@@ -165,10 +165,24 @@ Implikasi untuk adapter (`docs/VENUE_INTEGRATIONS.md`):
 
 `scripts/verify-bytecode.py` membaca `packages/core/artifacts/*.json`, meng-compile ulang dari pin yang tercatat, dan membandingkan hash. Bila pin berubah, script gagal — bukan diam-diam menghasilkan hash baru.
 
+### 7.1 Build harus bebas warning
+
+`forge build` (forge 1.9.0) menjalankan linter bawaan. Tiga warning yang sempat muncul sudah ditutup, dan cara menutupnya perlu diingat karena polanya berulang:
+
+| Warning | Lokasi | Tindakan |
+|---|---|---|
+| `reentrancy-events` | `MorphoVaultStrategy.sol` (`emit VenueDepositSkipped` sesudah external call) | diterima + `// forge-lint: disable-next-line(reentrancy-events)` dengan alasan tertulis: call yang gagal itu sudah di-rollback, event hanya telemetri keeper, dan reason baru ada setelah call gagal |
+| `environment-read-across-mutation` | `test/fork/ForkBase.sol` (`block.chainid`) | diganti `_chainId()` yang memanggil cheatcode `getChainId()`. Pin guard tidak boleh bergantung pada nilai yang bisa basi |
+| `environment-read-across-mutation` | `test/unit/AccountantFees.t.sol` (`block.timestamp` di sekitar `vm.warp`) | diganti `vm.getBlockTimestamp()` + assert bahwa waktu benar-benar maju |
+
+`forge-std` 1.9.6 (pin yang di-hash `scripts/check-vendor.py`) **tidak mendeklarasikan** `getChainId()`, sedangkan binernya punya. Karena `lib/` tidak boleh diubah, `ForkBase` mendeklarasikannya sendiri lewat `staticcall` ke `address(vm)`, dan gagal tertutup (`type(uint256).max`) bila cheatcode tidak menjawab.
+
+Bukti bahwa `getChainId()` segar dan `block.chainid` tidak basi pada toolchain ini (diukur 2026-11-20, `createSelectFork` ke pin): sebelum fork keduanya `31337`, sesudah fork keduanya `4663`. `vm.getBlockNumber()` sesudah fork balas `26450152` (tinggi L1), bukan `118337511` — pengingat bahwa tinggi L2 hanya lewat `ArbSys.arbBlockNumber()`.
+
 ## 8. Yang masih belum terbukti
 
 1. Tidak ada deployment `VaultV3 3.1.1` di chain publik → tidak ada pembanding byte-per-byte untuk versi yang kita pakai (§3).
 2. `vault-periphery@672de1c` membangun terhadap `yearn-vaults-v3@5b698f94` (branch `v3.1.0`); `Accountant`/`RoleManager`/`DebtAllocator` belum diuji terhadap ABI kita. Ini ticket 3 di epic 1.
-3. Fork test Robinhood Chain **sudah ada** (`packages/contracts/test/fork/`, dijalankan `python scripts/fork-test.py`; `verify-all.py` sengaja tidak menjalankannya tanpa flag — `--with-fork` mendelegasikan ke script itu), tetapi hanya probe venue pada pin `118337511` — belum e2e vault (deploy → deposit → report → withdraw). `maxWithdraw` venue untuk alamat strategi **sudah** diukur dan terbukti tidak bisa dipakai; yang belum: pola perubahan kas idle venue antar blok.
+3. Fork test Robinhood Chain ada di `packages/contracts/test/fork/` dan dijalankan `python scripts/fork-test.py` (11 test: `VenueProbe` 7 probe venue + `VaultE2E` 4 test e2e vault). `verify-all.py` sengaja tidak menjalankannya tanpa flag — `--with-fork` mendelegasikan ke script itu. Cakupan e2e: deploy lokal di atas fork → deposit → `update_debt` → `report` (gain + fee share ke accountant) → `redeemUnderlying` + `distribute` ke treasury → withdraw penuh dan sebagian. Yang **belum**: pola perubahan kas idle venue antar blok (butuh banyak pin, dan endpoint arsip gratis terus berubah).
 4. Verifikasi source on-chain belum mungkin: explorer diblokir Cloudflare dan RPC publik tidak menyediakan endpoint verifikasi.
-5. `docs/SECURITY_DIFF.md` belum ditulis; audit 2023 vs pin 2026 masih hutang.
+5. `docs/SECURITY_DIFF.md` sudah ditulis (rentang perubahan `yearn-vaults-v3`, perbaikan ChainSecurity, transfer hook, `TokenizedStrategy` 2023 → 2026), tetapi tetap bukan audit: tidak ada auditor yang memeriksa kombinasi pin kita.

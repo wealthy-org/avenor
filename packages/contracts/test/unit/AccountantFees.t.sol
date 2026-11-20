@@ -175,13 +175,19 @@ contract AccountantFeesTest is Test {
         // Mid-unlock the user sees part of the gain: the reported pps walks from 1.000000
         // to 1.002699 (the gain 0.3% minus the 0.03% fee) instead of jumping.
         assertEq(vault.convertToAssets(1e6), 1e6, "no jump at the report block");
-        vm.warp(block.timestamp + 3 days);
+        // `vm.getBlockTimestamp()` instead of `block.timestamp`: forge's
+        // `environment-read-across-mutation` lint warns that the cached value may be reused
+        // across `vm.warp`, which would make the second warp below land in the wrong place
+        // and quietly weaken "fully vested". Reading it fresh removes the question.
+        vm.warp(vm.getBlockTimestamp() + 3 days);
         uint256 midUnlock = vault.convertToAssets(1e6);
         assertGt(midUnlock, 1e6, "gain partially visible mid-unlock");
         assertLt(midUnlock, 1_002_699, "and not the whole gain yet");
 
         // After `profitMaxUnlockTime` the locked shares have fully vested into supply.
-        vm.warp(block.timestamp + vault.profitMaxUnlockTime() + 1);
+        uint256 midUnlockAt = vm.getBlockTimestamp();
+        vm.warp(midUnlockAt + vault.profitMaxUnlockTime() + 1);
+        assertGt(vm.getBlockTimestamp() - midUnlockAt, 3 days, "time actually advanced");
         assertApproxEqAbs(vault.unlockedShares(), LOCKED_ASSETS, 1, "locked shares unlocked");
 
         // §6 acceptance: pps difference vs 1.000.000/1e6 is 2.700/1e6, tolerance <= 1 unit.

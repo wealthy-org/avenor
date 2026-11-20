@@ -147,6 +147,16 @@ contract MorphoVaultStrategy is BaseStrategy {
             // The venue refused. Keeping the USDG loose is the only outcome that can
             // never lose funds, and reverting here would turn a closed venue into a
             // broken vault deposit path. The skip is logged, not hidden.
+            //
+            // `reentrancy-events` lint (event after an external call) is accepted here and
+            // not silenced by accident: the external call is the one that just *reverted*,
+            // so its state changes are rolled back; and this event is telemetry for the
+            // keeper, never an input to accounting, share price, or debt. A reentrant caller
+            // could at most reorder or duplicate a log entry, and `VenueDepositSkipped`
+            // carries the amount that stayed idle, which the next `report()` re-derives from
+            // balances anyway. Emitting before the call is impossible — the reason only
+            // exists after it fails.
+            // forge-lint: disable-next-line(reentrancy-events)
             emit VenueDepositSkipped(toDeposit, reason);
         }
         // Reset on both paths: a lingering allowance is a standing approval for the

@@ -90,12 +90,32 @@ abstract contract ForkBase is Test {
 
     bool internal forkReady;
 
+    /// @dev `forge-std` 1.9.6 (the pinned, hash-verified version) does not declare
+    ///      `getChainId()`, but the cheatcode exists in forge 1.9.0 and is what forge's own
+    ///      `environment-read-across-mutation` lint tells us to use instead of reading
+    ///      `block.chainid` around a `vm.createSelectFork`. Declaring it locally keeps the
+    ///      vendored library untouched (`scripts/check-vendor.py` hashes it).
+    ///
+    ///      Measured 2026-11-20 on this toolchain, forking the pin through
+    ///      `createSelectFork`: before the fork both read `31337`, after it both read
+    ///      `4663` — so the stale-cache bug the lint warns about does not reproduce here.
+    ///      `getChainId()` is used anyway because it cannot go stale, while a cached
+    ///      `block.chainid` read silently would turn this guard into a no-op.
+    function _chainId() internal view returns (uint256 id) {
+        (bool ok, bytes memory data) =
+            address(vm).staticcall(abi.encodeWithSignature("getChainId()"));
+        // Fail closed: an environment that cannot report its chain id must not be able to
+        // satisfy the pin check by defaulting to the expected value.
+        if (!ok || data.length < 32) return type(uint256).max;
+        id = abi.decode(data, (uint256));
+    }
+
     /// @return ready false when no endpoint could serve the pinned block.
     function _selectPinnedFork() internal returns (bool ready) {
         // Branch 2: forge was started on the pinned chain+block. Reuse it — do not spend
         // another request creating an identical fork, and do not silently ignore a fork the
         // operator explicitly asked for.
-        if (block.chainid == CHAIN_ID && _arbBlockNumber() == PIN_BLOCK) {
+        if (_chainId() == CHAIN_ID && _arbBlockNumber() == PIN_BLOCK) {
             return _pinMatches();
         }
 
@@ -122,7 +142,7 @@ abstract contract ForkBase is Test {
         id;
 
         // The fork may come back on a different block if the node ignores the pin.
-        if (block.chainid != CHAIN_ID || _arbBlockNumber() != PIN_BLOCK) return false;
+        if (_chainId() != CHAIN_ID || _arbBlockNumber() != PIN_BLOCK) return false;
 
         return _pinMatches();
     }
