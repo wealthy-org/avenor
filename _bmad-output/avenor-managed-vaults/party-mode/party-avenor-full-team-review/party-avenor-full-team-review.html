@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Avenor — Full Team Review (BMAD Party Mode)</title>
+<style>
+  :root{
+    --paper:#F6F5F1; --paper-2:#EDEBE4; --line:#D3D1C7;
+    --ink-900:#0B0D0C; --ink-700:#1F2624; --ink-500:#4A5551;
+    --accent:#1F4D3A; --warn:#8A5A12; --risk:#8C2F2F;
+    --mono: ui-monospace, "JetBrains Mono", "Berkeley Mono", Menlo, monospace;
+    --sans: "Inter Tight", Inter, system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink-900);font:400 15px/1.6 var(--sans);}
+  main{max-width:1040px;margin:0 auto;padding:48px 24px 96px}
+  header{border-bottom:1px solid var(--ink-900);padding-bottom:24px;margin-bottom:32px}
+  .kicker{font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-500)}
+  h1{font-size:34px;line-height:1.15;margin:8px 0 12px;font-weight:600;letter-spacing:-.02em}
+  h2{font-size:20px;margin:40px 0 12px;font-weight:600}
+  h3{font-size:15px;margin:24px 0 8px;font-weight:600}
+  p{margin:0 0 12px;color:var(--ink-700)}
+  .meta{font:500 12px/1.6 var(--mono);color:var(--ink-500)}
+  .turn{border-left:2px solid var(--line);padding:0 0 0 20px;margin:0 0 24px}
+  .turn.risk{border-left-color:var(--risk)}
+  .turn.warn{border-left-color:var(--warn)}
+  .turn.ok{border-left-color:var(--accent)}
+  .who{font:500 12px/1.4 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-900)}
+  .who span{color:var(--ink-500);text-transform:none;letter-spacing:0}
+  ul{margin:8px 0 12px;padding-left:20px;color:var(--ink-700)}
+  li{margin-bottom:6px}
+  code{font:500 13px var(--mono);background:var(--paper-2);padding:1px 5px;border-radius:2px}
+  table{width:100%;border-collapse:collapse;margin:16px 0 24px;font:450 13px/1.5 var(--mono)}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-500)}
+  td.num{text-align:right;white-space:nowrap}
+  .flag{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border:1px solid currentColor;border-radius:2px}
+  .flag.risk{color:var(--risk)} .flag.warn{color:var(--warn)} .flag.ok{color:var(--accent)}
+  footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink-500);font:500 12px var(--mono)}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="kicker">BMAD · Party Mode · Full Team Review</div>
+  <h1>Avenor — USDG Managed Yield: review lintas peran</h1>
+  <div class="meta">19 November 2026 · chain 4663 · fondasi Yearn V3 <code>v3.1.1</code> · peserta: Mary (analis), John (PM), Winston (arsitek), Amelia (dev), Sally (UX), Auditor independen, Adversary</div>
+</header>
+
+<section>
+<h2>1. Agenda</h2>
+<ul>
+  <li>Apakah brief <code>avenor.md</code> bisa dipenuhi tanpa mem-patch Yearn V3?</li>
+  <li>Apakah klaim Kassora ("withdrawals never paused", virtual shares) bisa kita tiru?</li>
+  <li>Apakah satu venue cukup, dan bagaimana menyatakan likuiditas 13,6%?</li>
+  <li>Di mana risiko terbesar: kontrak, peran, atau UI?</li>
+  <li>Apa yang harus selesai sebelum satu dolar masuk?</li>
+</ul>
+</section>
+
+<section>
+<h2>2. Temuan yang mengubah rencana</h2>
+<table>
+  <thead><tr><th>#</th><th>Temuan</th><th>Bukti</th><th>Dampak</th></tr></thead>
+  <tbody>
+    <tr><td>F1</td><td><code>setPaused(true)</code> memblokir penarikan</td><td><code>VaultV3.vy:774</code>, <code>:592</code></td><td>klaim "exit selalu terbuka" batal; freeze deposit pakai <code>deposit_limit</code></td></tr>
+    <tr><td>F2</td><td>Default <code>withdraw</code> vs <code>redeem</code> berlawanan (<code>max_loss</code> 0 vs 10000)</td><td><code>:1896</code>, <code>:1919</code></td><td>UI wajib eksplisit; ini risiko UX #1</td></tr>
+    <tr><td>F3</td><td>Venue utama hanya ~13,6% likuid segera</td><td>Morpho API, 19 Nov 2026</td><td>likuiditas jadi angka utama di UI</td></tr>
+    <tr><td>F4</td><td>Pin upstream saling tidak konsisten</td><td>submodule pin di <code>BASELINE.md</code> §1–2</td><td>matriks kompatibilitas empiris sebelum slice</td></tr>
+    <tr><td>F5</td><td>Tidak ada virtual shares di core</td><td><code>_convert_to_shares</code> saat <code>total_supply == 0</code></td><td>seed + minimum deposit, bukan klaim Kassora</td></tr>
+    <tr><td>F6</td><td><code>maxFee &gt; 0</code> menghapus management fee saat gain = 0</td><td><code>src/accountants/Accountant.sol:267-269</code></td><td>v1: performance fee saja</td></tr>
+    <tr><td>F7</td><td><code>shutdown_vault</code> memberi <code>DEBT_MANAGER</code> ke pemanggil</td><td><code>VaultV3.vy:1853</code></td><td>guardian jadi pemegang alokasi; butuh test regresi</td></tr>
+    <tr><td>F8</td><td>Route <code>/app/*</code> Kassora identik 2.281 byte (shell kosong)</td><td><code>referensi/kassora.org/app/*</code></td><td>parity visual belum punya dasar; dilarang menyalin</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section>
+<h2>3. Diskusi</h2>
+
+<div class="turn">
+  <div class="who">Mary <span>— business analyst</span></div>
+  <p>Pasar tidak kekurangan vault. Yang tidak ada di chain ini adalah <em>alasan untuk percaya</em>: siapa kurator, apa batasnya, berapa yang bisa keluar hari ini. Kalau kita hanya menjual APY 3,71%, kita kalah dari APY 19% <code>nnUSDG</code> — kecuali kita menjual likuiditas yang jujur. Jadi posisi produk bukan "yield tertinggi", tapi "angka yang bisa diperiksa".</p>
+  <p>Konsekuensi: metrik sukses tidak boleh TVL. TVL akan datang jika exit terlihat masuk akal; jika tidak, TVL besar hanya jebakan reputasi.</p>
+</div>
+
+<div class="turn warn">
+  <div class="who">Winston <span>— arsitek</span></div>
+  <p>Setuju arahnya, tapi ada harga teknis. F1 memaksa kita memilih: janji exit atau tombol darurat. Kita tidak bisa dua-duanya dengan core ini. Saya menolak mem-patch <code>_redeem</code> untuk "pause deposit saja" — itu mengubah kontrak yang diaudit dan memindahkan kita ke kategori "fork berisiko" tanpa audit baru.</p>
+  <p>Jalannya: freeze risiko baru lewat <code>deposit_limit</code>/<code>deposit_hook</code> (ADR-5), dan <code>setPaused</code> dinyatakan sebagai mode insiden yang ikut menahan penarikan. Kalau tim marketing tidak setuju, kita harus ganti fondasi kontrak — dan itu bertentangan dengan brief.</p>
+</div>
+
+<div class="turn risk">
+  <div class="who">John <span>— product manager</span></div>
+  <p>Ini titik paling tidak nyaman di seluruh review. Pengguna retail membaca "pause" sebagai "dana saya ditahan". Saya bisa menerima ADR-5 hanya jika ada tiga hal: (1) guardian terpisah dari timelock, (2) alasan pause dan ETA wajib tampil di app dalam satu klik, (3) runbook unpause yang teruji, bukan teoretis.</p>
+  <p>Tanpa tiga itu, saya akan menolak meluncurkan.</p>
+</div>
+
+<div class="turn ok">
+  <div class="who">Amelia <span>— dev</span></div>
+  <p>Ketiganya bisa dikerjakan. Tapi F2 adalah bug menunggu terjadi: siapa pun yang memanggil <code>redeem(shares, receiver, owner)</code> tanpa argumen keempat akan mengirim toleransi loss 100%. Saya minta SDK tidak mengekspos overload default sama sekali — hanya pembungkus dengan parameter wajib. Test calldata harus memeriksa nilai <code>max_loss</code> yang benar-benar terkirim, bukan hanya UI-nya.</p>
+  <p>Untuk F6, saya sarankan test regresi yang memastikan <code>maxFee = 0</code> selama <code>managementFee = 0</code>; kalau nanti ada yang menyalakan management fee, test itu akan gagal dan memaksa keputusan sadar.</p>
+</div>
+
+<div class="turn">
+  <div class="who">Sally <span>— UX</span></div>
+  <p>F3 bukan masalah teknis, itu masalah tata letak. "Nilai posisi 12.480" dan "dapat ditarik 3.120" harus dua angka bersebelahan dengan bobot yang sama; kalau yang kedua jadi catatan kaki, kita berbohong secara struktural. Saya juga menolak slider <code>max_loss</code> yang default-nya di tengah: default harus 0%, dan naikkan hanya dengan tindakan sadar.</p>
+  <p>Untuk F8: saya tidak akan mengejar parity dengan shell kosong. Struktur informasi Kassora kita pakai; visual kita sendiri — ledger, bukan landing page.</p>
+</div>
+
+<div class="turn risk">
+  <div class="who">Auditor <span>— independen</span></div>
+  <p>Saya akan mengulang tiga hal yang sering diklaim salah di kategori produk ini.</p>
+  <ul>
+    <li>Audit 2023 bukan audit kode 2026. F4 menunjukkan kombinasi pin bahkan tidak konsisten satu sama lain; tanpa matriks kompatibilitas empiris, "built on audited Yearn" adalah pernyataan tanpa isi.</li>
+    <li><code>Accountant.maxGain/maxLoss</code> adalah <em>healthcheck</em> yang revert, bukan pemotong nilai. Keeper yang salah akan gagal, dan itu harus terdokumentasi sebagai perilaku yang benar.</li>
+    <li><code>refundRatio</code> hanya berfungsi bila kontrak Accountant memegang asset. Menjanjikan proteksi loss tanpa pendanaan = misrepresentasi.</li>
+  </ul>
+  <p>Saya juga menandai F7: <code>shutdown_vault</code> memberi <code>DEBT_MANAGER</code> ke pemanggil. Siapa pun yang memegang <code>EMERGENCY_MANAGER</code> otomatis bisa mengalokasikan dana setelah shutdown. Itu harus ditulis di matriks peran, bukan ditemukan saat insiden.</p>
+</div>
+
+<div class="turn risk">
+  <div class="who">Adversary <span>— red team</span></div>
+  <p>Skenario yang paling mungkin menghabiskan uang user bukan eksploit, tapi kombinasi:</p>
+  <ul>
+    <li>Keeper hot key bocor → report palsu. Mitigasi: <code>maxGain</code> 5%, <code>maxLoss</code> 2%, dan keeper tanpa izin revoke. Masih bisa menagih fee kecil berulang; interval report harus dibatasi.</li>
+    <li>Guardian 3/5 dikompromikan → pause permanen. Mitigasi: unpause hanya lewat timelock 48 jam, dan guardian tidak boleh menjadi proposer timelock. Efeknya: satu tim tidak bisa menahan dana sekaligus mem-pause.</li>
+    <li>Likuiditas venue turun saat TVL tinggi → antrean penarikan. Mitigasi: buffer idle, kuotasi `maxWithdraw` yang jujur, dan tidak ada janji waktu.</li>
+    <li>Frontend memakai angka indexer basi → user menandatangani dengan ekspektasi salah. Mitigasi: provenance wajib + refetch sebelum tx.</li>
+  </ul>
+  <p>Satu lagi: jangan pernah menampilkan "dapat ditarik" dari nilai yang dihitung sendiri oleh frontend. Hanya <code>maxWithdraw</code> on-chain.</p>
+</div>
+
+<div class="turn">
+  <div class="who">Winston <span>— arsitek</span></div>
+  <p>Dengan tambahan Adversary, saya kunci lima ADR: pin tunggal + matriks kompatibilitas (ADR-1), factory sendiri (ADR-2), venue <code>steakUSDG</code> (ADR-3), timelock 48 jam sejak hari pertama (ADR-4), freeze via <code>deposit_limit</code> (ADR-5), <code>auto_allocate = false</code> (ADR-6), seed + minimum deposit (ADR-7), tanpa proxy (ADR-8), indexer dari RPC (ADR-9), performance fee saja (ADR-10).</p>
+  <p>Yang perlu dicatat: ADR-2 berarti kita kehilangan tooling kanonik Yearn. Itu biaya yang saya terima karena brief melarang mengubah core dan tidak ada bukti factory resmi di <code>4663</code>.</p>
+</div>
+
+<div class="turn warn">
+  <div class="who">Mary <span>— analis</span></div>
+  <p>Satu koreksi terhadap narasi "satu venue cukup". Secara risiko, satu venue berarti seluruh produk bergantung pada satu kurator yang belum kita ajak bicara. Saya tidak menuntut venue kedua di v1, tapi saya menuntut dua hal: cap konsentrasi 80% (bukan 100%), dan jalur keluar terdokumentasi ke venue yang sudah lolos gate, sehingga migrasi tidak dimulai dari nol saat kurator bermasalah.</p>
+</div>
+
+<div class="turn ok">
+  <div class="who">John <span>— PM</span></div>
+  <p>Diterima, dan saya tambahkan satu syarat peluncuran yang tidak boleh dinegosiasikan: bukti transaksi harus memuat <em>satu penarikan parsial</em>. Kalau kita tidak pernah membuktikan penarikan parsial di mainnet, kita belum membuktikan bahwa kita jujur soal F3.</p>
+</div>
+</section>
+
+<section>
+<h2>4. Keputusan</h2>
+<table>
+  <thead><tr><th>#</th><th>Keputusan</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>D1</td><td>Core Yearn V3 tidak dipatch; fitur di luar core ditolak</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D2</td><td>Freeze deposit pakai <code>deposit_limit</code>/hook; <code>setPaused</code> = insiden dengan disclosure</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D3</td><td><code>max_loss</code> wajib eksplisit; SDK tidak mengekspos overload default</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D4</td><td>Guardian 3/5 terpisah; unpause lewat timelock 48 jam</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D5</td><td>Venue v1 <code>steakUSDG</code>, cap 80%, buffer idle 10%, jalur migrasi terdokumentasi</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D6</td><td>Fee performance 10%, management 0, <code>maxGain</code> 5%, <code>maxLoss</code> 2%</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D7</td><td>Seed 1.000 USDG dead shares + minimum deposit 10 USDG</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D8</td><td>Bukti transaksi wajib memuat satu penarikan parsial</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D9</td><td>Visual: ledger/instrument panel; parity Kassora hanya struktur informasi</td><td><span class="flag ok">diterima</span></td></tr>
+    <tr><td>D10</td><td>Mulai keterlibatan reviewer eksternal sekarang, bukan di akhir</td><td><span class="flag warn">dijadwalkan</span></td></tr>
+    <tr><td>D11</td><td>Yurisdiksi, entitas penerima fee, dan nama final</td><td><span class="flag risk">terbuka — manusia</span></td></tr>
+    <tr><td>D12</td><td>Apakah <code>refundRatio</code> didanai di v1</td><td><span class="flag risk">terbuka — rekomendasi: tunda</span></td></tr>
+  </tbody>
+</table>
+</section>
+
+<section>
+<h2>5. Yang tidak boleh diklaim (hasil review)</h2>
+<ul>
+  <li>"Audited" untuk kombinasi versi 2026, adapter kita, atau konfigurasi kita.</li>
+  <li>"Withdrawals never paused" — <code>setPaused</code> memblokir penarikan.</li>
+  <li>"Instant/100% liquid" — venue utama ~13,6% likuid segera.</li>
+  <li>"Virtual shares protection" — core tidak memilikinya.</li>
+  <li>"Principal protected" atau janji hasil dalam bentuk apa pun.</li>
+  <li>"Guardian/delayed control" sementara <code>role_manager</code> masih EOA.</li>
+</ul>
+</section>
+
+<section>
+<h2>6. Langkah berikut (berurutan, tidak boleh dilompati)</h2>
+<table>
+  <thead><tr><th>Urut</th><th>Aksi</th><th>Pemilik</th><th>Selesai bila</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td>Pasang Foundry + env Python 3.11; reproduksi bytecode</td><td>Amelia</td><td>hash cocok, tercatat di <code>docs/BASELINE.md</code></td></tr>
+    <tr><td class="num">2</td><td>Matriks kompatibilitas + <code>SECURITY_DIFF</code></td><td>Winston</td><td>tabel terisi, test tambahan terdaftar</td></tr>
+    <tr><td class="num">3</td><td>Adapter + fork test venue asli</td><td>Amelia</td><td>deposit/report/withdraw penuh &amp; parsial lulus</td></tr>
+    <tr><td class="num">4</td><td>Deploy script + peran terverifikasi</td><td>Winston</td><td>assert timelock &amp; guardian lulus</td></tr>
+    <tr><td class="num">5</td><td>App + indexer + keeper</td><td>Sally / Amelia</td><td>12 state UX, provenance, soak 7 hari</td></tr>
+    <tr><td class="num">6</td><td>Review eksternal + launch terbatas</td><td>John</td><td>temuan kritis nol, cap + allowlist aktif</td></tr>
+  </tbody>
+</table>
+</section>
+
+<footer>
+Sumber: <code>docs/BASELINE.md</code>, <code>docs/REFERENCE_CAPTURE.md</code>, <code>docs/ACCOUNTING.md</code>, <code>docs/WITHDRAWAL_SEMANTICS.md</code>, <code>docs/FEE_CONFIG.md</code>, <code>docs/ROLE_PERMISSION_MATRIX.md</code>, <code>docs/VENUE_INTEGRATIONS.md</code>, <code>docs/ARCHITECTURE.md</code>, <code>prd-avenor-managed-vaults/</code>, <code>ux-avenor-managed-vaults/</code>.
+</footer>
+</main>
+</body>
+</html>

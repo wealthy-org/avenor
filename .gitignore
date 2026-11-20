@@ -1,0 +1,57 @@
+# toolchain terpasang lokal (bukan source; ukuran ratusan MB)
+.tools/
+.venv-ape/
+.venv-037/
+.venv/
+node_modules/
+
+# Foundry
+out/
+cache/
+broadcast/
+!deployments/**
+
+# worktree & scratch
+.tmp/
+referensi/.tmp/
+
+# artefak build repo upstream (dihasilkan `forge build`)
+referensi/*/out/
+referensi/*/cache/
+referensi/*/artifacts/
+
+# python
+__pycache__/
+*.pyc
+scripts/__pycache__/
+
+# rahasia & konfigurasi lokal
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# os / editor
+.DS_Store
+__MACOSX/
+Thumbs.db
+.idea/
+.vscode/
+
+# log
+*.log
+
+# Foundry build output inside the contracts package (keep packages/core/artifacts!)
+packages/contracts/out/
+packages/contracts/cache/
+# Scratch dir the interface generator may leave behind on an interrupted run
+packages/contracts/src/.gen-check/
+
+# Klon upstream untuk pembacaan (punya .git sendiri). Pin commit-nya tercatat di
+# docs/REFERENCE_CAPTURE.md; jangan di-commit sebagai gitlink yang tak bisa di-clone.
+referensi/kassora-overview/
+referensi/tokenized-strategy/
+referensi/vault-periphery/
+referensi/Yearn-ERC4626-Router/
+referensi/yearn-vaults-v3/

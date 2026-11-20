@@ -1,0 +1,72 @@
+{
+  "deployment": {
+    "accountant": "0x62c20Aa1e0272312BC100b4e23B4DC1Ed96dD7D1",
+    "blockNumber": 28,
+    "chainId": 31337,
+    "deployer": "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38",
+    "depositLimit": 0,
+    "factory": "0xDB8cFf278adCCF9E9b5da745B44E754fC4EE3C76",
+    "factoryRuntimeHash": "0xdfc2a10112cf82c15ada486a586ff1a5bebd312e9dbe86ef8c13d92683bddec2",
+    "gitRev": "local-rehearsal",
+    "guardian": "0x599440b654ED887776371B9C85EA31756cC583d9",
+    "keeper": "0xeF802CbBda3151b5E83Af0901B8B2e66393c492D",
+    "maxDebt": 0,
+    "minimumTotalIdle": 0,
+    "mode": "dry-run",
+    "placeholdersUsed": true,
+    "profitMaxUnlockTime": 604800,
+    "seedAssets": 0,
+    "strategy": "0xDEb1E9a6Be7Baf84208BB6E10aC9F9bbE1D70809",
+    "strategyManagement": "0x2c5C173d7f4F0b48747877689cbEfa54Bd8359e9",
+    "timelock": "0xBb2180ebd78ce97360503434eD37fcf4a1Df61c3",
+    "timestamp": 1795109142,
+    "tokenizedStrategyAddress": "0x3110D1Eec90f0651C18e75AD37711A8777342504",
+    "treasury": "0x1E1aB069aC05956C468455eAb5171D251E5c5aD1",
+    "vault": "0x3a9a7A1561eEFeF29Baa94dB20002a2049c582b4",
+    "vaultOriginal": "0xA8452Ec99ce0C64f20701dB7dD3abDb607c00496",
+    "vaultRuntimeHash": "0x6909c58e42814ae46cadd909f29f19163751b77ff4a2ccf62c5a87e933e02be6"
+  },
+  "roleMatrix": {
+    "deployer": 0,
+    "guardian": 8192,
+    "keeper": 96,
+    "strategyActivation": 1795109142,
+    "strategyCurrentDebt": 0,
+    "strategyMaxDebt": 0,
+    "timelock": 3999,
+    "treasury": 4096
+  },
+  "pendingActions": {
+    "items": [
+      "timelock must call accept_role_manager() (48h delayed op)",
+      "strategy.acceptManagement() by the new management",
+      "fee manager: Accountant.redeemUnderlying + distribute(USDG) to feeRecipient",
+      "set KEEPER_ROLES/ALLOWLIST in keeper app (epic 6)",
+      "seed dead shares once treasury is funded"
+    ]
+  },
+  "proposalTargets": {
+    "items": []
+  },
+  "proposalCalldatas": {
+    "items": []
+  },
+  "feeConfig": {
+    "accountantRedeemMaxLoss": 0,
+    "custom": false,
+    "feeManager": "0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38",
+    "feeRecipient": "0x1E1aB069aC05956C468455eAb5171D251E5c5aD1",
+    "managementFee": 0,
+    "maxFee": 0,
+    "maxGain": 500,
+    "maxLoss": 200,
+    "performanceFee": 1000,
+    "refundRatio": 0,
+    "strategyKeeper": "0xeF802CbBda3151b5E83Af0901B8B2e66393c492D",
+    "strategyPerformanceFee": 0,
+    "strategyPerformanceFeeRecipient": "0x1E1aB069aC05956C468455eAb5171D251E5c5aD1",
+    "strategyProfitMaxUnlockTime": 0,
+    "vaultAccountant": "0x62c20Aa1e0272312BC100b4e23B4DC1Ed96dD7D1",
+    "vaultAddedToAccountant": true
+  }
+}

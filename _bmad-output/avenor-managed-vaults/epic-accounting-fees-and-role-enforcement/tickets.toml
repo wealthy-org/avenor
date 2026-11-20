@@ -1,0 +1,82 @@
+# tickets.toml — Epic 3: Accounting, Fee Engine, Role Enforcement & Invariants
+
+[[entry]]
+id = 1
+type = "story"
+title = "Deploy and configure Accountant with v1 fee parameters"
+description = "Script + test: deploy Accountant, set defaultConfig (performanceFee 1000, managementFee 0, refundRatio 0, maxFee 0, maxGain 500, maxLoss 200), add_vault, set_accountant di vault."
+verify = "Test reproduksi contoh FEE_CONFIG §6: gain 3000 → fee 300, shares_to_lock setara 2700; refund 0 karena Accountant tidak didanai."
+covers = ["S2"]
+after = []
+hitl = false
+risk = "medium"
+status = "done"
+note = """
+Landing: `script/Deploy.s.sol` (_deployAccountant + addVault + set_accountant, proposal 10
+target), `src/interfaces/IAccountant.sol`, `test/unit/AccountantFees.t.sol` (8 test),
+`test/unit/DeployScript.t.sol` (16 test).
+
+Angka terbukti (test/unit/AccountantFees.t.sol::test_documentedExampleFeesLockAndUnlock):
+deposit 1_000_000e6 lalu gain venue 3_000e6 menghasilkan total_fees 300e6 shares, locked
+2_700e6, totalAssets vault 1_003_000e6, totalSupply setelah unlock 1_000_300e6, dan
+convertToAssets(1e6) = 1_002_699 (toleransi 2). Kenaikan pps jadi 0,2699%, bukan 0,27%
+eksak; docs/FEE_CONFIG.md bagian 6 dikoreksi karena angka lama (1.000.003) salah basis.
+
+Dua bug nyata ditemukan test ini dan sudah diperbaiki:
+1. BaseStrategy._strategyTotalAssets() default mengembalikan TokenizedStrategy.lastTotalAssets(),
+   yang hanya bergerak saat *strategi* report. VaultV3._process_report (VaultV3.vy:1069) tidak
+   pernah memanggil strategy.report(), jadi dengan default itu gain/loss venue tidak akan pernah
+   terlihat vault. Override live (_totalAssets()) di MorphoVaultStrategy; regression test
+   test_strategyTotalAssetsIsLiveSoTheVaultCanSeeTheVenue.
+2. TokenizedStrategy.initialize memberi setiap strategi performanceFee 1_000 plus unlock 10 hari
+   ke msg.sender (TokenizedStrategy.sol:481-489): fee kedua yang tidak pernah muncul di
+   total_fees. Dimatikan di Deploy.s.sol::_configureStrategy lalu dibaca ulang (revert
+   StrategyWiringFailed bila tidak cocok). Tidak bisa dilakukan di constructor karena setter
+   tersebut memanggil _accrue, yang external-call ke address(this) sebelum ada code.
+
+Belum: acceptance fork (dua run hijau berurutan di blok pin) masih diblokir RPC arsip chain
+4663. Dicatat sebagai blocker, bukan diklaim lulus."""
+
+[[entry]]
+id = 2
+type = "story"
+title = "Encode role matrix and prove per-function enforcement"
+description = "Grant peran sesuai ROLE_PERMISSION_MATRIX §2 di harness, lalu test positif/negatif untuk setiap fungsi role-gated, termasuk efek samping shutdown_vault."
+verify = "Test revert untuk setiap fungsi tanpa bit; test lulus dengan bit; test regresi bahwa shutdown_vault memberi DEBT_MANAGER ke pemanggil."
+covers = ["S2"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Loss path: healthcheck rejection and force revoke accounting"
+description = "Test loss > maxLoss Accountant revert, lalu force_revoke_strategy menanggung loss, membakar shares, dan menurunkan pps secara deterministik."
+verify = "pps sebelum/sesudah cocok dengan perhitungan manual; tidak ada dust yang menguntungkan pihak lain; event LossReported tercatat."
+covers = ["S2"]
+after = [1]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Stateful invariant suite across deposit/withdraw/report/role changes"
+description = "Handler acak: deposit, mint, withdraw, redeem (max_loss acak), process_report (gain/loss acak), update_debt, set_deposit_limit, setPaused; jalankan invariant 10k run."
+verify = "Invariant lolos; setiap kegagalan punya seed yang bisa direproduksi dan dicatat."
+covers = ["S2"]
+after = [1, 2]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 5
+type = "story"
+title = "DepositCapHook with per-wallet cap and allowlist phase"
+description = "Implementasi IDepositHook: available_deposit_limit(receiver) menghormati allowlist + cap per wallet + global cap, post_deposit mencatat kontribusi; test termasuk hook yang menolak semua."
+verify = "maxDeposit(receiver) sesuai hook; deposit di atas cap revert 'exceed deposit limit'; withdraw tetap jalan saat cap 0."
+covers = ["S2"]
+after = [2]
+hitl = false
+risk = "medium"

@@ -1,0 +1,125 @@
+{
+  "_meta": {
+    "purpose": "Chain 4663 constants consumed by fork harness, deploy script and SDK. One source of truth; no addresses copied into test files.",
+    "generated_from": "direct eth_call/eth_getCode reads",
+    "network": {
+      "name": "Robinhood Chain mainnet",
+      "chainId": 4663,
+      "nativeCurrency": "ETH",
+      "explorer": "https://robinhoodchain.blockscout.com",
+      "explorer_status": "blocked by Cloudflare from build host (2026-11-19)"
+    },
+    "observed_at": {
+      "blockNumber": 118337511,
+      "blockTimestamp": 1795103654,
+      "blockHash": "0xbaa980abd65e0c748b3b5f69d2352b69dd33b03138179bf61c988137291ba0af",
+      "hostDate": "2026-11-19",
+      "note": "Captured while drpc still served this block (2026-11-19). Fork tests verify the pin against `totalAssets` AND `ArbSys.arbBlockNumber()` (chain 4663 is an Arbitrum Orbit chain: `block.number` is L1 height, the L2 height is `0x64.arbBlockNumber()`), then fail loudly instead of forking `latest`. Reproduce with `python scripts/fork-test.py`."
+    },
+    "rpc": {
+      "primary": "https://rpc.solidrpc.io/public/evm/4663",
+      "fallbacks": ["https://robinhood.api.onfinality.io/public"],
+      "retired": ["https://robinhood.drpc.org", "https://robinhood-rpc.publicnode.com", "https://4663.rpc.thirdweb.com"],
+      "primary_note": "Only keyless archive endpoints that still serve block 118337511 (checked 2026-11-19). drpc pruned it: it answers `Unknown state. First available state is 1`, and its window is only ~150-200 blocks (~60-70s at ~3 blocks/s). publicnode and thirdweb reject historical state; robinhood.dwellir.com and public blastapi reject the chain.",
+      "archive": true
+    }
+  },
+  "tokens": {
+    "usdg": {
+      "address": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+      "symbol": "USDG",
+      "decimals": 6,
+      "totalSupply": "622410599910270",
+      "evidence": "eth_call @118337511: symbol/decimals/totalSupply",
+      "issuer_verified": false,
+      "issuer_note": "docs.robinhood.com unreadable from host (expired TLS + ISP redirect). Symbol/decimals confirmed on chain; issuer identity not independently confirmed."
+    }
+  },
+  "venues": {
+    "steakUSDG": {
+      "address": "0xBeEff033F34C046626B8D0A041844C5d1A5409dd",
+      "kind": "Morpho Vault V2",
+      "asset": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+      "shareDecimals": 18,
+      "curator": "0x9023FBD6A08C666491A2d1648737E400cF42D2Fb",
+      "snapshot": {
+        "totalAssets": "538856055994280",
+        "totalSupply": "531418644510854399888342585",
+        "convertToAssets_1e18": "1013995",
+        "convertToShares_1e6": "986197776937474866",
+        "maxDeposit_zero": "0",
+        "idleUsdg": "27024457979514"
+      },
+      "deposit": {
+        "gate_reports_zero_but_accepts": true,
+        "why": "`maxDeposit` answers 0 for every address (fresh, holder, venue itself) while `deposit` succeeds. Not 'vault full' and not a curator gate. Believing the zero makes VaultV3.update_debt a permanent no-op: the adapter would never allocate and every vault deposit would sit idle.",
+        "probe": {
+          "maxDeposit": "0",
+          "deposit_10000e6": "ok, spent exactly 10000000000, minted 9861977769374748661535 shares",
+          "convertToAssets_of_minted": "9999999999",
+          "maxWithdraw_after": "0",
+          "withdraw_2000e6": "ok, received 2000000000, returned 1972395553874949732308 (shares)"
+        },
+        "adapter_rule": "availableDepositLimit() passes a positive venue limit through, reports type(uint256).max for a zero, and _deployFunds attempts the deposit; a refusal keeps the USDG idle and emits VenueDepositSkipped(amount, reason).",
+        "evidence": "test/fork/VenueProbe.t.sol::test_depositSucceedsWhileMaxDepositReportsZero, unit-mirrored by MockVenue.setMaxDepositLies"
+      },
+      "liquidity": {
+        "bound": "min(value of position, idle USDG held by the venue)",
+        "why": "`maxWithdraw`/`maxRedeem` are NOT liquidity signals here: both answer 0 for a 8213519595843454223149753-share position that the venue then redeems in full. The venue's own cash balance is the only bound it enforces.",
+        "probes": {
+          "holder": "0x32Ba0BD09218b1b93681ecF83304A1E5566421f1",
+          "holderShares": "8213519595843454223149753",
+          "maxWithdraw_holder": "0",
+          "maxRedeem_holder": "0",
+          "withdraw_1e6": "ok, received 1000000, burned 986197776937474867 shares",
+          "withdraw_8328000e6": "ok, burned 8213055086335290685327046 shares",
+          "redeemAll": "8328471010500",
+          "withdraw_30000000e6": "revert (payload unstable across runs: Panic(0x11) sometimes, empty data other times)"
+        },
+        "adapter_rule": "MorphoVaultStrategy._venueLiquidity() = min(venue.convertToAssets(venue.balanceOf(this)), USDG.balanceOf(venue))",
+        "return_semantics": {
+          "withdraw": "SHARES burned (18 decimals), NOT assets paid. Measured: withdraw(2000e6) returned 1972395553874949732308 and paid 2000000000 USDG.",
+          "redeem": "assets paid (ERC-4626 conformant).",
+          "adapter_rule": "MorphoVaultStrategy._freeFunds measures the USDG balance delta; it never compares the withdraw return value to an asset amount."
+        },
+        "evidence": "test/fork/VenueProbe.t.sol, run via scripts/fork-test.py"
+      },
+      "verified": [
+        "asset",
+        "symbol",
+        "decimals",
+        "totalAssets",
+        "totalSupply",
+        "convertToAssets",
+        "convertToShares",
+        "maxDeposit",
+        "curator",
+        "maxWithdraw",
+        "maxRedeem",
+        "withdraw",
+        "redeem"
+      ],
+      "unverified": [
+        "deposit behaviour under gates",
+        "bytecode hash vs Morpho Vault V2 release"
+      ],
+      "known_absent": ["liquidity()"],
+      "status": "research"
+    }
+  },
+  "infrastructure": {
+    "createx": "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed",
+    "tokenizedStrategyImplementation": {
+      "address": "0x3110D1Eec90f0651C18e75AD37711A8777342504",
+      "runtimeCodesize": 18224,
+      "evidence": "eth_getCode on 4663 and mainnet; runtime keccak matches after masking immutable `factory` and stripping 53-byte CBOR metadata",
+      "source": "constant in lib/tokenized-strategy/src/BaseStrategy.sol:111",
+      "note": "Hardcoded in strategy source, not configurable at deploy time. Same address on every chain because it is a constant."
+    },
+    "tokenizedStrategyFactory": "0x311de24e48C360B9A7765E7aB7eCDBABCd27B134",
+    "yearnVaultFactory": {
+      "codesize": 0,
+      "conclusion": "The Yearn VaultFactory address found in brief/Kassora notes returns no code on 4663 at the observed block. Avenor therefore deploys its own factory (ADR-2). Full address intentionally not reproduced here: the earlier capture stored it truncated (0x444045c5...), and an address pasted from a truncated note is worse than none. Re-read it from the source before use; the conclusion (codesize 0) is what matters."
+    }
+  }
+}

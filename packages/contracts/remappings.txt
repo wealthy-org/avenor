@@ -1,0 +1,5 @@
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+tokenized-strategy/=lib/tokenized-strategy/src/
+forge-std/=lib/forge-std/src/
+@yearn-vaults/interfaces/=lib/yearn-periphery/interfaces/
+yearn-periphery/=lib/yearn-periphery/src/

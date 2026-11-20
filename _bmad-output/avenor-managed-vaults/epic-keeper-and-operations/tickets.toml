@@ -1,0 +1,56 @@
+# tickets.toml — Epic 6: Keeper, Monitoring, Runbook & Incident Drills
+
+[[entry]]
+id = 1
+type = "story"
+title = "Keeper core with mandatory simulation and structured logging"
+description = "Runtime keeper: wallet terbatas, simulate via eth_call sebelum kirim, log alasan/calldata/hasil, nonce management, dan kill switch."
+verify = "Test: tx yang gagal simulasi tidak pernah terkirim; log memuat blockNumber dan alasan; kill switch menghentikan semua job."
+covers = ["S5"]
+after = []
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Report and allocation jobs with caps and healthchecks"
+description = "process_report pada interval/ambang, update_debt sesuai targetRatio/maxRatio + minimum_total_idle + cap venue; hormati maxGain/maxLoss Accountant."
+verify = "Dry-run fork: report menghasilkan fee sesuai FEE_CONFIG; alokasi tidak pernah melewati cap; report yang melanggar healthcheck berhenti dengan alert."
+covers = ["S5"]
+after = [1]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Liquidity and parameter monitoring with real alert delivery"
+description = "Monitor maxWithdraw venue, totalAssets delta, paused/shutdown, deposit_limit, fee config; kirim alert ke kanal on-call dengan link runbook."
+verify = "Alert uji terkirim nyata (screenshot/timestamp); ambang tertulis; tidak ada alarm tanpa aksi."
+covers = ["S5"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Author RUNBOOK.md and execute four incident drills"
+description = "Runbook: pause/unpause, force revoke, venue liquidity drop, shutdown + migrasi; jalankan drill dan catat waktu aktual vs target."
+verify = "docs/RUNBOOK.md lengkap; empat drill punya catatan eksekusi (block, tx, waktu) di staging/fork."
+covers = ["S5"]
+after = [2, 3]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Seven-day soak with keeper metrics"
+description = "Jalankan keeper 7 hari di staging (atau testnet) dengan metrik: uptime, tx sukses/gagal, fee terbentuk, alarm palsu."
+verify = "Laporan soak dengan angka nyata; kriteria lulus: 0 tx gagal berulang, alarm palsu ≤ 2/hari, rekonsiliasi bersih tiap hari."
+covers = ["S5"]
+after = [2, 3]
+hitl = false
+risk = "medium"

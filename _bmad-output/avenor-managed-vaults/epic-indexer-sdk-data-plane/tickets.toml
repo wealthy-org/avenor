@@ -1,0 +1,56 @@
+# tickets.toml — Epic 4: Indexer, SDK & Data Plane
+
+[[entry]]
+id = 1
+type = "story"
+title = "Design indexer schema, migrations and checkpointing"
+description = "Tabel vaults, strategies, share_price_snapshots, positions, reports, fees, role_events, venue_snapshots, ingestion_checkpoints; unique constraint dan index untuk query app."
+verify = "Migrasi jalan dari kosong; constraint mencegah duplikat event; checkpoint memungkinkan resume."
+covers = ["S3"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Implement event ingestion with reorg handling over RPC"
+description = "Polling/getLogs dengan batching, simpan blockHash, deteksi reorg dan rollback, backfill dari block deploy, retry/backoff saat rate-limit."
+verify = "Simulasi reorg (anvil) menghasilkan rollback yang benar; backfill 50k blok selesai tanpa gap dan tercatat di checkpoint."
+covers = ["S3"]
+after = [1]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Daily reconciliation job against on-chain state"
+description = "Bandingkan agregat event dengan eth_call (totalAssets/totalSupply/totalIdle/totalDebt/currentDebt/balanceOf(vault)); selisih > toleransi = alert."
+verify = "Test dengan data yang sengaja dirusak memicu alert; rekonsiliasi bersih pada data normal."
+covers = ["S3"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Ship typed SDK with preview, simulation and 6-decimal formatting"
+description = "Paket packages/sdk: kontrak dari artefak, helper preview/max/simulate, formatter USDG 6 desimal, dan guard agar UI tidak menghitung sendiri."
+verify = "Test unit untuk rounding dan formatter; app memakai SDK (tidak ada BigInt manual di komponen)."
+covers = ["S3"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Expose app API with block provenance on every number"
+description = "Endpoint katalog/detail/portfolio/transparency mengembalikan angka + blockNumber + blockTimestamp + source, dan status unknown bila data hilang."
+verify = "Kontrak API mengembalikan provenance; test snapshot; tidak ada field APY tanpa sumber."
+covers = ["S3"]
+after = [3, 4]
+hitl = false
+risk = "medium"

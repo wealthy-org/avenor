@@ -1,0 +1,56 @@
+# tickets.toml — Epic 5: Web App
+
+[[entry]]
+id = 1
+type = "story"
+title = "Build app shell, design tokens and numeric primitives"
+description = "Next.js App Router + Tailwind, token warna/spacing/type, komponen Amount (6 desimal), BlockProvenance, StatusPill, ErrorState."
+verify = "Storybook/snapshot untuk Amount dan provenance; tidak ada komponen menghitung BigInt sendiri."
+covers = ["S4"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Catalog and vault detail with mandate, allocation, liquidity and fees"
+description = "Halaman katalog + detail: mandat, venue & bobot, likuiditas segera, fee on-chain, peran/timelock, last_report freshness, dokumen."
+verify = "Semua angka berasal dari API ber-provenance; status unknown tampil bila data hilang; tidak ada CTA deposit pada vault non-live."
+covers = ["S4"]
+after = [1]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Deposit flow with explicit caps, preview and full error taxonomy"
+description = "Approve terbatas, previewDeposit, simulasi, submit, track receipt, tampilkan shares aktual; tangani cap penuh/paused/shutdown/wrong network/reject/revert/RPC error."
+verify = "E2E test untuk 7 error state + happy path; angka setelah receipt diambil dari event, bukan quote."
+covers = ["S4"]
+after = [2]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Withdraw flow with explicit max_loss and partial withdrawal UX"
+description = "Input assets/shares, batas maxWithdraw/maxRedeem, slider max_loss dengan default 0%, peringatan penarikan parsial, konfirmasi konsekuensi, hasil dari event."
+verify = "Test bahwa tx membawa max_loss eksplisit; snapshot copy peringatan; kasus W3/W4/W6 punya UI yang sesuai."
+covers = ["S4"]
+after = [3]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Portfolio and transparency surfaces"
+description = "Posisi user, nilai vs dapat ditarik, riwayat report/fee, riwayat peran, alamat kontrak + apiVersion + hash artefak + tautan bukti transaksi."
+verify = "Data cocok dengan rekonsiliasi indexer; tautan tx valid; tidak ada klaim audit untuk versi kita."
+covers = ["S4"]
+after = [4]
+hitl = false
+risk = "medium"

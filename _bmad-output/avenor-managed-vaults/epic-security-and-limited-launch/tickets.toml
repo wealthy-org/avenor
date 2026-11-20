@@ -1,0 +1,56 @@
+# tickets.toml — Epic 7: Security Review, Limited Launch & Transaction Proof
+
+[[entry]]
+id = 1
+type = "story"
+title = "Define review scope and engage independent reviewer"
+description = "Scope: MorphoVaultStrategy, DepositCapHook, Deploy.s.sol, konfigurasi peran/fee, dan asumsi terhadap pin upstream. Kirim repo + dokumen docs/*."
+verify = "Scope disetujui tertulis; reviewer independen dari penulis kode; jadwal tercatat."
+covers = ["S6"]
+after = []
+hitl = true
+risk = "medium"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Remediate findings and re-run full test suite"
+description = "Tutup critical/high, dokumentasikan medium/low yang diterima, tambah test regresi untuk setiap perbaikan."
+verify = "Setiap temuan punya status + bukti; suite penuh hijau; tidak ada test dihapus untuk meloloskan perbaikan."
+covers = ["S6"]
+after = [1]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Execute limited launch with caps, allowlist and on-call"
+description = "Deploy mainnet dengan deposit_limit kecil, hook allowlist, seed dead shares, keeper aktif, monitoring siaga; naikkan cap bertahap sesuai kriteria."
+verify = "Deposit nyata berhasil dalam cap; peran terverifikasi on-chain; timelock aktif; tidak ada alarm kritis 72 jam pertama."
+covers = ["S6"]
+after = [2]
+hitl = true
+risk = "high"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Publish acceptance evidence and transaction proof"
+description = "Kumpulkan alamat, tx hash deposit/report/withdraw (termasuk parsial), verifikasi source (bila memungkinkan), dan hasil rekonsiliasi."
+verify = "docs/ACCEPTANCE_EVIDENCE.md lengkap; setiap hash bisa dibuka di explorer; screenshot tersimpan di repo."
+covers = ["S6"]
+after = [3]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Final documentation and risk disclosure pass"
+description = "Pastikan delapan dokumen brief §17 final dan konsisten satu sama lain; tulis halaman risiko produk; hapus semua klaim yang tidak terbukti."
+verify = "Review silang antar dokumen: angka, alamat, dan parameter sama; tidak ada kata 'audited' untuk versi kita; disclosure risiko tampil di app."
+covers = ["S6"]
+after = [4]
+hitl = true
+risk = "medium"

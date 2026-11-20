@@ -1,0 +1,56 @@
+# tickets.toml — Epic 1: Baseline Reproduction, Toolchain & Compatibility Matrix
+
+[[entry]]
+id = 1
+type = "story"
+title = "Install and pin host toolchain (foundry, python 3.11, uv env)"
+description = "Pasang Foundry, siapkan env Python 3.11 untuk eth-ape 0.8.10 + vyper 0.3.10, catat semua versi di docs/BASELINE.md."
+verify = "`forge --version`, `ape --version`, `vyper --version` terekam; docs/BASELINE.md §5 diperbarui dengan angka nyata, bukan 'tidak terpasang'."
+covers = ["S0"]
+after = []
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Reproduce VaultV3/VaultFactory bytecode and publish artifacts"
+description = "Kompilasi Vyper upstream dengan parameter resmi (vyper 0.3.10, evm paris, optimize codesize), bandingkan keccak256 runtime bytecode, commit ABI+bytecode ke packages/core/artifacts."
+verify = "Hash runtime bytecode sama dengan artefak rilis upstream; artefak ter-commit; script pembanding ada di repo."
+covers = ["S0"]
+after = [1]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Vendor periphery and router at pinned commits with compatibility matrix"
+description = "Vendor vault-periphery@672de1c9 dan Yearn-ERC4626-Router@fc96fe36, uji Accountant/RoleManager/DebtAllocator terhadap VaultV3@f449264f, catat hasil di matriks kompatibilitas."
+verify = "Setiap modul yang dipakai punya test yang jalan; matriks kompatibilitas terisi (lulus/gagal + alasan), tidak ada modul dipakai hanya karena 'biasanya jalan'."
+covers = ["S0"]
+after = [2]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = 4
+type = "story"
+title = "Author SECURITY_DIFF between audited 2023 commits and pinned 2026 commits"
+description = "Diff commit yang diaudit (ChainSecurity/Statemind/YAcademy) terhadap pin v3.1.1 dan v3.1.0, klasifikasikan security-relevant vs kosmetik, tulis dampak ke produk."
+verify = "docs/SECURITY_DIFF.md ada, setiap perubahan berkategori, dan daftar item yang perlu test tambahan tertulis."
+covers = ["S0"]
+after = [2]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Verify USDG and venue addresses on chain 4663 via RPC"
+description = "Baca simbol/decimals/totalSupply USDG, alamat venue steakUSDG beserta asset()/totalAssets()/maxWithdraw() dari RPC langsung; catat block number + hash."
+verify = "Tabel verifikasi di docs/REFERENCE_CAPTURE.md §3/§4 terisi nilai nyata + block; tidak ada alamat yang dipakai tanpa pembacaan on-chain."
+covers = ["S0"]
+after = [1]
+hitl = false
+risk = "medium"

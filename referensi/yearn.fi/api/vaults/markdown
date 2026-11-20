@@ -1,0 +1,369 @@
+---
+title: Yearn Vaults
+description: Kong-derived active public Yearn single asset and LP vault summary with APY, TVL, and on-chain addresses
+source: https://kong.yearn.fi/api/rest/list/vaults
+canonical_data: https://kong.yearn.fi/api/rest/list/vaults
+derived_from_kong: true
+generated_at: 2026-11-19T15:21:22.709Z
+cache_refreshed_at: 2026-11-19T15:00:16.007Z
+total_vaults: 324
+---
+
+# Yearn Vaults
+
+Yearn operates automated yield vaults across multiple EVM-compatible chains. Each vault accepts a specific ERC-20 token and routes funds to on-chain strategies, compounding returns automatically.
+
+This markdown is generated live from Kong REST for discovery convenience. Use `https://kong.yearn.fi/api/rest/list/vaults` as the canonical source for current vault data.
+
+`cache_refreshed_at`, when present, is Kong's last successful cache refresh. It does not establish when each vault's on-chain data was updated; CDN caching can delay the reported timestamp.
+
+Vault page URLs follow the pattern: `https://yearn.fi/vaults/{chainId}/{address}`
+Vault snapshots follow the pattern: `https://kong.yearn.fi/api/rest/snapshot/{chainId}/{address}`
+
+Included vaults match the public Yearn vault catalog: `origin` is `yearn`, `inclusion.isYearn` is not false, `isHidden` and `isRetired` are false, and the vault is either a Single Asset vault or an LP Token vault. Legacy vaults, underlying single-strategy entries, and non-Yearn entries are excluded. No TVL minimum is applied. APY and TVL are time-sensitive; refresh from Kong at retrieval time.
+
+## Vaults
+
+### Ethereum (Chain ID: 1)
+
+| Vault | Token | TVL | APY/APR (net) | Address |
+|-------|-------|-----|---------------|---------|
+| [USDC-1 yVault](https://yearn.fi/vaults/1/0xBe53A109B494E5c9f97b9Cd39Fe969BE68BF6204) | USDC | $18.17M | 4.38% | `0xBe53A109B494E5c9f97b9Cd39Fe969BE68BF6204` |
+| [yvUSD](https://yearn.fi/vaults/1/0x696d02Db93291651ED510704c9b286841d506987) | USDC | $13.96M | 7.28% | `0x696d02Db93291651ED510704c9b286841d506987` |
+| [Curve DOLA-sUSDe Factory yVault](https://yearn.fi/vaults/1/0x1Fc80CfCF5B345b904A0fB36d4222196Ed9eB8a5) | DOLA-sUSDe | $9.29M | 3.76% | `0x1Fc80CfCF5B345b904A0fB36d4222196Ed9eB8a5` |
+| [WETH-2 yVault](https://yearn.fi/vaults/1/0xAc37729B76db6438CE62042AE1270ee574CA7571) | WETH | $8.96M | 2.44% | `0xAc37729B76db6438CE62042AE1270ee574CA7571` |
+| [USDS-1 yVault](https://yearn.fi/vaults/1/0x182863131F9a4630fF9E27830d945B1413e347E8) | USDS | $8.57M | 6.14% | `0x182863131F9a4630fF9E27830d945B1413e347E8` |
+| [WETH-1 yVault](https://yearn.fi/vaults/1/0xc56413869c6CDf96496f2b1eF801fEDBdFA7dDB0) | WETH | $8.18M | 1.91% | `0xc56413869c6CDf96496f2b1eF801fEDBdFA7dDB0` |
+| [Yearn BOLD](https://yearn.fi/vaults/1/0x9F4330700a36B29952869fac9b33f45EEdd8A3d8) | BOLD | $7.60M | 7.97% | `0x9F4330700a36B29952869fac9b33f45EEdd8A3d8` |
+| [DAI-1 yVault](https://yearn.fi/vaults/1/0x028eC7330ff87667b6dfb0D94b954c820195336c) | DAI | $5.56M | 4.36% | `0x028eC7330ff87667b6dfb0D94b954c820195336c` |
+| [USDT-1 yVault](https://yearn.fi/vaults/1/0x310B7Ea7475A0B449Cfd73bE81522F1B88eFAFaa) | USDT | $5.33M | 2.96% | `0x310B7Ea7475A0B449Cfd73bE81522F1B88eFAFaa` |
+| [Curve stETH Factory yVault](https://yearn.fi/vaults/1/0x5B8C556B8b2a78696F0B9B830B3d67623122E270) | steCRV | $3.69M | 1.67% | `0x5B8C556B8b2a78696F0B9B830B3d67623122E270` |
+| [WBTC-1 yVault](https://yearn.fi/vaults/1/0x751F0cC6115410A3eE9eC92d08f46Ff6Da98b708) | WBTC | $3.04M | 0.04% | `0x751F0cC6115410A3eE9eC92d08f46Ff6Da98b708` |
+| [Curve msETH Factory yVault](https://yearn.fi/vaults/1/0xAD2f9A55518Dba12E8AB069502820923351667C5) | msETHWETH-f | $1.66M | 9.09% | `0xAD2f9A55518Dba12E8AB069502820923351667C5` |
+| [Curve reUSD-scrvUSD Factory yVault](https://yearn.fi/vaults/1/0xf165a634296800812B8B0607a75DeDdcD4D3cC88) | reusdscrv | $1.32M | 4.95% | `0xf165a634296800812B8B0607a75DeDdcD4D3cC88` |
+| [crvUSD-2 yVault](https://yearn.fi/vaults/1/0xBF319dDC2Edc1Eb6FDf9910E39b37Be221C8805F) | crvUSD | $1.30M | 7.39% | `0xBF319dDC2Edc1Eb6FDf9910E39b37Be221C8805F` |
+| [Flex USDC yVault](https://yearn.fi/vaults/1/0x863687e4E9751b57F38b4B0ebA04744C72d0f7B8) | USDC | $1.12M | 3.26% | `0x863687e4E9751b57F38b4B0ebA04744C72d0f7B8` |
+| [Curve reUSD-sDOLA Factory yVault](https://yearn.fi/vaults/1/0x7c439Df9ADE8831180EA4D546c1E910D4Ba71a86) | reusdsdola | $1.11M | 6.28% | `0x7c439Df9ADE8831180EA4D546c1E910D4Ba71a86` |
+| [LP Yearn CRV Vault v2](https://yearn.fi/vaults/1/0x6E9455D109202b426169F0d8f01A3332DAE160f3) | yCRV-f | $751.79K | 15.03% | `0x6E9455D109202b426169F0d8f01A3332DAE160f3` |
+| [Flex WETH yVault](https://yearn.fi/vaults/1/0xfaC55fAFD0b55BFb8dD41F735EfCc195adA9891F) | WETH | $563.10K | 1.74% | `0xfaC55fAFD0b55BFb8dD41F735EfCc195adA9891F` |
+| [Curve TriCryptoUSDC Factory yVault](https://yearn.fi/vaults/1/0xaA379c2aA72529d5ec0da8A41e2F41ED7Fe4b48C) | crvUSDCWBTCWETH | $477.03K | 5.21% | `0xaA379c2aA72529d5ec0da8A41e2F41ED7Fe4b48C` |
+| [Curve LUSD Factory yVault](https://yearn.fi/vaults/1/0xAd86Df2e8F989c828B25A7Da5EB1Ec363283fA3F) | LUSD3CRV-f | $317.03K | 0.37% | `0xAd86Df2e8F989c828B25A7Da5EB1Ec363283fA3F` |
+| [Curve DUSD-frxUSD Factory yVault](https://yearn.fi/vaults/1/0xB53B70Cb960FeEAf2093Df3C733E368F6D254898) | frxUSDDUSD | $303.96K | 13.18% | `0xB53B70Cb960FeEAf2093Df3C733E368F6D254898` |
+| [Curve iREET-pmUSD Factory yVault](https://yearn.fi/vaults/1/0x668c5Ef17f2F01503FBB4F285F32161251047720) | iREETpmUSD | $270.90K | 23.99% | `0x668c5Ef17f2F01503FBB4F285F32161251047720` |
+| [USDC-2 yVault](https://yearn.fi/vaults/1/0xAe7d8Db82480E6d8e3873ecbF22cf17b3D8A7308) | USDC | $217.46K | 7.37% | `0xAe7d8Db82480E6d8e3873ecbF22cf17b3D8A7308` |
+| [Curve 3Crypto Factory yVault](https://yearn.fi/vaults/1/0x8078198Fc424986ae89Ce4a910Fc109587b6aBF3) | crv3crypto | $213.74K | 2.76% | `0x8078198Fc424986ae89Ce4a910Fc109587b6aBF3` |
+| [Curve msUSD-frxUSD Factory yVault](https://yearn.fi/vaults/1/0xe0287cA62fE23f4FFAB827d5448d68aFe6DD9Fd7) | FrxMsUSD | $198.06K | 13.31% | `0xe0287cA62fE23f4FFAB827d5448d68aFe6DD9Fd7` |
+| [Curve CVX-ETH Factory yVault](https://yearn.fi/vaults/1/0x75A291F0232ADD37d72Dd1Dcff55B715755ECDEe) | crvCVXETH | $141.90K | 19.81% | `0x75A291F0232ADD37d72Dd1Dcff55B715755ECDEe` |
+| [Curve USDC-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x7cA00559B978CFde81297849be6151d3ccB408A9) | crvUSDUSDC-f | $133.48K | 7.07% | `0x7cA00559B978CFde81297849be6151d3ccB408A9` |
+| [Curve GEAR-ETH Factory yVault](https://yearn.fi/vaults/1/0x04c8bfe2eb09a1e2e9fA97A2fd970E06d87B43de) | crvGEARETH-f | $129.57K | 0.41% | `0x04c8bfe2eb09a1e2e9fA97A2fd970E06d87B43de` |
+| [yYB yVault](https://yearn.fi/vaults/1/0x1F6f16945e395593d8050d6Cc33e4328a515B648) | yYB | $120.86K | 54.13% | `0x1F6f16945e395593d8050d6Cc33e4328a515B648` |
+| [Curve BOLD-USDC Factory yVault](https://yearn.fi/vaults/1/0xb83461b887398CD981957BD93CB7067cF89c21C0) | BOLDUSDC | $114.32K | 39.63% | `0xb83461b887398CD981957BD93CB7067cF89c21C0` |
+| [Curve CRV LlamaLend Recovery Factory yVault](https://yearn.fi/vaults/1/0x192725C6516656f3e288c08Db8228c25Fe1f77D5) | LL-CRV-rec | $105.95K | 9.55% | `0x192725C6516656f3e288c08Db8228c25Fe1f77D5` |
+| [Curve USDT-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x241AdD131B9aaa7527132b752252b99420937ADc) | crvUSDUSDT-f | $104.82K | 5.72% | `0x241AdD131B9aaa7527132b752252b99420937ADc` |
+| [Curve pmUSD-frxUSD Factory yVault](https://yearn.fi/vaults/1/0xc952f3028E322da48e239A077b810A24556f36f1) | pmfrxUSD | $99.13K | 13.58% | `0xc952f3028E322da48e239A077b810A24556f36f1` |
+| [Curve frxUSD-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x4282B8f159ee677559Dc6A20cd478DD0BDe75fF2) | crvfrxUSD | $91.62K | 7.65% | `0x4282B8f159ee677559Dc6A20cd478DD0BDe75fF2` |
+| [Curve FRAX Factory yVault](https://yearn.fi/vaults/1/0xb37094c1B5614Bd6EcE40AFb295C26F4377069d3) | FRAX3CRV-f | $87.91K | 0.03% | `0xb37094c1B5614Bd6EcE40AFb295C26F4377069d3` |
+| [Curve alUSD Factory yVault](https://yearn.fi/vaults/1/0x4CbB6A5EC00cEEC252a7091559484F7adb83165f) | alUSD3CRV-f | $76.98K | 0.10% | `0x4CbB6A5EC00cEEC252a7091559484F7adb83165f` |
+| [Curve reUSD-sfrxUSD Factory yVault](https://yearn.fi/vaults/1/0xD2433Ec6De2a932Ab7bc1A0080676333AeF8B546) | reusdsfrx | $64.31K | 6.55% | `0xD2433Ec6De2a932Ab7bc1A0080676333AeF8B546` |
+| [Curve msUSD-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0xDb26d8815EdA864Dfa43306766f2F8CA50C03F9E) | msUSDFRAX3CRV-f | $53.35K | 0.57% | `0xDb26d8815EdA864Dfa43306766f2F8CA50C03F9E` |
+| [Curve ynETHx Factory yVault](https://yearn.fi/vaults/1/0xe7c25cb1eac7D870F3cD103cBB060A6DFbc5eaF2) | ynETHx/ETH | $46.29K | 1.84% | `0xe7c25cb1eac7D870F3cD103cBB060A6DFbc5eaF2` |
+| [Curve ETH+ Factory yVault](https://yearn.fi/vaults/1/0x849dC56ceCa7Cf55AbF5ec87910DA21c5C7dA581) | ETH+ETH-f | $37.73K | 1.12% | `0x849dC56ceCa7Cf55AbF5ec87910DA21c5C7dA581` |
+| [Curve alUSD-sDOLA Factory yVault](https://yearn.fi/vaults/1/0xb7b1C394b3F82091988A1e400C6499178eE64b99) | alUSDsDOLA | $32.64K | 4.57% | `0xb7b1C394b3F82091988A1e400C6499178eE64b99` |
+| [Curve yYB Factory yVault](https://yearn.fi/vaults/1/0x0844C227b892be5d7c837000C096f64bFc316c2d) | yYB-LP | $29.46K | 36.47% | `0x0844C227b892be5d7c837000C096f64bFc316c2d` |
+| [Curve TriCRV Factory yVault](https://yearn.fi/vaults/1/0x3f34A7eF4f17528CbFFb7817060941BCdaC924fa) | crvUSDETHCRV | $28.67K | 8.08% | `0x3f34A7eF4f17528CbFFb7817060941BCdaC924fa` |
+| [Curve mUSD Factory yVault](https://yearn.fi/vaults/1/0x944d749017053e0D37ec206c9898716A21e0B2E2) | musd3CRV | $26.88K | 0.07% | `0x944d749017053e0D37ec206c9898716A21e0B2E2` |
+| [SKY-1 yVault](https://yearn.fi/vaults/1/0xaF71a4f5d93fb88B24C67760BCF9688a6C3A54D4) | SKY | $26.62K | 0.00% | `0xaF71a4f5d93fb88B24C67760BCF9688a6C3A54D4` |
+| [Curve TriCryptoUSDT Factory yVault](https://yearn.fi/vaults/1/0x7845Ebf66c9575Fc5f5A0dBb9a34a706Ad997a3f) | crvUSDTWBTCWETH | $26.26K | 5.30% | `0x7845Ebf66c9575Fc5f5A0dBb9a34a706Ad997a3f` |
+| [Curve sdCRVv2 Factory yVault](https://yearn.fi/vaults/1/0xa669d6C2Df33F41940c2646A9BF3031e2524d515) | sdCRVlp-f | $25.29K | 41.43% | `0xa669d6C2Df33F41940c2646A9BF3031e2524d515` |
+| [Curve StaFi rETH Factory yVault](https://yearn.fi/vaults/1/0x77e829FFF18C14AD9bb88963acB0010A0506de88) | rCRV | $25.14K | 0.01% | `0x77e829FFF18C14AD9bb88963acB0010A0506de88` |
+| [Curve stETHv2 Factory yVault](https://yearn.fi/vaults/1/0x5F208d3a8b13062adE45a33Ca9Bc8de64D520CB9) | stETH-ng-f | $24.68K | 2.32% | `0x5F208d3a8b13062adE45a33Ca9Bc8de64D520CB9` |
+| [Curve avUSD-frxUSD Factory yVault](https://yearn.fi/vaults/1/0x8F49C410ac9d05aa7260ef0951b3f328E80d1f3D) | av/frxUSD | $21.77K | 11.52% | `0x8F49C410ac9d05aa7260ef0951b3f328E80d1f3D` |
+| [Curve RSUP-WETH Factory yVault](https://yearn.fi/vaults/1/0x8017B5d498f75d12dA6A857e867699fB07De41a4) | wethrsup | $19.62K | 21.24% | `0x8017B5d498f75d12dA6A857e867699fB07De41a4` |
+| [Curve OETH-ARM-stETH Factory yVault](https://yearn.fi/vaults/1/0x5fFd0C196838aa5e700657C1f6fd8A87f5d80ED2) | OETHAstETH | $18.97K | 2.44% | `0x5fFd0C196838aa5e700657C1f6fd8A87f5d80ED2` |
+| [Curve TriCryptoINV Factory yVault](https://yearn.fi/vaults/1/0x6949145469362F9eeaB3c96Ea41b51D9B4cC2b21) | crvUSDCWETHINV | $18.06K | 1.04% | `0x6949145469362F9eeaB3c96Ea41b51D9B4cC2b21` |
+| [Curve TriCryptoLLAMA Factory yVault](https://yearn.fi/vaults/1/0xE2CaD35CFD1A9B5acD557558f44B096ef8340C1B) | crvCRVUSDTBTCWSTETH | $15.35K | 5.75% | `0xE2CaD35CFD1A9B5acD557558f44B096ef8340C1B` |
+| [Curve xETH Factory yVault](https://yearn.fi/vaults/1/0xd02b103f7f5dba89Ad316E2b3Fe247F280CcE5b2) | xETHETH-f | $12.95K | 0.27% | `0xd02b103f7f5dba89Ad316E2b3Fe247F280CcE5b2` |
+| [Curve Compound Factory yVault](https://yearn.fi/vaults/1/0xAE6eD98B1Bd9aAdd3185160324e0e011159B61D3) | cDAI+cUSDC | $11.19K | 0.01% | `0xAE6eD98B1Bd9aAdd3185160324e0e011159B61D3` |
+| [Curve OUSD-frxUSD Factory yVault](https://yearn.fi/vaults/1/0x5591Ac6CC8cdeE5d47E553a8c3543eF5eA808919) | frxUSDOUSD | $10.40K | 3.73% | `0x5591Ac6CC8cdeE5d47E553a8c3543eF5eA808919` |
+| [Curve tBTC-cbBTC Factory yVault](https://yearn.fi/vaults/1/0x03f8CCf5b5004B55309e949ea9D08136a32E9C5d) | tBTC/cbBTC | $9.36K | 7.73% | `0x03f8CCf5b5004B55309e949ea9D08136a32E9C5d` |
+| [Curve USDaf-scrvUSD Factory yVault](https://yearn.fi/vaults/1/0xe3Bf2D04cd3B6e74613D36368c7D21B2d6C26d72) | USDafscrv | $8.25K | 1.89% | `0xe3Bf2D04cd3B6e74613D36368c7D21B2d6C26d72` |
+| [Curve ankrETH Factory yVault](https://yearn.fi/vaults/1/0x774B4Cbc2703cE83fB3b828b7C782d1CD983b04A) | ankrCRV | $6.50K | 0.12% | `0x774B4Cbc2703cE83fB3b828b7C782d1CD983b04A` |
+| [Curve GUSD Factory yVault](https://yearn.fi/vaults/1/0x63bD3Bbb6c5cb6E457C3f3cbb2D8aa2536E319F1) | gusd3CRV | $5.91K | 0.82% | `0x63bD3Bbb6c5cb6E457C3f3cbb2D8aa2536E319F1` |
+| [Curve pxETH-stETH Factory yVault](https://yearn.fi/vaults/1/0x2c8a33C66c00264316Ea4E4433e86A386Eb6ECBf) | pxsteth | $4.99K | 1.66% | `0x2c8a33C66c00264316Ea4E4433e86A386Eb6ECBf` |
+| [Curve CLEV-ETH Factory yVault](https://yearn.fi/vaults/1/0x3a51269E0707A3416044bad5066858A12198fCf5) | CLEVETH-f | $4.61K | 10.23% | `0x3a51269E0707A3416044bad5066858A12198fCf5` |
+| [Curve alETH-frxETH Factory yVault](https://yearn.fi/vaults/1/0x150F76e1339A918BaA38338ED9bd695Bd0924Bcf) | alfrxETH-f | $4.61K | 2.66% | `0x150F76e1339A918BaA38338ED9bd695Bd0924Bcf` |
+| [Curve OHM-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0x7788A5492bc948e1d8c2caa53b2e0a60ed5403b0) | OHMFRAXBP-f | $4.07K | 0.77% | `0x7788A5492bc948e1d8c2caa53b2e0a60ed5403b0` |
+| [Curve FT/ftUSD Factory yVault](https://yearn.fi/vaults/1/0x63658f6bc7F6BEC9868584CEbcb0E0dEc449C33a) | FT/ftUSD | $3.66K | 28.20% | `0x63658f6bc7F6BEC9868584CEbcb0E0dEc449C33a` |
+| [Curve Paxos Factory yVault](https://yearn.fi/vaults/1/0x91aE8fEaBe09182Fe5F91Fc273040b7D8F7aeFE7) | pax-usdp3CRV-f | $2.83K | 4.38% | `0x91aE8fEaBe09182Fe5F91Fc273040b7D8F7aeFE7` |
+| [Curve 3Crv Factory yVault](https://yearn.fi/vaults/1/0xAbD64D5AB5A4b129df4f6f37A8d461c2510b5503) | 3Crv | $2.52K | 0.00% | `0xAbD64D5AB5A4b129df4f6f37A8d461c2510b5503` |
+| [Curve USD3-sUSDS Factory yVault](https://yearn.fi/vaults/1/0xc9e146B126f4ca0Aa8edA3BDBCd76a960B4dcba7) | USD3sUSDS | $2.27K | 4.77% | `0xc9e146B126f4ca0Aa8edA3BDBCd76a960B4dcba7` |
+| [Curve LUSD-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xe2277cC76f806925DC6c9a5E4E5933605f43c3c4) | LUSDcrvUSD-f | $2.20K | 0.51% | `0xe2277cC76f806925DC6c9a5E4E5933605f43c3c4` |
+| [Curve eUSD-USDC Factory yVault](https://yearn.fi/vaults/1/0xBfBC4acAE2ceC91A5bC80eCA1C9290F92959f7c3) | eUSDUSDC | $2.08K | 5.23% | `0xBfBC4acAE2ceC91A5bC80eCA1C9290F92959f7c3` |
+| [Curve agEUR-EUROC Factory yVault](https://yearn.fi/vaults/1/0x321d570790fd2f109Fe4e55aa419Adf2fce0c842) | agEUREUROC-f | $2.02K | 0.00% | `0x321d570790fd2f109Fe4e55aa419Adf2fce0c842` |
+| [Curve USD3-sUSDe Factory yVault](https://yearn.fi/vaults/1/0x8770d076dC2db46f368BDc8EaAE3b7164e59267b) | USD3sUSDe | $1.87K | 5.41% | `0x8770d076dC2db46f368BDc8EaAE3b7164e59267b` |
+| [Curve USDC-USDT Factory yVault](https://yearn.fi/vaults/1/0xfBd4d8bf19c67582168059332c46567563d0d75f) | crv2pool | $1.70K | 2.87% | `0xfBd4d8bf19c67582168059332c46567563d0d75f` |
+| [Curve OUSD-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x22c64f32b5FeA40D7D387CA875D079d80415F988) | OUSDcrvUSD | $1.60K | 0.04% | `0x22c64f32b5FeA40D7D387CA875D079d80415F988` |
+| [Curve dgnETH-ETH+ Factory yVault](https://yearn.fi/vaults/1/0x961Ad224fedDFa468c81acB3A9Cc2cC4731809f4) | dgnETHETH+ | $926.78 | 2.27% | `0x961Ad224fedDFa468c81acB3A9Cc2cC4731809f4` |
+| [Curve USD3-sDAI Factory yVault](https://yearn.fi/vaults/1/0x72FDf7e33893cc1649eFE5821414E4c9B7C47D40) | USD3sDAI | $911.76 | 3.38% | `0x72FDf7e33893cc1649eFE5821414E4c9B7C47D40` |
+| [Curve GHO-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xAc22e3a3cfE4dC82FFD4Ffa7453729Ca963CeB5a) | GHOcrvUSD | $899.74 | 6.20% | `0xAc22e3a3cfE4dC82FFD4Ffa7453729Ca963CeB5a` |
+| [Curve MUSD-2pool Factory yVault](https://yearn.fi/vaults/1/0xC8B38D661794d8847961baF40Db92B76f2EBf30d) | MUSD/2pool | $875.50 | 15.43% | `0xC8B38D661794d8847961baF40Db92B76f2EBf30d` |
+| [Curve TriCryptoGHO Factory yVault](https://yearn.fi/vaults/1/0xBf2BD27F8C4B38aBdcaD6d3E37445343Cb0630eF) | BTCGHOETH | $854.55 | 8.02% | `0xBf2BD27F8C4B38aBdcaD6d3E37445343Cb0630eF` |
+| [Curve OUSD-USDC Factory yVault](https://yearn.fi/vaults/1/0x68E3C51f091102960CDBddEd27Dd06eC21083854) | OUSD/USDC | $833.55 | 8.82% | `0x68E3C51f091102960CDBddEd27Dd06eC21083854` |
+| [Curve cbETH Factory yVault](https://yearn.fi/vaults/1/0xF614d3864EF53510909a94c618a5EC1Ff75103BF) | cbETH/ETH-f | $812.95 | 1.67% | `0xF614d3864EF53510909a94c618a5EC1Ff75103BF` |
+| [Curve DOLA-sUSDS Factory yVault](https://yearn.fi/vaults/1/0x342D24F2a3233F7Ac8A7347fA239187BFd186066) | DOLA-sUSDS | $748.94 | 4.84% | `0x342D24F2a3233F7Ac8A7347fA239187BFd186066` |
+| [Curve USDf-USDC Factory yVault](https://yearn.fi/vaults/1/0x6F9A3ab8Aea89892b4157643A6e75d8E6ff2291d) | USDC/USDf | $743.19 | 5.17% | `0x6F9A3ab8Aea89892b4157643A6e75d8E6ff2291d` |
+| [Curve cvxCRVv2 Factory yVault](https://yearn.fi/vaults/1/0xa8eF50905352aCD611F53640b001E48F2eA31d63) | cvxcrv-crv-f | $737.03 | 26.28% | `0xa8eF50905352aCD611F53640b001E48F2eA31d63` |
+| [Curve fxUSD-GHO Factory yVault](https://yearn.fi/vaults/1/0xbcccE9991D2C8A8056D677c0c52C20ac901f39eC) | fxUSDGHO | $732.08 | 1.05% | `0xbcccE9991D2C8A8056D677c0c52C20ac901f39eC` |
+| [Curve alUSD-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0x507c6dE33f50c0505F77F598c0B3CA7b5fEB3D68) | alUSDFRAXB3CRV-f | $546.80 | 0.08% | `0x507c6dE33f50c0505F77F598c0B3CA7b5fEB3D68` |
+| [Curve sDOLA-scrvUSD Factory yVault](https://yearn.fi/vaults/1/0x08c0833AF1331831759b8e0BFeF1BC5738436325) | savedola | $478.64 | 8.23% | `0x08c0833AF1331831759b8e0BFeF1BC5738436325` |
+| [Curve GHO-USR Factory yVault](https://yearn.fi/vaults/1/0x18f85861488380a7577c73B25df1C4458e5191F8) | GHOUSR | $439.70 | 0.00% | `0x18f85861488380a7577c73B25df1C4458e5191F8` |
+| [Curve wBETH Factory yVault](https://yearn.fi/vaults/1/0xd6627F7dE81eB517A32F0F81537Ea2636B27B8CC) | ETHwBETHCRV | $373.71 | 5.64% | `0xd6627F7dE81eB517A32F0F81537Ea2636B27B8CC` |
+| [Curve USG-frxUSD Factory yVault](https://yearn.fi/vaults/1/0x7A257B4c15309e046571D8A33465e0ed797Ba946) | USGfrxUSD | $320.90 | 14.29% | `0x7A257B4c15309e046571D8A33465e0ed797Ba946` |
+| [Curve DYDX-ETH Factory yVault](https://yearn.fi/vaults/1/0xca46d6e44499AfbD8795f8F86910F068a6bF1a7c) | DYDXETH-f | $306.09 | 2.26% | `0xca46d6e44499AfbD8795f8F86910F068a6bF1a7c` |
+| [Curve DOLA-USR Factory yVault](https://yearn.fi/vaults/1/0x57a2c7925bAA1894a939f9f6721Ea33F2EcFD0e2) | DOLA/USR | $297.36 | 0.00% | `0x57a2c7925bAA1894a939f9f6721Ea33F2EcFD0e2` |
+| [Curve lvlUSD-USDC Factory yVault](https://yearn.fi/vaults/1/0xce2f57252644Db26c76011aD490553d88C3B9030) | lvlUSDUSDC | $277.16 | 0.00% | `0xce2f57252644Db26c76011aD490553d88C3B9030` |
+| [Curve JPEG-pETH Factory yVault](https://yearn.fi/vaults/1/0x30B801F933e676Cb25892D1838FDCC00A1dde4cf) | JPEGpETH-f | $228.12 | 0.00% | `0x30B801F933e676Cb25892D1838FDCC00A1dde4cf` |
+| [Curve frxUSD-USDe Factory yVault](https://yearn.fi/vaults/1/0x17EaFb42d42FeDc0B950bbCc73FA532216322e7D) | frxUSDe | $209.17 | 0.09% | `0x17EaFb42d42FeDc0B950bbCc73FA532216322e7D` |
+| [Curve bLUSD Factory yVault](https://yearn.fi/vaults/1/0x2D59aa422A7AaE58038CF8aE6eD07330Cc7d3ae8) | bLUSDLUSD3-f | $160.43 | 0.02% | `0x2D59aa422A7AaE58038CF8aE6eD07330Cc7d3ae8` |
+| [Curve DOLA-wstUSR Factory yVault](https://yearn.fi/vaults/1/0x8A5f20dA6B393fE25aCF1522C828166D22eF8321) | DOLAwstUSR | $124.69 | 0.00% | `0x8A5f20dA6B393fE25aCF1522C828166D22eF8321` |
+| [Curve FXS-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xA76436957378bF3812dba0A98E864686086fd0e6) | FXScrvUSD | $115.97 | 0.46% | `0xA76436957378bF3812dba0A98E864686086fd0e6` |
+| [SWAN yVault](https://yearn.fi/vaults/1/0xcE918671E6D9e56E19c5Cbc4DC45655d80C65265) | SWAN | $111.03 | 159.70% | `0xcE918671E6D9e56E19c5Cbc4DC45655d80C65265` |
+| [Curve OUSD-msUSD Factory yVault](https://yearn.fi/vaults/1/0xe9a4F7119BF549F65465551DE3C31FfD8D3B22f4) | OUSDmsUSD | $106.33 | 0.02% | `0xe9a4F7119BF549F65465551DE3C31FfD8D3B22f4` |
+| [Curve USD3-eUSD Factory yVault](https://yearn.fi/vaults/1/0xBB1Cc2ca1d89Fb593e2F79FC7474fdF40d78f6Be) | USD3eUSD | $105.88 | 0.00% | `0xBB1Cc2ca1d89Fb593e2F79FC7474fdF40d78f6Be` |
+| [Curve XAI-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0x00e8Eb340f8AF587EEA6200D2081E31dC87285ac) | XAIFRAXBP3CRV-f | $90.00 | 0.02% | `0x00e8Eb340f8AF587EEA6200D2081E31dC87285ac` |
+| [Curve USDP-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xF56fB6cc29F0666BDD1662FEaAE2A3C935ee3469) | crvUSDUSDP-f | $69.19 | 1.17% | `0xF56fB6cc29F0666BDD1662FEaAE2A3C935ee3469` |
+| [Curve TryLSD Factory yVault](https://yearn.fi/vaults/1/0x2D85Ac3F2AeD4f0A14DC6852f1725240E47Cfc1f) | TryLSD | $62.22 | 2.96% | `0x2D85Ac3F2AeD4f0A14DC6852f1725240E47Cfc1f` |
+| [Curve upYFI Factory yVault](https://yearn.fi/vaults/1/0xFCa9Ab2996e7b010516adCC575eB63de4f4fa47A) | upYFI | $58.13 | 0.14% | `0xFCa9Ab2996e7b010516adCC575eB63de4f4fa47A` |
+| [Curve oETH Factory yVault](https://yearn.fi/vaults/1/0x79F4a9ed7a6196c67a2D6BCE8eC55E9F18802018) | OETHCRV-f | $55.83 | 5.41% | `0x79F4a9ed7a6196c67a2D6BCE8eC55E9F18802018` |
+| [Curve CTR-ETH Factory yVault](https://yearn.fi/vaults/1/0x2Ab6578239eD541Ef7cC7D11a45D740cE9F0a1F4) | CTRETH-f | $48.83 | 22.38% | `0x2Ab6578239eD541Ef7cC7D11a45D740cE9F0a1F4` |
+| [Curve MATIC-ETH Factory yVault](https://yearn.fi/vaults/1/0x63c5c0604Ec410130C69C958aCab81794f7a622F) | ETH MATIC-f | $48.71 | 0.08% | `0x63c5c0604Ec410130C69C958aCab81794f7a622F` |
+| [Curve sUSD-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xB512D68A3194ba294A5b8146FA9beCd6a5Fea137) | crvUSDSUSD-f | $45.52 | 0.00% | `0xB512D68A3194ba294A5b8146FA9beCd6a5Fea137` |
+| [Curve eUSD-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0x468C76f16B7735303f7215b3839D270d058b3d7a) | eUSD3CRV-f | $38.80 | 0.42% | `0x468C76f16B7735303f7215b3839D270d058b3d7a` |
+| [Curve T-ETH Factory yVault](https://yearn.fi/vaults/1/0xd6b2f4F0586BCfc9B1bf5cD8E22546aDD7B81a64) | crvTETH | $31.65 | 4.43% | `0xd6b2f4F0586BCfc9B1bf5cD8E22546aDD7B81a64` |
+| [Curve DOLA-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0xe5F625e8f4D2A038AE9583Da254945285E5a77a4) | DOLAFRAXBP3CRV-f | $27.36 | 2.24% | `0xe5F625e8f4D2A038AE9583Da254945285E5a77a4` |
+| [Curve PAL-ETH Factory yVault](https://yearn.fi/vaults/1/0x1C97e67Dc7ca179aE82E0c4AFF4Af9ff66612A43) | PALETH-f | $21.33 | 1.97% | `0x1C97e67Dc7ca179aE82E0c4AFF4Af9ff66612A43` |
+| [Curve TOKE-ETH Factory yVault](https://yearn.fi/vaults/1/0x0a35322c5C9Dd22fF592bfC5b134c5CE78154d10) | TOKEETH-f | $20.66 | 0.04% | `0x0a35322c5C9Dd22fF592bfC5b134c5CE78154d10` |
+| [Curve DOLA-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xfb5137Aa9e079DB4b7C2929229caf503d0f6DA96) | crvUSDDOLA-f | $12.80 | 3.10% | `0xfb5137Aa9e079DB4b7C2929229caf503d0f6DA96` |
+| [Curve LDO-ETH Factory yVault](https://yearn.fi/vaults/1/0x708c42E0236fe8f5916C5638a462Ee83DA99d07b) | LDOETH-f | $11.93 | 1.79% | `0x708c42E0236fe8f5916C5638a462Ee83DA99d07b` |
+| [Curve CVX-afCVX Factory yVault](https://yearn.fi/vaults/1/0x97aae86E5efC305f2189f78B5C7e9Dac1249c379) | CVXafCVX | $10.52 | 6.66% | `0x97aae86E5efC305f2189f78B5C7e9Dac1249c379` |
+| [Curve sdYB Factory yVault](https://yearn.fi/vaults/1/0xeC456f00E1f1a6A9097b723Ab979c27AB45C5906) | sdYBYB-LP | $10.42 | 7.59% | `0xeC456f00E1f1a6A9097b723Ab979c27AB45C5906` |
+| [Curve FRAX-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x8176b059BD8f63aeB7e20282b12D243b4626E2AE) | crvUSDFRAX-f | $1.29 | 0.12% | `0x8176b059BD8f63aeB7e20282b12D243b4626E2AE` |
+| [Curve sdsfrxrUSD Factory yVault](https://yearn.fi/vaults/1/0x2f1260453050A29b65726BF5022b1a76Cf428302) | sdsfrxrUSD | $0.45 | 221.71% | `0x2f1260453050A29b65726BF5022b1a76Cf428302` |
+| [Curve clevCVX Factory yVault](https://yearn.fi/vaults/1/0xc869206adAfD3D874dB22e8BbA662E05F6257613) | clevCVX-f | $0.35 | 34.22% | `0xc869206adAfD3D874dB22e8BbA662E05F6257613` |
+| [Curve sUSD-USDe Factory yVault](https://yearn.fi/vaults/1/0x573E8C71DC41F9C04c9b77942D8f18801548e545) | sUSDUSDe | $0.29 | 0.00% | `0x573E8C71DC41F9C04c9b77942D8f18801548e545` |
+| [Curve DOLA-FRAXPYUSD Factory yVault](https://yearn.fi/vaults/1/0xcC2EFb8bEdB6eD69ADeE0c3762470c38D4730C50) | crvDOLA | $0.22 | 29.03% | `0xcC2EFb8bEdB6eD69ADeE0c3762470c38D4730C50` |
+| [Curve DOLA-scrvUSD Factory yVault](https://yearn.fi/vaults/1/0xbCe40f1840A449cAAaF374Df0A1fEe1e212784CB) | dola-save | $0.20 | 2.79% | `0xbCe40f1840A449cAAaF374Df0A1fEe1e212784CB` |
+| [Curve FXS-ETH Factory yVault](https://yearn.fi/vaults/1/0xE6570a24Ce63dD588195B98aAD9F91B121d5F3D7) | FXSETH-f | $0.16 | 2.04% | `0xE6570a24Ce63dD588195B98aAD9F91B121d5F3D7` |
+| [Curve GUSD-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xF5f33812c93C5f2Ae2F28c041eEb393212439502) | crvUSDGUSD-f | $0.02 | 0.00% | `0xF5f33812c93C5f2Ae2F28c041eEb393212439502` |
+| [Curve deUSD-frxUSD Factory yVault](https://yearn.fi/vaults/1/0x4233c8e5A7DB8d706e15B0500d040967b11585f2) | Fraxelixir | $0.01 | 0.00% | `0x4233c8e5A7DB8d706e15B0500d040967b11585f2` |
+| [Curve STBT Factory yVault](https://yearn.fi/vaults/1/0xe8b96C38a0b370eAfb11D9b8Df4131415423577a) | STBT3CRV-f | $0.00 | 2.51% | `0xe8b96C38a0b370eAfb11D9b8Df4131415423577a` |
+| [Curve cvxFXS Factory yVault](https://yearn.fi/vaults/1/0xe80Cc7b2b69f32999766c1a0035ab77E8fb5B99C) | cvxFXSFXS-f | $0.00 | 0.93% | `0xe80Cc7b2b69f32999766c1a0035ab77E8fb5B99C` |
+| [Curve frxETH Factory yVault](https://yearn.fi/vaults/1/0xdADbB5472474E612A6fA9d82d3395DEA5829a52a) | frxETHCRV | $0.00 | 1.10% | `0xdADbB5472474E612A6fA9d82d3395DEA5829a52a` |
+| [Curve XAUt-PAXG Factory yVault](https://yearn.fi/vaults/1/0x7F8b06CDF3b4b0650bc9E810744E15140f5984Ee) | GOLD++ | $0.00 | 0.58% | `0x7F8b06CDF3b4b0650bc9E810744E15140f5984Ee` |
+| [Curve CADC-USDC Factory yVault](https://yearn.fi/vaults/1/0x7bDeb15b00437fc8b5DbBf8Ba7B0FC6CB7F7e68c) | CADCUSDC-f | $0.00 | 0.00% | `0x7bDeb15b00437fc8b5DbBf8Ba7B0FC6CB7F7e68c` |
+| [Curve ynETH-ynETHx Factory yVault](https://yearn.fi/vaults/1/0x7eb27381F8Ab6A73cc0a0B40cAA4ABF672F8d90d) | ynETH/ETHx | $0.00 | 8.71% | `0x7eb27381F8Ab6A73cc0a0B40cAA4ABF672F8d90d` |
+| [Curve rETH-frxETH Factory yVault](https://yearn.fi/vaults/1/0x8072B1d66389a1AA039e21Aac35A92464005baF5) | rETHfrxETH-f | $0.00 | 1.20% | `0x8072B1d66389a1AA039e21Aac35A92464005baF5` |
+| [Curve sUSDreUSD Factory yVault](https://yearn.fi/vaults/1/0x81BC65e2Ca41722F3eCDa4235226Fa16703e714e) | sUSDreUSD | $0.00 | 15.21% | `0x81BC65e2Ca41722F3eCDa4235226Fa16703e714e` |
+| [Curve ynETH-LSD Factory yVault](https://yearn.fi/vaults/1/0x823976dA34aC45C23a8DfEa51B3Ff1Ae0D980213) | yn-ETH/LSD | $0.00 | 2.48% | `0x823976dA34aC45C23a8DfEa51B3Ff1Ae0D980213` |
+| [Curve USD3-scrvUSD Factory yVault](https://yearn.fi/vaults/1/0x8257A895A1380f42c33eCE9CD9e6Bff35Be69d55) | USD3scrvUS | $0.00 | 7.10% | `0x8257A895A1380f42c33eCE9CD9e6Bff35Be69d55` |
+| [Curve USDe-FRAX Factory yVault](https://yearn.fi/vaults/1/0x82e75Cf176C18DCCeF1b05B0F1d89a444a3A1005) | FRAXUSDe | $0.00 | 4.28% | `0x82e75Cf176C18DCCeF1b05B0F1d89a444a3A1005` |
+| [Curve USDe-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x864f78037639225b7CD0B6c632F8F187520b480B) | USDecrvUSD | $0.00 | 0.61% | `0x864f78037639225b7CD0B6c632F8F187520b480B` |
+| [Curve RSR-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0x8Aa95B71D8e0e1C7949bd84223E0C7911D85171C) | RSRcrvFRAX-f | $0.00 | 0.80% | `0x8Aa95B71D8e0e1C7949bd84223E0C7911D85171C` |
+| [Curve ebUSD-USDC Factory yVault](https://yearn.fi/vaults/1/0x8F1a55896a882601880adb79e3F97579Dae6a365) | ebUSDUSDC | $0.00 | N/A | `0x8F1a55896a882601880adb79e3F97579Dae6a365` |
+| [Curve ynRWAx-ynUSDx Factory yVault](https://yearn.fi/vaults/1/0x96718b51e0d3f8Bd5ae516e22a2022a916eC1D94) | yn-RWA/USD | $0.00 | 0.00% | `0x96718b51e0d3f8Bd5ae516e22a2022a916eC1D94` |
+| [Curve STG-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0x98fA691998a9e6f410702dEA8BC08a9d500AaAFe) | STG/FRAXBP-f | $0.00 | 4.46% | `0x98fA691998a9e6f410702dEA8BC08a9d500AaAFe` |
+| [Curve reUSD-fxUSD Factory yVault](https://yearn.fi/vaults/1/0x9cBD86ee0dA1B6552D69f1df2F689fB78fAc2dF7) | reusdfxusd | $0.00 | 3.30% | `0x9cBD86ee0dA1B6552D69f1df2F689fB78fAc2dF7` |
+| [Curve USD3-rgUSD Factory yVault](https://yearn.fi/vaults/1/0xB25a14D81794884AE3ce69f14B5C97b4F50Eb8F3) | USD3rgUSD | $0.00 | 0.00% | `0xB25a14D81794884AE3ce69f14B5C97b4F50Eb8F3` |
+| [Curve rgUSD-alUSD Factory yVault](https://yearn.fi/vaults/1/0xB9A0e5E211213bb15315e5E7D9B341DB5417e561) | rev alUSD | $0.00 | 0.00% | `0xB9A0e5E211213bb15315e5E7D9B341DB5417e561` |
+| [Curve sdFXS Factory yVault](https://yearn.fi/vaults/1/0xB9F9EFfF9AdA5B147EC5BFdD5D75C8C5E5E3E4b3) | sdFXSlp-f | $0.00 | 4.31% | `0xB9F9EFfF9AdA5B147EC5BFdD5D75C8C5E5E3E4b3` |
+| [Curve stLINK-ng Factory yVault](https://yearn.fi/vaults/1/0xC7aF118d43a735527eCa65Be302266dF5913E607) | stLINK-ng | $0.00 | 3.36% | `0xC7aF118d43a735527eCa65Be302266dF5913E607` |
+| [Curve cbBTC-WBTC Factory yVault](https://yearn.fi/vaults/1/0xD19660365a4f8c92c00913127bb004aC27Eb0191) | cbBTC-WBTC | $0.00 | 3.12% | `0xD19660365a4f8c92c00913127bb004aC27Eb0191` |
+| [Curve frxUSD-scrvUSD Factory yVault](https://yearn.fi/vaults/1/0xD5497A68c3a77e7De0fa7fa0880387e6EC55d014) | frxscrvUSD | $0.00 | 5.95% | `0xD5497A68c3a77e7De0fa7fa0880387e6EC55d014` |
+| [Curve ZETA-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xD727551e619E54FB0d8d5aF30D3fE5c94F8615d6) | ZETACRVUSD | $0.00 | 0.31% | `0xD727551e619E54FB0d8d5aF30D3fE5c94F8615d6` |
+| [Curve JUSD-USDC Factory yVault](https://yearn.fi/vaults/1/0xDa764e05bdeb2CAfA8DE7FdB5bEa414C0F419197) | JUSD USDC | $0.00 | 0.00% | `0xDa764e05bdeb2CAfA8DE7FdB5bEa414C0F419197` |
+| [Curve OHM-ETH Factory yVault](https://yearn.fi/vaults/1/0xE510E87d0eF7d987Ed1baF8E1D7Aaef5b9e3db42) | OHMETH-f | $0.00 | 0.87% | `0xE510E87d0eF7d987Ed1baF8E1D7Aaef5b9e3db42` |
+| [Curve PYUSD-USDC Factory yVault](https://yearn.fi/vaults/1/0xEeC7036C1Af1f07668b4c5520CcB4b52Ec4594D7) | PYUSDUSDC | $0.00 | 2.23% | `0xEeC7036C1Af1f07668b4c5520CcB4b52Ec4594D7` |
+| [Curve ynRWAx-OUSD Factory yVault](https://yearn.fi/vaults/1/0xFffE4eE5D8BdFE534F6df350c36842be9652B0c5) | RWA/OUSD | $0.00 | 0.00% | `0xFffE4eE5D8BdFE534F6df350c36842be9652B0c5` |
+| [Curve USD3-frxUSD Factory yVault](https://yearn.fi/vaults/1/0xa56cc86D86AdEA0114DFE81c74A800a2Eb8E515D) | USD3frxUSD | $0.00 | 15.28% | `0xa56cc86D86AdEA0114DFE81c74A800a2Eb8E515D` |
+| [Curve RevPool Factory yVault](https://yearn.fi/vaults/1/0xa857aB5913BdA50B65d257aD13FC039afe02eC17) | revPool | $0.00 | 0.03% | `0xa857aB5913BdA50B65d257aD13FC039afe02eC17` |
+| [Curve 2BTC Factory yVault](https://yearn.fi/vaults/1/0xb3CA5C531BCaF94C3575500DA16b7e219b910224) | 2BTC-f | $0.00 | 0.83% | `0xb3CA5C531BCaF94C3575500DA16b7e219b910224` |
+| [Curve USD3-ETH+ Factory yVault](https://yearn.fi/vaults/1/0xb41c14954E4002D29BbBaC86B52143328DB2eE47) | USD3ETH+ | $0.00 | 6.30% | `0xb41c14954E4002D29BbBaC86B52143328DB2eE47` |
+| [Curve pmUSD-OUSD Factory yVault](https://yearn.fi/vaults/1/0xb46325F5bcf8A58A4eB6B1196677e61fD30b8FC0) | OUSDpmUSD | $0.00 | 0.13% | `0xb46325F5bcf8A58A4eB6B1196677e61fD30b8FC0` |
+| [Curve ynETH Factory yVault](https://yearn.fi/vaults/1/0xb6246cB8c98A59A753A94c8E16ac54eADb392E40) | ynETH-B | $0.00 | 22.80% | `0xb6246cB8c98A59A753A94c8E16ac54eADb392E40` |
+| [Curve pmUSD-crvUSD Factory yVault](https://yearn.fi/vaults/1/0xbCf0Ebe75e99395B6b56138A6E580E3Be560eE74) | pmcrvUSD | $0.00 | 14.03% | `0xbCf0Ebe75e99395B6b56138A6E580E3Be560eE74` |
+| [Curve ETHx-WETH Factory yVault](https://yearn.fi/vaults/1/0xbf91b696a35b539b1142e2f921A2A88BB019506a) | ETHxWETH-f | $0.00 | 0.01% | `0xbf91b696a35b539b1142e2f921A2A88BB019506a` |
+| [Curve ankrETH-frxETH Factory yVault](https://yearn.fi/vaults/1/0xc688c419f2407670463068CE540528B9a710AE7F) | ankrfrxETH-f | $0.00 | 1.10% | `0xc688c419f2407670463068CE540528B9a710AE7F` |
+| [Curve ETH+-WETH Factory yVault](https://yearn.fi/vaults/1/0xcfC71c6e1d3aB51E02C7400E82D9a2d58593082d) | ETH+ETH | $0.00 | 4.83% | `0xcfC71c6e1d3aB51E02C7400E82D9a2d58593082d` |
+| [Curve ZCHF-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x0141E81fB74C11CfD2308212D9C9a6a052Db3A98) | ZCHF/CRVUSD | $0.00 | 7.04% | `0x0141E81fB74C11CfD2308212D9C9a6a052Db3A98` |
+| [Curve rgUSD-fxUSD Factory yVault](https://yearn.fi/vaults/1/0x019015647be0b2604506F4EB8290908F062B62cb) | rev fxUSD | $0.00 | 0.00% | `0x019015647be0b2604506F4EB8290908F062B62cb` |
+| [Curve stETH-frxETH Factory yVault](https://yearn.fi/vaults/1/0x03eaE26089A8c28DDC4c81d65bEfE014C793A60d) | st-frxETH-f | $0.00 | 2.50% | `0x03eaE26089A8c28DDC4c81d65bEfE014C793A60d` |
+| [Curve tBTC Factory yVault](https://yearn.fi/vaults/1/0x04D549bAfE83B8BdCCC8dF38F15b90199D20f1eE) | TBTCSBTC23CRV-f | $0.00 | 0.00% | `0x04D549bAfE83B8BdCCC8dF38F15b90199D20f1eE` |
+| [Curve cvgCVX-CVX1 Factory yVault](https://yearn.fi/vaults/1/0x136AFB1250F0A65E387fC040Bf194C76EC3c1CAe) | cvgCVXCVX1 | $0.00 | 0.38% | `0x136AFB1250F0A65E387fC040Bf194C76EC3c1CAe` |
+| [Curve rgUSD-FRAX Factory yVault](https://yearn.fi/vaults/1/0x1E15886B5CcE9C3C9BD8f82B3b7A53860b3aD895) | rev FRAX | $0.00 | 0.00% | `0x1E15886B5CcE9C3C9BD8f82B3b7A53860b3aD895` |
+| [Curve sDUSDfrx Factory yVault](https://yearn.fi/vaults/1/0x1dCDdAaC98e3b9D3466fc808B7787FA4CfAF9813) | sDUSDfrx | $0.00 | 30.92% | `0x1dCDdAaC98e3b9D3466fc808B7787FA4CfAF9813` |
+| [Curve dUSD-sfrxUSD Factory yVault](https://yearn.fi/vaults/1/0x2336045fcA1F5CAF86D60E1B4Ae56bCEA6c999C6) | dsfrxUSD | $0.00 | 1.59% | `0x2336045fcA1F5CAF86D60E1B4Ae56bCEA6c999C6` |
+| [Curve ftUSD-USDC Factory yVault](https://yearn.fi/vaults/1/0x2434ccB738F4260a71C41Eea641A77936Ac1bBE0) | ftUSDUSDC | $0.00 | 9.80% | `0x2434ccB738F4260a71C41Eea641A77936Ac1bBE0` |
+| [Curve 2CRV Factory yVault](https://yearn.fi/vaults/1/0x2F11d0Cf731F1D7C79b7D8e718BF5CB1bd55E7aB) | 2CRV | $0.00 | 0.76% | `0x2F11d0Cf731F1D7C79b7D8e718BF5CB1bd55E7aB` |
+| [Curve USG-USDC Factory yVault](https://yearn.fi/vaults/1/0x2FEE733d8939343615a8627BC29f95390a161e74) | USGUSDC | $0.00 | 10.67% | `0x2FEE733d8939343615a8627BC29f95390a161e74` |
+| [Curve BTRFLY-ETH Factory yVault](https://yearn.fi/vaults/1/0x3221BFBE308144f19089CB197b7C11c2Bf495906) | BTRFLYETH-f | $0.00 | 0.00% | `0x3221BFBE308144f19089CB197b7C11c2Bf495906` |
+| [Curve sfrxUSD-frxUSD Factory yVault](https://yearn.fi/vaults/1/0x332142140F3791ca7726e4CfC184Fb737F43918C) | sfrxUSD2 | $0.00 | 6.83% | `0x332142140F3791ca7726e4CfC184Fb737F43918C` |
+| [Curve rgUSD-DOLA Factory yVault](https://yearn.fi/vaults/1/0x379984a6Afb7CBE73EFae3B414D8E3474eDfF7B2) | rev DOLA | $0.00 | 0.00% | `0x379984a6Afb7CBE73EFae3B414D8E3474eDfF7B2` |
+| [Curve yUSD-USDC Factory yVault](https://yearn.fi/vaults/1/0x3DCc44ce7867a3Fd592cB9e77abC676B2675eD8a) | yUSD USDC | $0.00 | 0.00% | `0x3DCc44ce7867a3Fd592cB9e77abC676B2675eD8a` |
+| [Curve TUSD-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x445F62Ee351E57cACBF3161F66562Ff2B1261db4) | crvUSDTUSD-f | $0.00 | 1.15% | `0x445F62Ee351E57cACBF3161F66562Ff2B1261db4` |
+| [Curve USG-sDOLA Factory yVault](https://yearn.fi/vaults/1/0x50A90236365B48620611b64A134949a5FBD6E7Ac) | USGsDOLA | $0.00 | 12.98% | `0x50A90236365B48620611b64A134949a5FBD6E7Ac` |
+| [Curve TriOGN Factory yVault](https://yearn.fi/vaults/1/0x527F6b584e467b2a54A1BB5704B9101C416CC73a) | OGNETHUSD | $0.00 | 18.75% | `0x527F6b584e467b2a54A1BB5704B9101C416CC73a` |
+| [Curve USGOUSD Factory yVault](https://yearn.fi/vaults/1/0x5486e6b6ac66Cc789d4b548e1227D781F44e39Ba) | USGOUSD | $0.00 | 7.16% | `0x5486e6b6ac66Cc789d4b548e1227D781F44e39Ba` |
+| [Curve msUSD-fxUSD Factory yVault](https://yearn.fi/vaults/1/0x5530e6aEB7867B27b1b866Ef1d487aC97C4FB626) | msUSDfxUSD | $0.00 | 2.05% | `0x5530e6aEB7867B27b1b866Ef1d487aC97C4FB626` |
+| [Curve sFRAX-crvUSD Factory yVault](https://yearn.fi/vaults/1/0x5b737CC835c29c493845353e0399B408Fbd7105D) | crvsFRAX | $0.00 | 0.57% | `0x5b737CC835c29c493845353e0399B408Fbd7105D` |
+| [Curve hyUSD-eUSD Factory yVault](https://yearn.fi/vaults/1/0x6a7A0481e476827857704B87bdeE7922D058cbE4) | hyUSDeUSD-f | $0.00 | 0.00% | `0x6a7A0481e476827857704B87bdeE7922D058cbE4` |
+| [Curve cbETH-frxETH Factory yVault](https://yearn.fi/vaults/1/0x6c6371E15499FedCdadEE06ADc5b55680b3d0785) | cbETHfrxET-f | $0.00 | 1.02% | `0x6c6371E15499FedCdadEE06ADc5b55680b3d0785` |
+| [Curve mevETH-frxETH Factory yVault](https://yearn.fi/vaults/1/0x4c2dF8adB2B14e1d5FDBD9d11A2cf7562b67adC9) | mevETHfrxE-f | N/A | 0.00% | `0x4c2dF8adB2B14e1d5FDBD9d11A2cf7562b67adC9` |
+| [Curve coveYFI Factory yVault](https://yearn.fi/vaults/1/0x6A5694C1b37fFA30690b6b60D8Cf89c937d408aD) | COVEYFI | N/A | 0.00% | `0x6A5694C1b37fFA30690b6b60D8Cf89c937d408aD` |
+| [Curve pUSD-FRAXBP Factory yVault](https://yearn.fi/vaults/1/0x01B01C4A1F4C522aD341A9da5eaA48aF207ab3Ec) | pUSDFRAXBP3CRV-f | N/A | 0.07% | `0x01B01C4A1F4C522aD341A9da5eaA48aF207ab3Ec` |
+| [Curve DUSD Factory yVault](https://yearn.fi/vaults/1/0x65346970F0f66CCAd8a5bfc3a03C96836C1897bE) | dusd3CRV | N/A | 0.01% | `0x65346970F0f66CCAd8a5bfc3a03C96836C1897bE` |
+| [Curve DUSDFRAXBP3CRV-f Factory yVault](https://yearn.fi/vaults/1/0x60a3f558A8e18DC6330e7bfBdCa88aA76E5Dde16) | DUSDFRAXBP3CRV-f | N/A | 1310311.73% | `0x60a3f558A8e18DC6330e7bfBdCa88aA76E5Dde16` |
+| [Curve alETH-pxETH Factory yVault](https://yearn.fi/vaults/1/0x0Bd7B7d511d9f60D5Fa5846A9B911168C5a82094) | alETHpxETH | N/A | 0.03% | `0x0Bd7B7d511d9f60D5Fa5846A9B911168C5a82094` |
+| [Curve tacUSD-USDT Factory yVault](https://yearn.fi/vaults/1/0xfC0a3397c73ca69E697C8b98D5E1887e409F289a) | tacUSDpool | N/A | 0.33% | `0xfC0a3397c73ca69E697C8b98D5E1887e409F289a` |
+| [Curve dYFI-ETH Factory yVault](https://yearn.fi/vaults/1/0xf70B3F1eA3BFc659FFb8b27E84FAE7Ef38b5bD3b) | dYFIETH-f | N/A | 0.04% | `0xf70B3F1eA3BFc659FFb8b27E84FAE7Ef38b5bD3b` |
+| [Curve lvlUSD-slvlUSD Factory yVault](https://yearn.fi/vaults/1/0xCFBA4c80d764fe3Cb7A9B8D72Dbb176c6e0b3716) | s/lvlUSD | N/A | 0.00% | `0xCFBA4c80d764fe3Cb7A9B8D72Dbb176c6e0b3716` |
+| [Curve sdYFIv2 Factory yVault](https://yearn.fi/vaults/1/0x93cF0b02D0A2B61551d107378AFf60CEAe40c342) | sdYFIpool-f | N/A | 1.32% | `0x93cF0b02D0A2B61551d107378AFf60CEAe40c342` |
+
+### Optimism (Chain ID: 10)
+
+| Vault | Token | TVL | APY/APR (net) | Address |
+|-------|-------|-----|---------------|---------|
+| [Velodrome v2 alETH-WETH Factory yVault](https://yearn.fi/vaults/10/0xf7D66b41Cd4241eae450fd9D2d6995754634D9f3) | sAMMV2-alETH/WETH | $1.07M | 0.00% | `0xf7D66b41Cd4241eae450fd9D2d6995754634D9f3` |
+| [Velodrome v2 msETH-WETH Factory yVault](https://yearn.fi/vaults/10/0xd0d2Ac44Cc842079e978bB11b094764f7D0dec6A) | sAMMV2-msETH/WETH | $106.49K | 0.00% | `0xd0d2Ac44Cc842079e978bB11b094764f7D0dec6A` |
+| [Velodrome v2 alETH-frxETH Factory yVault](https://yearn.fi/vaults/10/0x7e1d451799af57EA5570D1015c342C12a918a30b) | sAMMV2-alETH/frxETH | $41.11K | 0.00% | `0x7e1d451799af57EA5570D1015c342C12a918a30b` |
+| [Velodrome v2 alUSD-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x3B141BD7d6E1d67e2101A08E4dd849a8408d91aa) | sAMMV2-USDC/alUSD | $30.44K | 0.00% | `0x3B141BD7d6E1d67e2101A08E4dd849a8408d91aa` |
+| [Velodrome v2 STG-USDC Factory yVault](https://yearn.fi/vaults/10/0x65bAb5C963Aec5bFc72986c2a4c468c190d6de96) | vAMMV2-USDC/STG | $29.81K | 0.00% | `0x65bAb5C963Aec5bFc72986c2a4c468c190d6de96` |
+| [Velodrome v2 LUSD-WETH Factory yVault](https://yearn.fi/vaults/10/0xbC61B71562b01a3a4808D3B9291A3Bf743AB3361) | vAMMV2-WETH/LUSD | $13.54K | 0.00% | `0xbC61B71562b01a3a4808D3B9291A3Bf743AB3361` |
+| [Velodrome v2 VELO-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x88B429359665B8685b7431f5A0f6e8C719Bf49Aa) | vAMMV2-USDC/VELO | $10.84K | 0.00% | `0x88B429359665B8685b7431f5A0f6e8C719Bf49Aa` |
+| [Velodrome v2 ERN-WETH Factory yVault](https://yearn.fi/vaults/10/0xd3668ca9DF5d1bba8d264b8d10dD2F0C5962CC4C) | vAMMV2-WETH/ERN | $9.28K | 0.00% | `0xd3668ca9DF5d1bba8d264b8d10dD2F0C5962CC4C` |
+| [Velodrome v2 MTA-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x906122aC1b55B71248ABFA552fDc6ABd3356884A) | vAMMV2-USDC/MTA | $5.45K | 0.00% | `0x906122aC1b55B71248ABFA552fDc6ABd3356884A` |
+| [Velodrome v2 OP-WETH Factory yVault](https://yearn.fi/vaults/10/0xDdDCAeE873f2D9Df0E18a80709ef2B396d4a6EA5) | vAMMV2-WETH/OP | $4.56K | 0.00% | `0xDdDCAeE873f2D9Df0E18a80709ef2B396d4a6EA5` |
+| [Velodrome v2 ERN-USDC Factory yVault](https://yearn.fi/vaults/10/0xa3d57625B9a6284D1265d76294443b1E39a18007) | sAMMV2-USDC/ERN | $4.19K | 0.00% | `0xa3d57625B9a6284D1265d76294443b1E39a18007` |
+| [Velodrome v2 tBTC-WETH Factory yVault](https://yearn.fi/vaults/10/0x00a2faF97CC2b985B29a0a0eAa6E0D8033Dc0eA1) | vAMMV2-WETH/tBTC | $3.96K | 0.00% | `0x00a2faF97CC2b985B29a0a0eAa6E0D8033Dc0eA1` |
+| [Velodrome v2 ERN-LUSD Factory yVault](https://yearn.fi/vaults/10/0x7bDEA31F968089f93A548ddec8BB74036E8ac6e0) | sAMMV2-LUSD/ERN | $3.59K | 0.00% | `0x7bDEA31F968089f93A548ddec8BB74036E8ac6e0` |
+| [Velodrome v2 FRAX-DOLA Factory yVault](https://yearn.fi/vaults/10/0x3f14Df340498F3EAA2894BFc19789dD592Dc062D) | sAMMV2-FRAX/DOLA | $2.72K | 0.00% | `0x3f14Df340498F3EAA2894BFc19789dD592Dc062D` |
+| [Velodrome v2 alUSD-FRAX Factory yVault](https://yearn.fi/vaults/10/0x9056b19Fde674B5Ad8397e7Ed3E25a1BCCEf0C27) | sAMMV2-FRAX/alUSD | $2.55K | 0.00% | `0x9056b19Fde674B5Ad8397e7Ed3E25a1BCCEf0C27` |
+| [Velodrome v2 DOLA-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x39F60710a27a87332d10E3333c2eFF41EeC911Ee) | sAMMV2-USDC/DOLA | $2.19K | 0.00% | `0x39F60710a27a87332d10E3333c2eFF41EeC911Ee` |
+| [Velodrome v2 ERN-DOLA Factory yVault](https://yearn.fi/vaults/10/0x50032bE2b2c7e8A6a6bc241e3aEbef21497A3cF0) | sAMMV2-DOLA/ERN | $2.15K | 0.00% | `0x50032bE2b2c7e8A6a6bc241e3aEbef21497A3cF0` |
+| [Velodrome v2 SNX-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x01c77E8a099e97B7b0Dca2F987d9bd1911CdDE50) | vAMMV2-USDC/SNX | $2.09K | 0.00% | `0x01c77E8a099e97B7b0Dca2F987d9bd1911CdDE50` |
+| [Velodrome v2 DOLA-USDC Factory yVault](https://yearn.fi/vaults/10/0xc009D857bFA8AE8d43ddF2DDbe1686063fC73799) | sAMMV2-USDC/DOLA | $1.79K | 0.00% | `0xc009D857bFA8AE8d43ddF2DDbe1686063fC73799` |
+| [Velodrome v2 OP-VELO Factory yVault](https://yearn.fi/vaults/10/0xC86B70e2C16C5fB5315e4663737E0E077ABFC395) | vAMMV2-OP/VELO | $1.57K | 0.00% | `0xC86B70e2C16C5fB5315e4663737E0E077ABFC395` |
+| [Velodrome v2 TAROT-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x36bAF52bc8A2dB4450500c1a6c78f10F6d0E1C3B) | vAMMV2-TAROTv1/USDC | $1.40K | 0.00% | `0x36bAF52bc8A2dB4450500c1a6c78f10F6d0E1C3B` |
+| [Velodrome v2 LDO-wstETH Factory yVault](https://yearn.fi/vaults/10/0x507343bAD3a1ee0B67C3B1712133290DED43980D) | vAMMV2-wstETH/LDO | $1.32K | 0.00% | `0x507343bAD3a1ee0B67C3B1712133290DED43980D` |
+| [Velodrome v2 OP-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x3AD9566b15AACDd26d8a220cA8635F925EA7a3f6) | vAMMV2-OP/USDC | $1.16K | 0.00% | `0x3AD9566b15AACDd26d8a220cA8635F925EA7a3f6` |
+| [Velodrome v2 MAI-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x1d49ab5b03268E329fc7d2111E5364e63b36a3cE) | sAMMV2-USDC/MAI | $957.93 | 0.00% | `0x1d49ab5b03268E329fc7d2111E5364e63b36a3cE` |
+| [Velodrome v2 wstETH-WETH Factory yVault](https://yearn.fi/vaults/10/0x6Ec9d003f0e5184Ee54c1d899B414322a0f0Dc07) | vAMMV2-wstETH/WETH | $912.60 | 0.00% | `0x6Ec9d003f0e5184Ee54c1d899B414322a0f0Dc07` |
+| [Velodrome v2 wstETH-OP Factory yVault](https://yearn.fi/vaults/10/0x830cB4AabF786b9349d9701dD8ee073215d95174) | vAMMV2-wstETH/OP | $845.40 | 0.00% | `0x830cB4AabF786b9349d9701dD8ee073215d95174` |
+| [Velodrome v2 THALES-WETH Factory yVault](https://yearn.fi/vaults/10/0x45b0a7Dc29B7856A1B5069DB4CfA2A984b69cC41) | vAMMV2-THALES/WETH | $661.13 | 0.00% | `0x45b0a7Dc29B7856A1B5069DB4CfA2A984b69cC41` |
+| [Velodrome v2 EXA-WETH Factory yVault](https://yearn.fi/vaults/10/0xc3439Ba7db7566ed0deF55c179ED9b3bA273A67F) | vAMMV2-EXA/WETH | $483.39 | 0.00% | `0xc3439Ba7db7566ed0deF55c179ED9b3bA273A67F` |
+| [Velodrome v2 MAI-alUSD Factory yVault](https://yearn.fi/vaults/10/0xD02Ce9E211279ab3f414ff7A661518f9173780CB) | sAMMV2-alUSD/MAI | $233.52 | 0.00% | `0xD02Ce9E211279ab3f414ff7A661518f9173780CB` |
+| [Velodrome v2 TAROT-OP Factory yVault](https://yearn.fi/vaults/10/0xdD76A3C91A358B1093de52Cb82af5EC3282f6f7F) | vAMMV2-TAROTv1/OP | $181.43 | 0.00% | `0xdD76A3C91A358B1093de52Cb82af5EC3282f6f7F` |
+| [Velodrome v2 THALES-USDC.e Factory yVault](https://yearn.fi/vaults/10/0xa31Ad8D355B5223Ad34FD4fD0bC854A68E7D9681) | vAMMV2-THALES/USDC | $85.63 | 0.00% | `0xa31Ad8D355B5223Ad34FD4fD0bC854A68E7D9681` |
+| [Velodrome v2 STG-USDC.e Factory yVault](https://yearn.fi/vaults/10/0xf6B272134A193Df5b04332e73184E5b40b8EB810) | vAMMV2-STG/USDC | $68.86 | 0.00% | `0xf6B272134A193Df5b04332e73184E5b40b8EB810` |
+| [Velodrome v2 MAI-DOLA Factory yVault](https://yearn.fi/vaults/10/0x68f2B1db2DA6204489279a8fC681f83728bB9622) | sAMMV2-DOLA/MAI | $56.78 | 0.00% | `0x68f2B1db2DA6204489279a8fC681f83728bB9622` |
+| [Velodrome v2 frxETH-WETH Factory yVault](https://yearn.fi/vaults/10/0xB3532518DACA20Fd14e539B0eD6C0De5C59Fd2DE) | sAMMV2-WETH/frxETH | $53.31 | 0.00% | `0xB3532518DACA20Fd14e539B0eD6C0De5C59Fd2DE` |
+| [Velodrome v2 sfrxETH-frxETH Factory yVault](https://yearn.fi/vaults/10/0xc2626aCEdc27cFfB418680d0307C9178955A4743) | sAMMV2-sfrxETH/frxETH | $19.43 | 0.00% | `0xc2626aCEdc27cFfB418680d0307C9178955A4743` |
+| [Velodrome v2 rETH-WETH Factory yVault](https://yearn.fi/vaults/10/0x71117Bcd8FE69177EEb8857538D625209756B745) | vAMMV2-WETH/rETH | $18.77 | 0.00% | `0x71117Bcd8FE69177EEb8857538D625209756B745` |
+| [Velodrome sAMMV2-pxETH/WETH Factory yVault](https://yearn.fi/vaults/10/0x8BF2D37ACC93FdE36DCfFe9Ba9b8B0fB5d2fA747) | sAMMV2-pxETH/WETH | $2.88 | 0.00% | `0x8BF2D37ACC93FdE36DCfFe9Ba9b8B0fB5d2fA747` |
+| [Velodrome v2 wUSDR-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x43360FDd9546e3e77ac2e6793f53219729743293) | vAMMV2-USDC/wUSDR | $0.00 | 0.00% | `0x43360FDd9546e3e77ac2e6793f53219729743293` |
+| [Velodrome v2 TAROT-OP Factory yVault](https://yearn.fi/vaults/10/0x3BDe2aB72AfE70286fc944C07D98883E383DF239) | vAMMV2-TAROT/OP | $0.00 | 0.00% | `0x3BDe2aB72AfE70286fc944C07D98883E383DF239` |
+| [Velodrome v2 DAI-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x36E4c18B2B43CC989085B4a7306915b115058abF) | sAMMV2-USDC/DAI | $0.00 | 0.00% | `0x36E4c18B2B43CC989085B4a7306915b115058abF` |
+| [Velodrome v2 sUSD-USDC Factory yVault](https://yearn.fi/vaults/10/0x1c09aEA795DD79E201fA552b108b4b30E90CEd4f) | sAMMV2-USDC/sUSD | $0.00 | 0.00% | `0x1c09aEA795DD79E201fA552b108b4b30E90CEd4f` |
+| [Velodrome v2 sUSD-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x1B1d2EfB6045851F8ccdE24369003e0fF157980b) | sAMMV2-USDC/sUSD | $0.00 | 0.00% | `0x1B1d2EfB6045851F8ccdE24369003e0fF157980b` |
+| [Velodrome v2 USDC.e-WETH Factory yVault](https://yearn.fi/vaults/10/0xF89FdBBCE1A707061e9d59B8E4387f89798B4d10) | vAMMV2-WETH/USDC | $0.00 | 0.00% | `0xF89FdBBCE1A707061e9d59B8E4387f89798B4d10` |
+| [Velodrome v2 QI-USDC.e Factory yVault](https://yearn.fi/vaults/10/0xD402F3c8A999BFE97F8644E80DbD57E2bA7704ae) | vAMMV2-QI/USDC | $0.00 | 0.00% | `0xD402F3c8A999BFE97F8644E80DbD57E2bA7704ae` |
+| [Velodrome v2 FRAX-USDC.e Factory yVault](https://yearn.fi/vaults/10/0xCF6beF33c49824226fB9dEFCdc3b1DE11F207Db7) | sAMMV2-FRAX/USDC | $0.00 | 0.00% | `0xCF6beF33c49824226fB9dEFCdc3b1DE11F207Db7` |
+| [Velodrome v2 TAROT-USDC.e Factory yVault](https://yearn.fi/vaults/10/0xC3566662862c26FF56e3E709dc021902cC68BecD) | vAMMV2-TAROT/USDC | $0.00 | 0.00% | `0xC3566662862c26FF56e3E709dc021902cC68BecD` |
+| [Velodrome v2 OVN-USD+ Factory yVault](https://yearn.fi/vaults/10/0xAc8da30113238CfAF5011157CdF1E05A884CDB72) | vAMMV2-OVN/USD+ | $0.00 | 0.00% | `0xAc8da30113238CfAF5011157CdF1E05A884CDB72` |
+| [Velodrome v2 ERN-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x9E724b3f65b509326A4F5Ec90D4689BeE6b6C78e) | sAMMV2-USDC/ERN | $0.00 | 0.00% | `0x9E724b3f65b509326A4F5Ec90D4689BeE6b6C78e` |
+| [Velodrome v2 alUSD-USDC Factory yVault](https://yearn.fi/vaults/10/0x8Dc2B8886F289812Bb6e58220e740D1F50A00197) | sAMMV2-USDC/alUSD | $0.00 | 0.00% | `0x8Dc2B8886F289812Bb6e58220e740D1F50A00197` |
+| [Velodrome v2 MAI-FRAX Factory yVault](https://yearn.fi/vaults/10/0x87be630D279Bfd004775C1166F8A488b2ffFA500) | sAMMV2-FRAX/MAI | $0.00 | 0.00% | `0x87be630D279Bfd004775C1166F8A488b2ffFA500` |
+| [Velodrome v2 LUSD-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x6aFA09145245eAeDDdAb9333523af9984494FF34) | sAMMV2-USDC/LUSD | $0.00 | 0.00% | `0x6aFA09145245eAeDDdAb9333523af9984494FF34` |
+| [Velodrome v2 PERP-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x6F4f01A02e6037AA98d22405fEA4DCAB98D2a8eE) | vAMMV2-USDC/PERP | $0.00 | 0.00% | `0x6F4f01A02e6037AA98d22405fEA4DCAB98D2a8eE` |
+| [Velodrome v2 msUSD-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x62855B8E5dB35551661a1e304ec227314F4493C1) | sAMMV2-USDC/msUSD | $0.00 | 0.00% | `0x62855B8E5dB35551661a1e304ec227314F4493C1` |
+| [Velodrome v2 agEUR-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x03894Ca9b0CABfC53dDE7C2DCfcC2A58D6192687) | vAMMV2-USDC/agEUR | $0.00 | 0.00% | `0x03894Ca9b0CABfC53dDE7C2DCfcC2A58D6192687` |
+| [Velodrome v2 wTBT-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x05bBAF27429EB35cb3d51a979aCBA69f2F00E66A) | vAMMV2-USDC/wTBT | N/A | 0.00% | `0x05bBAF27429EB35cb3d51a979aCBA69f2F00E66A` |
+| [Velodrome v2 KWENTA-WETH Factory yVault](https://yearn.fi/vaults/10/0x686c125472024bDd3fA74eeb3720B3237541dCDC) | vAMMV2-WETH/KWENTA | N/A | 0.00% | `0x686c125472024bDd3fA74eeb3720B3237541dCDC` |
+| [Velodrome v2 RED-VELO Factory yVault](https://yearn.fi/vaults/10/0xD7EE0E2d232BcBeFa74EF36A439d0De880c6ece5) | vAMMV2-RED/VELO | N/A | 0.00% | `0xD7EE0E2d232BcBeFa74EF36A439d0De880c6ece5` |
+| [Velodrome v2 tBTC-WBTC Factory yVault](https://yearn.fi/vaults/10/0x00Cb8E36A9C40491A39e8bF2864Ed30C1B579860) | sAMMV2-WBTC/tBTC | N/A | 0.00% | `0x00Cb8E36A9C40491A39e8bF2864Ed30C1B579860` |
+| [Velodrome v2 sETH-WETH Factory yVault](https://yearn.fi/vaults/10/0x6a44B0415a5c440D32E82965FDFAad54a72D477D) | sAMMV2-WETH/sETH | N/A | 0.00% | `0x6a44B0415a5c440D32E82965FDFAad54a72D477D` |
+| [Velodrome v2 USD+-DAI+ Factory yVault](https://yearn.fi/vaults/10/0x78e20312105A85B7fe86dB119CfD5cD8de81FDaA) | sAMMV2-USD+/DAI+ | N/A | 0.00% | `0x78e20312105A85B7fe86dB119CfD5cD8de81FDaA` |
+| [Velodrome v2 OATH-WETH Factory yVault](https://yearn.fi/vaults/10/0x27939E33435cc4ee4e74c0F0260914596bcEb116) | vAMMV2-OATH/WETH | N/A | 0.00% | `0x27939E33435cc4ee4e74c0F0260914596bcEb116` |
+| [Velodrome v2 GRAIN-WETH Factory yVault](https://yearn.fi/vaults/10/0xf39B6196E6BB16cf0f37E4741a83413Cc329539D) | vAMMV2-WETH/GRAIN | N/A | 0.00% | `0xf39B6196E6BB16cf0f37E4741a83413Cc329539D` |
+| [Velodrome v2 USDT-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x3fb792Fa67cde50A41e20304E4afEf522CF711ee) | sAMMV2-USDC/USDT | N/A | 0.00% | `0x3fb792Fa67cde50A41e20304E4afEf522CF711ee` |
+| [Velodrome v2 USD+-DOLA Factory yVault](https://yearn.fi/vaults/10/0x4F1220f6375e95b43462465972cB2f478Ed34D0b) | sAMMV2-USD+/DOLA | N/A | 0.00% | `0x4F1220f6375e95b43462465972cB2f478Ed34D0b` |
+| [Velodrome v2 UNIDX-DAI Factory yVault](https://yearn.fi/vaults/10/0x9778589c8e0417687cF5D3Dd2eD7C4ec01d7e53B) | vAMMV2-UNIDX/DAI | N/A | 0.00% | `0x9778589c8e0417687cF5D3Dd2eD7C4ec01d7e53B` |
+| [Velodrome v2 BLU-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x83b8391B9efBc5B5A38777fB22A4968c622a405a) | vAMMV2-USDC/BLU | N/A | 0.00% | `0x83b8391B9efBc5B5A38777fB22A4968c622a405a` |
+| [Velodrome v2 CHI-DAI Factory yVault](https://yearn.fi/vaults/10/0xAa07Ca79490B3CDA1A25B8fCC69b76C09C6e7A4f) | sAMMV2-CHI/DAI | N/A | 0.00% | `0xAa07Ca79490B3CDA1A25B8fCC69b76C09C6e7A4f` |
+| [Velodrome v2 UNLOCK-VELO Factory yVault](https://yearn.fi/vaults/10/0xf5A8aF3C13C0f6c139F58aac8A549100484E0aaD) | vAMMV2-UNLOCK/VELO | N/A | 0.00% | `0xf5A8aF3C13C0f6c139F58aac8A549100484E0aaD` |
+| [Velodrome v2 USX-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x4e9C59F9b1b13bA7E1Ac4c09B64Df7Fdeff41b03) | sAMMV2-USDC/USX | N/A | 0.00% | `0x4e9C59F9b1b13bA7E1Ac4c09B64Df7Fdeff41b03` |
+| [Velodrome v2 stERN-ERN Factory yVault](https://yearn.fi/vaults/10/0xa7B550B3A80361d8e47E07616dC42f04c655881b) | vAMMV2-stERN/ERN | N/A | 0.00% | `0xa7B550B3A80361d8e47E07616dC42f04c655881b` |
+| [Velodrome v2 wUSDR-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x531fDb1C8429F404116932226D487db94471C4b7) | vAMMV2-wUSDR/USDC | N/A | 0.00% | `0x531fDb1C8429F404116932226D487db94471C4b7` |
+| [Velodrome v2 RED-OP Factory yVault](https://yearn.fi/vaults/10/0xfA3C6122906f2A2d644409dBB507DB1060D10b3A) | vAMMV2-RED/OP | N/A | 0.00% | `0xfA3C6122906f2A2d644409dBB507DB1060D10b3A` |
+| [Velodrome v2 IB-WETH Factory yVault](https://yearn.fi/vaults/10/0x8e8D635E28BB8774FD23107cC1D9b6D30AD5D0B9) | vAMMV2-IB/WETH | N/A | 0.00% | `0x8e8D635E28BB8774FD23107cC1D9b6D30AD5D0B9` |
+| [Velodrome v2 USD+-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x56EeF8430dDdF95b2B92c58B21edf1AC7F77E6a6) | sAMMV2-USD+/USDC | N/A | 0.00% | `0x56EeF8430dDdF95b2B92c58B21edf1AC7F77E6a6` |
+| [Velodrome v2 SONNE-USDC.e Factory yVault](https://yearn.fi/vaults/10/0xB9A14C5C760023801f8c731b4621C99F8ac211D9) | vAMMV2-SONNE/USDC | N/A | 0.00% | `0xB9A14C5C760023801f8c731b4621C99F8ac211D9` |
+| [Velodrome v2 USD+-FRAX Factory yVault](https://yearn.fi/vaults/10/0xb83DBAC6087592328909996A39D138e89E4B0AfE) | sAMMV2-FRAX/USD+ | N/A | 0.00% | `0xb83DBAC6087592328909996A39D138e89E4B0AfE` |
+| [Velodrome v2 UNIDX-WETH Factory yVault](https://yearn.fi/vaults/10/0x93d6D0AB2b2aA25580cb77e8C5f9D5a0cc5E08Fe) | vAMMV2-WETH/UNIDX | N/A | 0.00% | `0x93d6D0AB2b2aA25580cb77e8C5f9D5a0cc5E08Fe` |
+| [Velodrome v2 LYRA-USDC.e Factory yVault](https://yearn.fi/vaults/10/0x6657BdB994fC8678f6D709077F30aA0B3249b5c8) | vAMMV2-LYRA/USDC | N/A | 0.00% | `0x6657BdB994fC8678f6D709077F30aA0B3249b5c8` |
+
+### Base (Chain ID: 8453)
+
+| Vault | Token | TVL | APY/APR (net) | Address |
+|-------|-------|-----|---------------|---------|
+| [True Yield Dollar](https://yearn.fi/vaults/8453/0xb13CF163d916917d9cD6E836905cA5f12a1dEF4B) | USDC | $1.28M | 6.22% | `0xb13CF163d916917d9cD6E836905cA5f12a1dEF4B` |
+| [USDC Horizon yVault](https://yearn.fi/vaults/8453/0xc3BD0A2193c8F027B82ddE3611D18589ef3f62a9) | USDC | $737.39K | 7.01% | `0xc3BD0A2193c8F027B82ddE3611D18589ef3f62a9` |
+| [Aerodrome hyUSD-eUSD Factory yVault](https://yearn.fi/vaults/8453/0x4d3ceBA4349ADB06d2De8EBD2F9320A61303aD81) | vAMM-hyUSD/eUSD | $40.06K | 0.00% | `0x4d3ceBA4349ADB06d2De8EBD2F9320A61303aD81` |
+| [Aerodrome BMX-wBLT Factory yVault](https://yearn.fi/vaults/8453/0x31Ce9aB5A358E5c802Cc01080F29a65a14EB45b8) | vAMM-wBLT/BMX | $1.63K | 0.00% | `0x31Ce9aB5A358E5c802Cc01080F29a65a14EB45b8` |
+| [Aerodrome AERO-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x68393A804c9fe4f1c7148d37796436e450Ad98E8) | vAMM-AERO/USDbC | $1.19K | 0.00% | `0x68393A804c9fe4f1c7148d37796436e450Ad98E8` |
+| [Aerodrome eUSD-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x5b508fE98Ac33DA9352FA539E2EFA9F1DdA26c51) | sAMM-eUSD/USDbC | $599.50 | 0.00% | `0x5b508fE98Ac33DA9352FA539E2EFA9F1DdA26c51` |
+| [Aerodrome WETH-DAI Factory yVault](https://yearn.fi/vaults/8453/0xEcFc1e5BDa4d4191c9Cab053ec704347Db87Be5d) | vAMM-WETH/DAI | $449.04 | 0.00% | `0xEcFc1e5BDa4d4191c9Cab053ec704347Db87Be5d` |
+| [Aerodrome DOLA-USDC Factory yVault](https://yearn.fi/vaults/8453/0x00F30115B5E828AB387b8190f8532EA7cEAF3fDC) | sAMM-DOLA/USDC | $199.44 | 0.00% | `0x00F30115B5E828AB387b8190f8532EA7cEAF3fDC` |
+| [Aerodrome DOLA-USDbC Factory yVault](https://yearn.fi/vaults/8453/0xA3386F0a4034184ECB8A0d1E7E79b4f720634317) | sAMM-DOLA/USDbC | $199.44 | 0.00% | `0xA3386F0a4034184ECB8A0d1E7E79b4f720634317` |
+| [Aerodrome cbETH-WETH Factory yVault](https://yearn.fi/vaults/8453/0x8C589ADdBe1466a9B555EaA6cE8940Ac1680C5F4) | vAMM-cbETH/WETH | $179.06 | 0.00% | `0x8C589ADdBe1466a9B555EaA6cE8940Ac1680C5F4` |
+| [Aerodrome wstETH-WETH Factory yVault](https://yearn.fi/vaults/8453/0x3ED55314C0a4B1a1e3E6b4C9E0617d99c8B5fFf8) | vAMM-WETH/wstETH | $41.85 | 0.00% | `0x3ED55314C0a4B1a1e3E6b4C9E0617d99c8B5fFf8` |
+| [Aerodrome DEUS-WETH Factory yVault](https://yearn.fi/vaults/8453/0x12e3187D6B7a0BA98A427ef9EF287Bd9960764D1) | vAMM-WETH/DEUS | $32.00 | 0.00% | `0x12e3187D6B7a0BA98A427ef9EF287Bd9960764D1` |
+| [Aerodrome ION-WETH Factory yVault](https://yearn.fi/vaults/8453/0x68A0ba9EcaD98BFd16D2457E2546226e8FB7C101) | vAMM-ION/WETH | $29.73 | 0.00% | `0x68A0ba9EcaD98BFd16D2457E2546226e8FB7C101` |
+| [Aerodrome sfrxETH-wstETH Factory yVault](https://yearn.fi/vaults/8453/0xf4B57A2177e6695Bc56fd16c042548BAF4Aa8f5A) | vAMM-sfrxETH/wstETH | $4.80 | 0.00% | `0xf4B57A2177e6695Bc56fd16c042548BAF4Aa8f5A` |
+| [Aerodrome bsdETH-WETH Factory yVault](https://yearn.fi/vaults/8453/0x82A9CC022BfFba4358A4286381c0855A8e295605) | vAMM-WETH/bsdETH | $1.88 | 0.00% | `0x82A9CC022BfFba4358A4286381c0855A8e295605` |
+| [Aerodrome AERO-USDC Factory yVault](https://yearn.fi/vaults/8453/0x30BcA23B220dEb343f62c83edA1465546Ac9C7F7) | vAMM-USDC/AERO | $0.00 | 0.00% | `0x30BcA23B220dEb343f62c83edA1465546Ac9C7F7` |
+| [Aerodrome MAI-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x13454B672213F53cb1D31eA0BE033c58fe315392) | sAMM-MAI/USDbC | $0.00 | 0.00% | `0x13454B672213F53cb1D31eA0BE033c58fe315392` |
+| [Aerodrome MOG-WETH Factory yVault](https://yearn.fi/vaults/8453/0x141719bd8A203839c291B6927d13B32710932B90) | vAMM-Mog/WETH | $0.00 | 0.00% | `0x141719bd8A203839c291B6927d13B32710932B90` |
+| [Aerodrome WETH-USDC Factory yVault](https://yearn.fi/vaults/8453/0x7B8BF6D5557B7c1b5b0235B7cC2aCa6345534cdD) | vAMM-WETH/USDC | $0.00 | 0.00% | `0x7B8BF6D5557B7c1b5b0235B7cC2aCa6345534cdD` |
+| [Aerodrome UNIDX-WETH Factory yVault](https://yearn.fi/vaults/8453/0x7cbdf03CA2B633CA9FA613945ab4b19A46b3d671) | vAMM-WETH/UNIDX | $0.00 | 0.00% | `0x7cbdf03CA2B633CA9FA613945ab4b19A46b3d671` |
+| [Aerodrome AERO-WETH Factory yVault](https://yearn.fi/vaults/8453/0x80Ba48973490a94941eaeC6bE8DBcFf6a5aA8892) | vAMM-WETH/AERO | $0.00 | 0.00% | `0x80Ba48973490a94941eaeC6bE8DBcFf6a5aA8892` |
+| [Aerodrome DAI+-USD+ Factory yVault](https://yearn.fi/vaults/8453/0x84C9C1569Aaa02b9a7fD0fa8021464b179e6eCE6) | sAMM-DAI+/USD+ | $0.00 | 0.00% | `0x84C9C1569Aaa02b9a7fD0fa8021464b179e6eCE6` |
+| [Aerodrome stERN-USD+ Factory yVault](https://yearn.fi/vaults/8453/0x8f22D62434d5E52AF442F69F43eb27BA20768692) | vAMM-USD+/stERN | $0.00 | 0.00% | `0x8f22D62434d5E52AF442F69F43eb27BA20768692` |
+| [Aerodrome LUSD-USDC Factory yVault](https://yearn.fi/vaults/8453/0x987949D2dC1D2b70Bc3284b556D3Ecd2d7C060b7) | sAMM-LUSD/USDC | $0.00 | 0.00% | `0x987949D2dC1D2b70Bc3284b556D3Ecd2d7C060b7` |
+| [Aerodrome AERO-wstETH Factory yVault](https://yearn.fi/vaults/8453/0x99e860D5bbE61A12ca215ABa714a2e886860DBC8) | vAMM-AERO/wstETH | $0.00 | 0.00% | `0x99e860D5bbE61A12ca215ABa714a2e886860DBC8` |
+| [Aerodrome eUSD-USDC Factory yVault](https://yearn.fi/vaults/8453/0x9E13E1CfCd750657B81549F8f773d68f1625DCfb) | sAMM-eUSD/USDC | $0.00 | 0.00% | `0x9E13E1CfCd750657B81549F8f773d68f1625DCfb` |
+| [Aerodrome tBTC-USDbC Factory yVault](https://yearn.fi/vaults/8453/0xA49dCCD9425cc38d4111Df2e665f2a33fe799C42) | vAMM-tBTC/USDbC | $0.00 | 0.00% | `0xA49dCCD9425cc38d4111Df2e665f2a33fe799C42` |
+| [Aerodrome WELL-WETH Factory yVault](https://yearn.fi/vaults/8453/0x391E5dc227CDcf3cCA012E5278798121236b1861) | vAMM-WETH/WELL | $0.00 | 0.00% | `0x391E5dc227CDcf3cCA012E5278798121236b1861` |
+| [Aerodrome MAI-USDC Factory yVault](https://yearn.fi/vaults/8453/0x3D0C3B02EB2788c97CDb0a23E369A49278E4b497) | sAMM-USDC/MAI | $0.00 | 0.00% | `0x3D0C3B02EB2788c97CDb0a23E369A49278E4b497` |
+| [Aerodrome TAROT-WETH Factory yVault](https://yearn.fi/vaults/8453/0x41102DB56D0531Be4560Ec2DB295E28a3C6954C7) | vAMM-WETH/TAROT | $0.00 | 0.00% | `0x41102DB56D0531Be4560Ec2DB295E28a3C6954C7` |
+| [Aerodrome MAI-DOLA Factory yVault](https://yearn.fi/vaults/8453/0x4DCC2EcafF01525fBcAB3ED18823270F912a380A) | sAMM-DOLA/MAI | $0.00 | 0.00% | `0x4DCC2EcafF01525fBcAB3ED18823270F912a380A` |
+| [Aerodrome WETH-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x58dcE038423A1e43f3429cb62425a1364cc3bb4c) | vAMM-WETH/USDbC | $0.00 | 0.00% | `0x58dcE038423A1e43f3429cb62425a1364cc3bb4c` |
+| [Aerodrome EXTRA-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x5B9b4F9B704faAe29f600C04b12aF92FB518604f) | vAMM-EXTRA/USDbC | $0.00 | 0.00% | `0x5B9b4F9B704faAe29f600C04b12aF92FB518604f` |
+| [Aerodrome agEUR-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x5C366341bB86baD85e78eBa974E3f335c9488FA2) | vAMM-agEUR/USDbC | $0.00 | 0.00% | `0x5C366341bB86baD85e78eBa974E3f335c9488FA2` |
+| [Aerodrome tBTC-WETH Factory yVault](https://yearn.fi/vaults/8453/0x6fb7CC0B6f0fCEf9cF7c560BeB68954Efc142608) | vAMM-tBTC/WETH | $0.00 | 0.00% | `0x6fb7CC0B6f0fCEf9cF7c560BeB68954Efc142608` |
+| [Aerodrome wUSDR-USDbC Factory yVault](https://yearn.fi/vaults/8453/0xF8f36Ab972f6fE3ae1f594595aEe1284E270d034) | vAMM-wUSDR/USDbC | $0.00 | 0.00% | `0xF8f36Ab972f6fE3ae1f594595aEe1284E270d034` |
+| [Aerodrome DAI-USDbC Factory yVault](https://yearn.fi/vaults/8453/0xa6cBdD6aE6596b5EE57F67DF70CC7c801129464F) | sAMM-DAI/USDbC | $0.00 | 0.00% | `0xa6cBdD6aE6596b5EE57F67DF70CC7c801129464F` |
+| [Aerodrome stERN-ERN Factory yVault](https://yearn.fi/vaults/8453/0xaCcB6Fa47E2dA8F937f6E33BC25B68328b370D2e) | vAMM-ERN/stERN | $0.00 | 0.00% | `0xaCcB6Fa47E2dA8F937f6E33BC25B68328b370D2e` |
+| [Aerodrome USDC-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x37fDacD764AA64F4e453842D8056853e5550c09b) | sAMM-USDC/USDbC | N/A | 0.00% | `0x37fDacD764AA64F4e453842D8056853e5550c09b` |
+| [Aerodrome SONNE-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x37A74970f80adAa8215598e95A17Cbed2C39030D) | vAMM-SONNE/USDbC | N/A | 0.00% | `0x37A74970f80adAa8215598e95A17Cbed2C39030D` |
+| [Aerodrome USD+-USDbC Factory yVault](https://yearn.fi/vaults/8453/0x41489713d581EC717E1AA55b7729d24965Cf96b5) | sAMM-USD+/USDbC | N/A | 0.00% | `0x41489713d581EC717E1AA55b7729d24965Cf96b5` |
+| [Aerodrome pHAM-pwBLT Factory yVault](https://yearn.fi/vaults/8453/0x1F1969209E18F24282CE6Fae9c27f6e1fe5a1d1b) | vAMM-pHAM/pwBLT | N/A | 0.00% | `0x1F1969209E18F24282CE6Fae9c27f6e1fe5a1d1b` |
+
+### Katana (Chain ID: 747474)
+
+| Vault | Token | TVL | APY/APR (net) | Address |
+|-------|-------|-----|---------------|---------|
+| [vbUSDC yVault](https://yearn.fi/vaults/747474/0x80c34BD3A3569E126e7055831036aa7b212cB159) | vbUSDC | $6.26M | 1.11% | `0x80c34BD3A3569E126e7055831036aa7b212cB159` |
+| [vbETH yVault](https://yearn.fi/vaults/747474/0xE007CA01894c863d7898045ed5A3B4Abf0b18f37) | vbETH | $4.82M | 0.25% | `0xE007CA01894c863d7898045ed5A3B4Abf0b18f37` |
+| [vbUSDT yVault](https://yearn.fi/vaults/747474/0x9A6bd7B6Fd5C4F87eb66356441502fc7dCdd185B) | vbUSDT | $1.41M | 1.25% | `0x9A6bd7B6Fd5C4F87eb66356441502fc7dCdd185B` |
+| [vbWBTC yVault](https://yearn.fi/vaults/747474/0xAa0362eCC584B985056E47812931270b99C91f9d) | vbWBTC | $712.81K | 0.00% | `0xAa0362eCC584B985056E47812931270b99C91f9d` |
+| [vbUSDS yVault](https://yearn.fi/vaults/747474/0x8Fb1c10Ad4417EcA341a1D903Ff437d25ff87a4e) | vbUSDS | $0.00 | 0.00% | `0x8Fb1c10Ad4417EcA341a1D903Ff437d25ff87a4e` |

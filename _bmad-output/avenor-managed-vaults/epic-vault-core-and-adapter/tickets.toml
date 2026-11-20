@@ -1,0 +1,67 @@
+# tickets.toml — Epic 2: Vault Core Deployment, Morpho Adapter & Fork Parity
+
+[[entry]]
+id = 1
+type = "story"
+title = "Scaffold contracts package with pinned build settings and vendored core"
+description = "Buat packages/contracts (solc 0.8.18, evm paris, optimizer 200), vendored yearn core + tokenized-strategy pins, remappings, dan interface minimal."
+verify = "`forge build` hijau; `forge fmt --check`; tidak ada dependensi dari branch master."
+covers = ["S1"]
+after = []
+hitl = false
+risk = "low"
+status = "done"
+completed = "2026-11-19"
+
+[[entry]]
+id = 2
+type = "story"
+title = "Implement MorphoVaultStrategy adapter with liquidity-aware freeFunds"
+description = "Implementasi BaseStrategy ke venue ERC-4626: _deployFunds (clamp venue.maxDeposit), _freeFunds (revert VenueLiquidityShortfall), _harvestAndReport (view), availableDepositLimit, availableWithdrawLimit (idle + venue.maxWithdraw), allowance hygiene."
+verify = "Unit test menutup: venue cukup likuid, venue kurang likuid (revert, bukan loss senyap), venue penuh, venue revert deposit, skala 6 vs 18 desimal, report gain/loss, allowance kembali 0."
+covers = ["S1"]
+after = [1]
+hitl = false
+risk = "high"
+status = "done"
+completed = "2026-11-19"
+
+[[entry]]
+id = 3
+type = "story"
+title = "Build fork harness for chain 4663 with pinned block"
+description = "Konfigurasi anvil --fork chain 4663 dengan block pin, helper untuk impersonate/whale USDG, dan fixture alamat venue dari packages/config."
+verify = "`forge test --match-path test/fork/*` deterministik pada block yang sama; tanpa network call ke explorer."
+covers = ["S1"]
+after = [1]
+hitl = false
+risk = "medium"
+status = "done"
+started = "2026-11-19"
+completed = "2026-11-19"
+note = "Dua run `python scripts/fork-test.py` berurutan 6/6 PASS (71,76s dan 94,45s) melawan state pin 118337511 via archive keyless. Tiga bug invocation ditemukan dan didokumentasikan, bukan di-workaround: (1) default hardfork `london` -> bytecode venue PUSH0 halt `EvmError: NotActivated`, perlu `--hardfork cancun` (JANGAN ubah evm_version di foundry.toml, itu merusak bukti bytecode); (2) chain 4663 Arbitrum Orbit, `block.number` = tinggi L1 (26450152), tinggi L2 = ArbSys(0x64).arbBlockNumber() = 118337511 -> pin diverifikasi lewat `arbBlockNumber()`; (3) forge 1.9 butuh `eth_getAccountInfo` dan mengirim parameter EIP-1898 berbentuk object yang ditolak drpc/solidrpc -> `--fork-state-by-number` + anvil lokal `--fork-url http://127.0.0.1:<port>`. Probe venue menemukan bug adapter nyata (`venue.maxWithdraw` = 0 walau kas idle 27M) yang sudah diperbaiki di `MorphoVaultStrategy._venueLiquidity()` + diuji unit dan fork. Endpoint: rpc.solidrpc.io/public/evm/4663 (utama), robinhood.api.onfinality.io/public (cadangan); drpc sudah prune pin ini."
+
+[[entry]]
+id = 4
+type = "story"
+title = "Author Deploy.s.sol with role wiring and safety asserts"
+description = "Script deploy: factory → vault (deposit_limit 0) → strategi → queue → max debt → accountant → seed; assert role_manager = timelock, guardian terpisah, deposit_limit 0 sampai approve."
+verify = "Dry-run anvil menghasilkan deployments/<chainId>.dry-run.json; script revert bila role_manager EOA atau guardian == proposer timelock."
+covers = ["S1"]
+after = [3]
+hitl = false
+risk = "high"
+status = "done"
+started = "2026-11-19"
+completed = "2026-11-19"
+
+[[entry]]
+id = 5
+type = "story"
+title = "Fork end-to-end: deposit, allocate, report, full and partial withdraw"
+description = "Test e2e pada venue asli: deposit 10k USDG, update_debt, process_report, withdraw penuh; lalu skenario maxWithdraw venue < posisi untuk penarikan parsial."
+verify = "Kedua skenario lulus dengan assertion saldo user, total_idle, total_debt, dan event; hasil dicatat di tickets sebagai evidence."
+covers = ["S1"]
+after = [2, 4]
+hitl = false
+risk = "high"

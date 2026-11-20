@@ -1,0 +1,53 @@
+# tickets.toml — Initiative Avenor Managed Vaults
+# Urutan build mengikuti slice S0..S6 di docs/ARCHITECTURE.md §8.
+
+[[epic]]
+id = 1
+slug = "epic-baseline-and-toolchain"
+title = "Slice S0 — Baseline Reproduction, Toolchain & Compatibility Matrix"
+covers = ["S0"]
+
+[[epic]]
+id = 2
+slug = "epic-vault-core-and-adapter"
+title = "Slice S1 — Vault Core Deployment, Morpho Adapter & Fork Parity"
+covers = ["S1"]
+after = [{ epic = 1, needs = "forge terpasang, bytecode Vyper tereproduksi, matriks kompatibilitas v3.1.1/v3.1.0 selesai" }]
+
+[[epic]]
+id = 3
+slug = "epic-accounting-fees-and-role-enforcement"
+title = "Slice S2 — Accounting, Fee Engine, Role Enforcement & Invariants"
+covers = ["S2"]
+after = [{ epic = 2, needs = "vault + adapter berjalan di fork 4663 dengan venue asli" }]
+
+[[epic]]
+id = 4
+slug = "epic-indexer-sdk-data-plane"
+title = "Slice S3 — Indexer, SDK & Data Plane (RPC-sourced, reconcile-able)"
+covers = ["S3"]
+after = [{ epic = 3, needs = "event dan parameter final: report, fee, peran" }]
+
+[[epic]]
+id = 5
+slug = "epic-web-app-and-transactions"
+title = "Slice S4 — Web App: Katalog, Detail, Transaksi, Portfolio, Transparency"
+covers = ["S4"]
+after = [{ epic = 4, needs = "SDK + indexer query stabil dan angka tervalidasi on-chain" }]
+
+[[epic]]
+id = 6
+slug = "epic-keeper-and-operations"
+title = "Slice S5 — Keeper, Monitoring, Runbook & Incident Drills"
+covers = ["S5"]
+after = [{ epic = 3, needs = "role matrix ter-encode dan report path teruji" }]
+
+[[epic]]
+id = 7
+slug = "epic-security-and-limited-launch"
+title = "Slice S6 — Security Review, Limited Launch & Transaction Proof"
+covers = ["S6"]
+after = [
+  { epic = 5, needs = "app end-to-end lulus 12 kasus withdrawal semantics" },
+  { epic = 6, needs = "keeper stabil 7 hari dan runbook teruji drill" }
+]
