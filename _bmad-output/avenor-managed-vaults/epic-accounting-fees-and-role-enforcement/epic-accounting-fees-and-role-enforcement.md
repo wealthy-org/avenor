@@ -3,7 +3,6 @@ type: epic
 title: "Slice S2 — Accounting, Fee Engine, Role Enforcement & Invariants"
 parent: "initiative-avenor-managed-vaults"
 covers: ["S2"]
-status: draft
 ---
 
 # Epic 3: Accounting, Fee Engine, Role Enforcement & Invariants

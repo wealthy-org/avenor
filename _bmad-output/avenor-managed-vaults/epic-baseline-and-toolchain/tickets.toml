@@ -32,8 +32,6 @@ covers = ["S0"]
 after = [2]
 hitl = false
 risk = "medium"
-status = "done"
-completed = "2026-11-20"
 note = """
 `docs/COMPATIBILITY_MATRIX.md` — satu baris per modul dengan pin, permukaan ABI, bukti test,
 vonis. Hasil: `VaultV3`/`VaultFactory`/`TokenizedStrategy`/`Accountant`/`IVault.sol` =
@@ -72,8 +70,6 @@ covers = ["S0"]
 after = [1]
 hitl = false
 risk = "medium"
-status = "done"
-completed = "2026-11-20"
 note = """
 Dibaca ulang langsung dari RPC pada pin yang sama (`eth_call` @118337511 via
 `rpc.solidrpc.io/public/evm/4663`), bukan dari API:

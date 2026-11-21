@@ -3,7 +3,7 @@ type: epic
 title: "Slice S1 — Vault Core Deployment, Morpho Adapter & Fork Parity"
 parent: "initiative-avenor-managed-vaults"
 covers: ["S1"]
-status: draft
+status: in-progress
 ---
 
 # Epic 2: Vault Core Deployment, Morpho Adapter & Fork Parity

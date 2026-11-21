@@ -309,6 +309,13 @@ contract MorphoVaultStrategy is BaseStrategy {
      * venue-internal per-market math), so nothing here depends on it: the bound is
      * `min(position value, venue idle USDG)`, which is what the two reads below compute.
      * The venue is an ERC-4626 with no queue: idle cash is the queue.
+     *
+     * Guard: this invariant is held by `test/fork/VenueProbe.t.sol` alone. The unit
+     * suite drives `MockVenue`, which answers `maxWithdraw` sanely, so replacing the
+     * `min(...)` below with `venue.maxWithdraw(address(this))` would keep every unit
+     * test green and silently cap withdrawals at the wrong number on the real venue.
+     * If you are "tidying" this function, run `python scripts/fork-test.py` before
+     * claiming it still works.
      */
     function _venueLiquidity() internal view returns (uint256) {
         uint256 shares = venue.balanceOf(address(this));

@@ -1,0 +1,36 @@
+{
+  "generation_hash": "ffe70782df8132e5bea3",
+  "inputs": {
+    "jinja2_version": "3.1.6",
+    "project_root": "C:\\laragon\\www\\kevin-work\\wealthy-project\\avenor",
+    "renderer_sha256": "b866e2bbb649d93ea30ed0a3bf01d1fec030002c0a5a82f5bd958746b432a904",
+    "resolved_values": {
+      "customization.workflow.activation_steps_append": [],
+      "customization.workflow.activation_steps_prepend": [],
+      "customization.workflow.on_complete": "",
+      "customization.workflow.persistent_facts": []
+    },
+    "skill_root": "C:\\Users\\KevinAdisuryaNugraha\\.agents\\skills\\bmad-retrospective",
+    "source_sha256": {
+      "references/acceptance-verdict.md": "3d589d204d0040c10e4bbfab3e446fb0e41163598c8edebeeceeb184a9bcd3f1",
+      "references/aggregate-views.md": "985733daf701b0d3508764d428033128a7ea48fadea493e00a59a1b17d88fd34",
+      "references/evidence-gathering.md": "d5933391a74c535b1df782e9c0f84c5b375c82940420bc7953ff88c970202687",
+      "references/retro-document.md": "41d2fc84c1739791816a1908a40fa5393fe3ab3d74890067bc4151130b651e66",
+      "references/team-discussion.md": "dec27941b7a5056b2bdd5d160d9769806aa95e2ed3452234fbf3bf47b0831d7d",
+      "workflow.md": "eae22c22b372c825a2462386c72aa927d4102a7ea15e99685cca30ac6bfde559"
+    }
+  },
+  "outputs": {
+    "references/acceptance-verdict.md": "3d589d204d0040c10e4bbfab3e446fb0e41163598c8edebeeceeb184a9bcd3f1",
+    "references/aggregate-views.md": "3935bd8b465077622daeb7c3ce9f464ff2120bedadcad4fee5259847fb06f728",
+    "references/evidence-gathering.md": "51808ca3738a362a76be512505b6cc796ab44a6fb1d1a70320685424bd52f803",
+    "references/retro-document.md": "4ad4036b1ece83766c8003c111fe6357483f892817c2c6100e01f6a9c2f16617",
+    "references/team-discussion.md": "dec27941b7a5056b2bdd5d160d9769806aa95e2ed3452234fbf3bf47b0831d7d",
+    "workflow.md": "bdb8c2b78a1a97f413705bfac1f03fa6e623fe961f14b2e47847c33e10f63aca"
+  },
+  "project_root": "C:\\laragon\\www\\kevin-work\\wealthy-project\\avenor",
+  "project_slug": "avenor",
+  "root_hash": "780bdcb6d89a",
+  "schema_version": 1,
+  "skill": "bmad-retrospective"
+}
