@@ -3,7 +3,7 @@ title: 'Fork end-to-end: deposit, allocate, report, full and partial withdraw'
 type: 'test'
 ticket: 5
 created: '2026-11-19'
-status: 'ready'
+status: 'done'
 baseline_revision: 'f449264ff4f8bebe9a6bf72e43095304fdf101b8'
 route: 'oneshot'
 route_source: 'auto'
@@ -11,6 +11,7 @@ risk: 'high'
 review: 'required'
 review_source: 'default'
 lenses_ran: []
+completed: '2026-11-20'
 review_loop_iteration: 0
 context: ['docs/VENUE_INTEGRATIONS.md', 'docs/WITHDRAWAL_SEMANTICS.md', 'docs/ACCOUNTING.md', 'docs/ARCHITECTURE.md', 'docs/BASELINE.md']
 ---
@@ -63,3 +64,18 @@ context: ['docs/VENUE_INTEGRATIONS.md', 'docs/WITHDRAWAL_SEMANTICS.md', 'docs/AC
 - Venue kedua dan strategi kedua.
 - UI/SDK (epic 4–5).
 - Deploy ke mainnet (epic 7).
+
+## Hasil eksekusi (2026-11-20)
+
+Tidak ada test yang perlu ditulis baru: `test/fork/VaultE2E.t.sol` sudah memuat keempat skenario. Ticket ini menutup dengan **menjalankan** suite pada pin, dua kali, dengan gas identik:
+
+| Test | Gas run A | Gas run B |
+|---|---|---|
+| `test_e2e_depositAllocateReportWithdrawAll` | 2.394.348 | 2.394.348 |
+| `test_e2e_partialWithdrawalFreesFundsFromTheVenue` | 2.461.292 | 2.461.292 |
+| `test_e2e_venueAccrualIsReportedAsGainAndFee` | 2.697.109 | 2.697.109 |
+| `test_e2e_shortfallIsUnreachableAtThePin` | 20.214 | 20.214 |
+
+11 test lulus (7 `VenueProbe` + 4 `VaultE2E`), 0 gagal. Satu percobaan di antaranya `BLOCKED` oleh endpoint (`failed to create genesis`) sementara `fork-status.py` masih `state OK match` — kegagalan transport, bukan kontrak; run berikutnya hijau penuh. `git status packages/core` bersih.
+
+Review lens belum dijalankan terpisah (`lenses_ran: []`); klaim yang dibuat hanya yang bisa ditunjuk ke test + gas di atas.

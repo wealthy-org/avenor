@@ -65,3 +65,32 @@ covers = ["S1"]
 after = [2, 4]
 hitl = false
 risk = "high"
+status = "done"
+started = "2026-11-20"
+completed = "2026-11-20"
+note = """
+Tidak ada test baru yang perlu ditulis: `test/fork/VaultE2E.t.sol` sudah memuat keempat skenario
+(352 baris) dan sebelumnya belum pernah dijalankan sampai hijau pada pin. Yang dikerjakan ticket ini
+adalah menjalankannya, dua kali, dan mencatat hasilnya.
+
+`python scripts/fork-test.py` pada pin `118337511` (state `totalAssets` venue = 538856055994280):
+
+| Test | Gas run A | Gas run B |
+|---|---|---|
+| `test_e2e_depositAllocateReportWithdrawAll` | 2.394.348 | 2.394.348 |
+| `test_e2e_partialWithdrawalFreesFundsFromTheVenue` | 2.461.292 | 2.461.292 |
+| `test_e2e_venueAccrualIsReportedAsGainAndFee` | 2.697.109 | 2.697.109 |
+| `test_e2e_shortfallIsUnreachableAtThePin` | 20.214 | 20.214 |
+
+11 test lulus (7 `VenueProbe` + 4 `VaultE2E`), 0 gagal, di dua run berbeda dengan gas identik —
+eksekusi identik, bukan sekadar 'sama-sama hijau'. Durasi 173,19s dan 138,11s.
+
+Kegagalan yang dicatat, bukan disembunyikan: percobaan kedua di antaranya berakhir
+`BLOCKED: no endpoint could serve the pinned state to a local fork` + anvil `failed to create
+ genesis`, sementara `python scripts/fork-status.py` pada menit yang sama masih menjawab `state OK
+match` lewat `eth_call`. Artinya kegagalan fetch state penuh / rate limit endpoint, bukan kegagalan
+kontrak atau test; run berikutnya pada pin dan endpoint yang sama hijau penuh. Karena itu kriteria
+'deterministik' di sini berarti: dua run hijau pada pin yang sama menghasilkan gas identik, dan
+ketidaktersediaan endpoint gagal secara berisik (bukan fallback diam-diam ke blok lain).
+
+`git status packages/core` bersih: tidak ada file Vyper yang berubah."""

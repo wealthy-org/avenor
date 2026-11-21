@@ -132,6 +132,8 @@ Keeper = hot wallet dengan gas saja, tanpa izin `REVOKE`/`FORCE_REVOKE`/`EMERGEN
 
 **ADR-10 — Fee: performance fee 10%, management fee 0.** Hindari interaksi aneh `maxFee` × `gain == 0` (`FEE_CONFIG.md` §2) dan hindari menagih saat rugi.
 
+**ADR-11 — `Yearn-ERC4626-Router` ditolak; app memanggil vault langsung.** `BASELINE.md` §1 sempat merencanakan vendor Router `fc96fe36`, tapi tidak ada satu pun kebutuhan produk yang menuntutnya: sembilan panggilan yang dipakai app (`deposit`, `mint`, `withdraw`, `redeem`, `previewDeposit`, `previewRedeem`, `maxWithdraw`, `maxRedeem`, `convertToAssets`) semuanya ada di ABI vault. Router akan menambah kontrak AGPL di jalur transaksi, menambah satu lapisan `approve`/`transferFrom` yang bisa salah, dan menyembunyikan nilai `max_loss` di balik helper — padahal `max_loss` wajib eksplisit di setiap pemanggilan (aturan produk 2). Konsekuensi: `max_loss` disusun SDK per panggilan, dan slippage penarikan menjadi tanggung jawab app, bukan diserahkan ke helper pihak ketiga. Bila kelak dibutuhkan zap multi-langkah, itu ADR baru dengan test kompatibilitas sendiri di `COMPATIBILITY_MATRIX.md`, bukan diam-diam menambah dependency. Bukti matriks: `docs/COMPATIBILITY_MATRIX.md`.
+
 ## 5. Alur deployment (deterministik, dapat diulang)
 
 1. Reproduksi bytecode: `scripts/compile-vault.py` (Vyper `0.3.10+commit.9136169`, `--optimize codesize --evm-version paris`) → bandingkan ke `packages/core/artifacts/*.json` (keccak256 runtime). Verifikasi ulang dengan `scripts/verify-bytecode.py all` (harus `14/14 checks passed`). Gagal = stop.

@@ -36,11 +36,11 @@ Submodule yang dipakai upstream (rekam, jangan di-upgrade diam-diam):
 Empat konflik nyata ditemukan dari pin di atas. Nomor versi yang sama **tidak** membuktikan kombinasi kompatibel.
 
 1. **Vault v3.1.1 mem-pin Tokenized Strategy v3.0.4 sebagai submodule.** `yearn-vaults-v3@f449264` mengunci `lib/tokenized-strategy` ke `6e12ce08` (branch `v3.0.4`), sementara `vault-periphery@672de1c` mengunci `48c53ab` (`v3.1.1`). Vault memanggil `IStrategy.convertToAssets/balanceOf/maxRedeem/deposit`, jadi perbedaan semantik strategi langsung mempengaruhi `_process_report` dan `_max_withdraw`. Kita memilih **`48c53ab` (v3.1.1)**, bukan `6e12ce08`, karena itu yang dipakai `vault-periphery` dan satu-satunya yang punya implementasi kanonik ber-kode di chain 4663.
-2. **Vault pin berbeda antara repo.** `vault-periphery@672de1c` membangun terhadap `yearn-vaults-v3@5b698f94` (branch `v3.1.0`), bukan `f449264` yang kita pin. Setiap modul periphery (`RoleManager`, `DebtAllocator`, `Accountant`) harus diverifikasi ulang terhadap ABI vault yang kita deploy (ticket 3 epic 1).
+2. **Vault pin berbeda antara repo.** `vault-periphery@672de1c` membangun terhadap `yearn-vaults-v3@5b698f94` (branch `v3.1.0`), bukan `f449264` yang kita pin. Hasil verifikasi ulang: `Accountant` teruji terhadap ABI kita (8 unit test + wiring deploy), sedangkan `RoleManager`/`TimelockExecutor`/`DebtAllocator` **tidak dipakai** jalur produk mana pun (ADR-4 memakai OZ `TimelockController` langsung, ADR-6 menonaktifkan auto-allocate) sehingga tidak diverifikasi dan tidak diklaim. Matriks lengkap + bukti: `docs/COMPATIBILITY_MATRIX.md`.
 3. **`tokenized-strategy-periphery` tidak ber-release.** `vault-periphery` menunjuk branch `master` commit `1e334fbd`. Tidak ada tag; tidak ada jaminan kompatibilitas jangka panjang. Bila modul ini dipakai, vendor pada commit tersebut dan dokumentasikan sebagai fork beku.
 4. **Tidak ada deployment publik Vault v3.1.1.** `VAULT_ORIGINAL` di semua network tahun utama masih `0x1ab62413e0cf2eBEb73da7D40C70E7202ae14467` dengan `apiVersion() = "3.0.2"`, dan alamat itu `immutable` di dalam creation code — tidak mungkin menunjuk implementasi lain. Artinya bytecode `v311` **belum pernah terbukti on-chain**; yang terbukti adalah reproduksinya lokal dan determinisme dua-run (lihat `docs/REPRODUCIBILITY.md` §4).
 
-Keputusan baseline: **pin tunggal = `yearn-vaults-v3@f449264` + `tokenized-strategy@48c53ab` + `vault-periphery@672de1c`**, lalu bangun matriks kompatibilitas empiris lewat fork test (lihat §6). `vault-periphery` dan Router di-vendor pada commit di atas, bukan di-`master`.
+Keputusan baseline: **pin tunggal = `yearn-vaults-v3@f449264` + `tokenized-strategy@48c53ab` + `vault-periphery@672de1c`**, lalu bangun matriks kompatibilitas empiris lewat fork test (lihat §6). `vault-periphery` di-vendor pada commit di atas, bukan di-`master`, dan hanya `src/accountants/Accountant.sol` + `interfaces/IVault.sol` yang benar-benar masuk `lib/`. **`Yearn-ERC4626-Router@fc96fe36` ditolak** (ADR-11): app memanggil vault langsung agar `max_loss` tetap eksplisit di tiap panggilan. Rincian: `docs/COMPATIBILITY_MATRIX.md`.
 
 ## 3. Cakupan audit upstream (bukan audit produk kita)
 
@@ -93,9 +93,9 @@ Catatan akses jaringan: `docs.robinhood.com` + `rpc.mainnet.chain.robinhood.com`
 - [x] Bytecode pin kita direkam dan deterministik: `v3.1.1` `VaultV3` runtime 23.462 B `0x6909c58e…02be6`, creation 23.536 B `0xc00d80e0…4121b`; `VaultFactory` runtime 3.604 B `0xdfc2a101…ddec2`, creation 3.834 B `0xde30ee1a…9564f`.
 - [x] `TokenizedStrategy v3.1.1` cocok dengan deployed: 18.224 B, setelah mask immutable `factory` + metadata CBOR → 18.171 B, **0 byte berbeda**, di mainnet dan di chain 4663.
 - [x] `scripts/compile-vault.py` + `scripts/verify-bytecode.py` ada dan hijau (`14/14 checks passed`).
-- [ ] Fork test Robinhood Chain `4663` berjalan: `VaultFactory.deploy_new_vault(USDG, ...)` + `RoleManager` + satu adapter Morpho berhasil.
-- [ ] `SECURITY_DIFF.md` untuk commit 2026 vs commit audit 2023 selesai.
-- [ ] Matriks kompatibilitas (§2) diuji, hasilnya menggantikan asumsi di dokumen ini.
+- [x] Fork test Robinhood Chain `4663` berjalan: `VaultFactory.deploy_new_vault(USDG, ...)` + `role_manager` berupa `TimelockController` + satu adapter Morpho berhasil — 4 test `test/fork/VaultE2E.t.sol` lulus di pin `118337511` dengan gas identik pada dua run (lihat `docs/COMPATIBILITY_MATRIX.md` §3). Catatan: `RoleManager` tidak dipakai (ADR-4).
+- [x] `SECURITY_DIFF.md` untuk commit 2026 vs commit audit 2023 selesai untuk perubahan keamanan; sisa pekerjaan yang masih terbuka (baca baris-per-baris seluruh `VaultV3.vy`) dicatat di `SECURITY_DIFF.md` §7 dan **tidak** diklaim tuntas.
+- [x] Matriks kompatibilitas (§2) diuji, hasilnya menggantikan asumsi di dokumen ini: `docs/COMPATIBILITY_MATRIX.md`.
 ## 7. Keadaan chain 4663 yang terverifikasi (bukan asumsi)
 
 Dibaca langsung via `eth_getCode` / `eth_call` pada block `118337511`. Semua nilai di bawah masuk ke `docs/REPRODUCIBILITY.md` §5.

@@ -106,7 +106,7 @@ Ini bukan patch kecil. Konsekuensi untuk kita:
 
 ## 4. Yang **tidak** berubah (dan tetap jadi risiko)
 
-- `Accountant` dan `RoleManager`/`DebtAllocator` di `vault-periphery@672de1c` dibangun terhadap `yearn-vaults-v3@5b698f94` (v3.1.0), bukan pin kita. Belum diuji (BASELINE §2 butir 2). `Accountant` menagih `managementFee` bahkan saat loss (`docs/ACCOUNTING.md`, `FEE_CONFIG.md`) — itu desain, bukan bug, dan alasan ADR-10 memilih `managementFee = 0`.
+- `Accountant` dan `RoleManager`/`DebtAllocator` di `vault-periphery@672de1c` dibangun terhadap `yearn-vaults-v3@5b698f94` (v3.1.0), bukan pin kita. `Accountant` sudah diuji terhadap ABI kita (8 unit test + wiring di `Deploy.s.sol`); `RoleManager`/`DebtAllocator` tidak dipakai sehingga tidak diuji dan tidak diklaim. Lihat `docs/COMPATIBILITY_MATRIX.md`. `Accountant` menagih `managementFee` bahkan saat loss (`docs/ACCOUNTING.md`, `FEE_CONFIG.md`) — itu desain, bukan bug, dan alasan ADR-10 memilih `managementFee = 0`.
 - Fee protocol dari factory: kalau factory kita mewarisi config pihak lain, potongan tak terduga muncul. Mitigasi: kita deploy factory sendiri dan memverifikasi `protocol_fee_config()` setelah deploy.
 - Tidak ada perubahan yang memperbaiki kelas risiko venue (Morpho, kurator). Diff ini hanya soal core.
 

@@ -182,7 +182,7 @@ Bukti bahwa `getChainId()` segar dan `block.chainid` tidak basi pada toolchain i
 ## 8. Yang masih belum terbukti
 
 1. Tidak ada deployment `VaultV3 3.1.1` di chain publik → tidak ada pembanding byte-per-byte untuk versi yang kita pakai (§3).
-2. `vault-periphery@672de1c` membangun terhadap `yearn-vaults-v3@5b698f94` (branch `v3.1.0`); `Accountant`/`RoleManager`/`DebtAllocator` belum diuji terhadap ABI kita. Ini ticket 3 di epic 1.
+2. `vault-periphery@672de1c` membangun terhadap `yearn-vaults-v3@5b698f94` (branch `v3.1.0`). Status per modul ada di `docs/COMPATIBILITY_MATRIX.md`: `Accountant` teruji terhadap ABI kita (8 unit test + wiring deploy); `RoleManager`/`TimelockExecutor`/`DebtAllocator` tidak dipakai jalur produk dan karenanya tidak diuji dan tidak diklaim; `Yearn-ERC4626-Router` ditolak (ADR-11).
 3. Fork test Robinhood Chain ada di `packages/contracts/test/fork/` dan dijalankan `python scripts/fork-test.py` (11 test: `VenueProbe` 7 probe venue + `VaultE2E` 4 test e2e vault). `verify-all.py` sengaja tidak menjalankannya tanpa flag — `--with-fork` mendelegasikan ke script itu. Cakupan e2e: deploy lokal di atas fork → deposit → `update_debt` → `report` (gain + fee share ke accountant) → `redeemUnderlying` + `distribute` ke treasury → withdraw penuh dan sebagian. Yang **belum**: pola perubahan kas idle venue antar blok (butuh banyak pin, dan endpoint arsip gratis terus berubah).
 4. Verifikasi source on-chain belum mungkin: explorer diblokir Cloudflare dan RPC publik tidak menyediakan endpoint verifikasi.
 5. `docs/SECURITY_DIFF.md` sudah ditulis (rentang perubahan `yearn-vaults-v3`, perbaikan ChainSecurity, transfer hook, `TokenizedStrategy` 2023 → 2026), tetapi tetap bukan audit: tidak ada auditor yang memeriksa kombinasi pin kita.

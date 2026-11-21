@@ -32,6 +32,24 @@ covers = ["S0"]
 after = [2]
 hitl = false
 risk = "medium"
+status = "done"
+completed = "2026-11-20"
+note = """
+`docs/COMPATIBILITY_MATRIX.md` — satu baris per modul dengan pin, permukaan ABI, bukti test,
+vonis. Hasil: `VaultV3`/`VaultFactory`/`TokenizedStrategy`/`Accountant`/`IVault.sol` =
+kompatibel-teruji; `RoleManager`/`TimelockExecutor`/`DebtAllocator` = **tidak dipakai** (ADR-4
+memakai OZ `TimelockController` langsung, ADR-6 mematikan auto-allocate) sehingga tidak diuji dan
+tidak diklaim; `Yearn-ERC4626-Router@fc96fe36` = ditolak lewat ADR-11 baru di
+`docs/ARCHITECTURE.md`.
+
+Alasan penolakan Router bukan preferensi: sembilan panggilan yang dipakai app sudah ada di ABI
+vault, dan Router akan menyembunyikan `max_loss` di balik helper padahal aturan produk 2 menuntut
+`max_loss` eksplisit tiap panggilan. Menolak lebih murah daripada mem-vendor + menulis test untuk
+kontrak AGPL yang tidak menambah kemampuan.
+
+Tidak ada file Vyper/solidity yang berubah untuk ticket ini (nol perubahan `packages/core`).
+Dokumen yang diperbarui: `COMPATIBILITY_MATRIX.md` (baru), `ARCHITECTURE.md` (ADR-11),
+`BASELINE.md` (§1, §2 butir 2, §6), `REPRODUCIBILITY.md` §8.2, `SECURITY_DIFF.md` §4."""
 
 [[entry]]
 id = 4
@@ -54,3 +72,25 @@ covers = ["S0"]
 after = [1]
 hitl = false
 risk = "medium"
+status = "done"
+completed = "2026-11-20"
+note = """
+Dibaca ulang langsung dari RPC pada pin yang sama (`eth_call` @118337511 via
+`rpc.solidrpc.io/public/evm/4663`), bukan dari API:
+
+- header: `eth_getBlockByNumber(0x70dafe7)` -> number 118337511, hash
+  `0xbaa980abd65e0c748b3b5f69d2352b69dd33b03138179bf61c988137291ba0af`, timestamp 1795103654
+  (2026-11-19T15:54:14Z) — cocok byte-per-byte dengan `packages/config/4663.json`.
+- `ArbSys(0x64).arbBlockNumber()` = 118337511 (chain 4663 = Arbitrum Orbit; L2 height, bukan
+  `block.number` yang berisi tinggi L1).
+- USDG `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`: `symbol()="USDG"`, `decimals()=6`,
+  `totalSupply()=622410599910270`.
+- steakUSDG `0xBeEff033F34C046626B8D0A041844C5d1A5409dd`: `symbol()="steakUSDG"`,
+  `decimals()=18`, `asset()=USDG`, `totalAssets()=538856055994280`,
+  `totalSupply()=531418644510854399888342585`,
+  `USDG.balanceOf(venue)=27024457979514` (kas idle 27.024,457979 USDG = 5,02% dari TVL).
+
+Semua angka sama dengan `packages/config/4663.json`; tidak ada yang berubah, jadi tidak ada
+angka dokumen yang perlu dikoreksi. Yang tetap **belum** terbukti dan tidak diklaim:
+identitas issuer USDG (`issuer_verified: false` — `docs.robinhood.com` tak terbaca dari host)
+dan hash bytecode venue terhadap rilis Morpho Vault V2."""
