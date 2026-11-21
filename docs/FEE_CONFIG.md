@@ -110,6 +110,44 @@ Jadi kenaikan pps = **+0,2699%** (bukan +0,27% eksak: fee 300 juga menambah supp
 
 Angka "1.000.003" yang sempat tertulis di dokumen ini salah basis (memakai gain tanpa membagi `total_supply` setelah fee); diganti dengan perhitungan di atas, dan test-nya menegakkan angka baru.
 
+## 7. Loss dan pemulihan (bukan "fee", tetapi mengubah angka yang user lihat)
+
+Tiga jalur loss, semuanya diuji di `test/unit/LossPath.t.sol` (4 test):
+
+1. **Loss di dalam `maxLoss` (200 bps).** `VaultV3._process_report` menghitung `shares_to_burn`
+   dari pps sebelum report lalu membakar **paling banyak** shares locked milik vault
+   (`:1270-1274`). Selama buffer profit ada, pps user tidak bergerak: contoh terukur, gain 30.000
+   (fee 3.000, locked 27.000) lalu loss 20.000 → sisa locked 7.000, `totalSupply` 1.010.000,
+   `totalAssets` 1.010.000, pps tetap `1.000000`. Loss report **tidak** menagih fee.
+2. **Loss tanpa buffer.** `to_burn = min(shares_to_burn, 0) = 0`, jadi tidak ada share yang
+   dibakar dan supply tetap; pps turun proporsional. Terukur: loss 2% → pps `980.000` tepat,
+   `convertToAssets(balanceOf(user))` = 980.000e6, dan tidak ada share di luar
+   user/accountant/vault/strategi (tidak ada dust yang menguntungkan pihak lain).
+3. **Loss di atas `maxLoss`.** `Accountant.report` revert `"too much loss"`; state tidak berubah.
+   Satu-satunya jalan adalah `force_revoke_strategy` (fast lane 6 jam, ADR-12) yang **menulis
+   seluruh `current_debt` sebagai loss**, bukan loss riil venue. Terukur: venue hanya kehilangan
+   3%, tetapi 1.000.000e6 debt ditulis penuh → `totalAssets = 0`, pps `0`, `totalSupply` tetap
+   1.000.000 (tidak ada share dibakar), dan vault masih memegang 1.000.000 share strategi senilai
+   970.000e6 USDG. Event yang benar adalah `StrategyReported(strategy, 0, loss, 0, 0, 0, 0)`;
+   **tidak ada event `LossReported`** di `VaultV3` maupun `Accountant` — jangan menunggu nama itu
+   di indexer.
+
+### Jebakan pemulihan: fee dihitung pada gain yang hanya mengembalikan loss
+
+`force_revoke_strategy` mendokumentasikan bahwa strategi bisa di-`add` lagi dan loss dikreditkan
+sebagai profit, dengan fee berlaku. Itu benar dan mahal: pada pps 0,5, venue yang tersisa 485.000
+di-credit sebagai **gain** 485.000 → fee 10% = 48.500 assets, dicetak sebagai 97.000 share.
+Hasil akhir setelah unlock: `totalSupply` 1.097.000, `totalAssets` 985.000, pps `0,897903`.
+Artinya loss pasar 1,5% menjadi kerugian user **10,21%**, karena fee dihitung dari pemulihan nilai
+yang sebelumnya sudah dihapus. Konsekuensi operasional:
+
+- `force_revoke` adalah pilihan terakhir, bukan cara menutup posisi yang merugi sedikit.
+- Bila tujuannya menghindari fee atas pemulihan, jalur yang benar adalah `buy_debt`
+  (`DEBT_PURCHASER`, treasury menyerap debt dengan kas nyata), yang diuji terpisah.
+- Health check `maxGain` dihitung dari `current_debt`; setelah write-off `current_debt = 0`, sehingga
+  report pemulihan **selalu** kena `"too much gain"` dan membutuhkan `turnOffHealthCheck` satu kali
+  oleh `feeManager`. UI/admin runbook harus menyebut ini, bukan menemukannya saat insiden.
+
 ## 7. Kewajiban transparansi
 
 Halaman fee wajib menampilkan, dibaca on-chain saat render:
