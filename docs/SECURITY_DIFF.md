@@ -132,7 +132,7 @@ git -C referensi/yearn-vaults-v3 diff 89ab996^ 89ab996 -- contracts/VaultV3.vy
 
 | # | Test | Tiket |
 |---|---|---|
-| T1 | Strategi mock yang melaporkan `withdrawn > assets_to_withdraw` pada `update_debt` tidak membuat `unsafe_sub` membungkus; vault revert atau memperlakukan sebagai tidak ada penarikan, tidak pernah menaikkan `total_idle` | epic 3 / tiket 4 (invariant suite) |
+| T1 | Venue yang membayar lebih / kurang / mengembalikan angka salah satuan tidak membuat `unsafe_sub` membungkus; surplus jadi gain, kekurangan hanya mengurangi debt yang benar-benar bergerak, dan return value diabaikan (diukur dari selisih balance) | `test/unit/MaliciousVenue.t.sol` (4 test, epic 3 / tiket 4) |
 | T2 | Refund accounting `:1296`/`:1307`: setelah report dengan `gain == 0` dan `total_refunds > 0`, `total_idle + total_debt == total_assets` tetap berlaku | epic 3 / tiket 4 |
 | T3 | `transfer_hook == 0` di v1 → `transfer`/`transferFrom` tidak pernah revert karena hook, dan tidak ada jalur lock baru | epic 3 / tiket 2 (role matrix) |
 | T4 | `_convert_to_shares` pada `total_supply > 0 && total_assets == 0` mengembalikan 0 → UI/SDK memperlakukannya sebagai kondisi darurat, bukan "deposit berhasil dengan share 0" | epic 3 / tiket 4 |

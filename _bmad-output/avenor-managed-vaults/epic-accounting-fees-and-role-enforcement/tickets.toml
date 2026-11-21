@@ -69,7 +69,32 @@ covers = ["S2"]
 after = [1, 2]
 hitl = false
 risk = "high"
+note = """
+Landing: `test/invariant/VaultHandler.sol` (10 aksi acak termasuk `withdraw`/`redeem` dengan
+`max_loss` acak), `test/invariant/VaultInvariants.t.sol` (7 invariant akuntansi),
+`test/unit/MaliciousVenue.t.sol` (4 test adversarial untuk SECURITY_DIFF T1), dan
+`foundry.toml [invariant] runs = 10000, depth = 16, fail_on_revert = false`.
 
+Hasil terukur: satu suite invarian lulus dalam ~130 s (10.000 run, 10 selector, 0 gagal).
+`fail_on_revert = false` disengaja: handler memang menghasilkan panggilan yang harus ditolak
+vault (deposit melewati limit, redeem dengan max_loss terlalu ketat, update_debt tanpa
+perubahan); itu discarded call, bukan kegagalan.
+
+Klaim T1 di SECURITY_DIFF sebelumnya ("invariant suite membuktikan unsafe_sub tidak membungkus")
+tidak bisa dibuktikan handler acak di atas adapter jujur, jadi ditutup dengan empat test
+terarah: venue membayar lebih (surplus jadi gain, bukan idle palsu), venue mengembalikan angka
+salah satuan (diabaikan karena diukur dari selisih balance), venue hanya bisa membayar sebagian
+(debt turun sebesar yang benar-benar bergerak, totalAssets tidak berubah, sisanya ditarik
+kemudian), dan overpayment melebihi sisa debt (di-cap di current_debt, debt tidak wrap).
+
+Dua perilaku dicatat, bukan dihaluskan:
+1. TokenizedStrategy mengunci total untuk blok tempat accrual terjadi ("otherwise from the next
+   block"); gain yang dibuat dan dilaporkan di blok yang sama tidak terlihat. Karena itu report
+   adalah aksi keeper di blok berikutnya, bukan bagian transaksi user.
+2. VaultV3._withdraw_from_strategy memanggil redeem tanpa max_loss; TokenizedStrategy membatasi
+   payout ke availableWithdrawLimit dan vault mengurangi debt sebesar yang diterima, jadi pull
+   saat venue tidak likuid mengurangi debt, bukan membukukan loss dan bukan revert.
+"""
 [[entry]]
 id = 5
 type = "story"

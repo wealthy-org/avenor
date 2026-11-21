@@ -58,6 +58,12 @@ contract MockVenue {
     ///         it paid. The real venue does this; `redeem` returns assets.
     bool public withdrawReturnsShares;
 
+    /// @notice Extra assets the venue pays on top of what was asked, without reducing its
+    ///         own reported `totalAssets` for them. Models a venue that over-delivers — the
+    ///         case `VaultV3._withdraw` handles by measuring the balance delta
+    ///         (`VaultV3.vy:877-890`) instead of trusting the request or the return value.
+    uint256 public overpayWithdraw;
+
     error VenuePaused();
     error ExceedsMaxDeposit();
     error ExceedsMaxWithdraw();
@@ -120,6 +126,12 @@ contract MockVenue {
         bool _reverts
     ) external {
         depositReverts = _reverts;
+    }
+
+    function setOverpayWithdraw(
+        uint256 _overpay
+    ) external {
+        overpayWithdraw = _overpay;
     }
 
     /// @notice Force the venue's reported total assets (simulates yield or loss).
@@ -245,9 +257,13 @@ contract MockVenue {
         balanceOf[owner] -= shares;
         totalSupply -= shares;
         totalAssetsAmount -= assets;
-        assetToken.transfer(receiver, assets);
+
+        uint256 extra = overpayWithdraw;
+        if (extra > 0) assetToken.mint(address(this), extra);
+        assetToken.transfer(receiver, assets + extra);
+
         // The real venue returns shares burned here, not assets paid.
-        return withdrawReturnsShares ? shares : assets;
+        return withdrawReturnsShares ? shares : assets + extra;
     }
 
     function redeem(

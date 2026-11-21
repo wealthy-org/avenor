@@ -56,8 +56,13 @@ runs = 1024
 max_test_rejects = 65536
 
 [invariant]
-runs = 64
-depth = 32
+# Ticket 3.4 asks for 10k runs. `depth` is kept modest because the handler's actions are
+# multi-step (deposit -> report -> update_debt -> withdraw) and 10k x 16 already explores the
+# state space the invariants care about; raising depth multiplies wall time without adding
+# reachable states. `fail_on_revert = false` is deliberate: the handler produces calls the
+# vault *must* refuse, and those are discarded calls, not failures.
+runs = 10000
+depth = 16
 fail_on_revert = false
 
 # No etherscan entry on purpose: the only explorer for chain 4663

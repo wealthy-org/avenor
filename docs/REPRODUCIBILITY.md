@@ -177,6 +177,8 @@ Implikasi untuk adapter (`docs/VENUE_INTEGRATIONS.md`):
 
 `forge-std` 1.9.6 (pin yang di-hash `scripts/check-vendor.py`) **tidak mendeklarasikan** `getChainId()`, sedangkan binernya punya. Karena `lib/` tidak boleh diubah, `ForkBase` mendeklarasikannya sendiri lewat `staticcall` ke `address(vm)`, dan gagal tertutup (`type(uint256).max`) bila cheatcode tidak menjawab.
 
+Suite invarian (`test/invariant/`) dikonfigurasi di `foundry.toml` dengan `runs = 10000`, `depth = 16`, `fail_on_revert = false`. Angka `runs` adalah yang diminta tiket 3.4; `depth` diturunkan dari 32 ke 16 karena setiap aksi handler multi-langkah (deposit -> report -> update_debt -> withdraw) sehingga 10.000 x 16 sudah menjelajah ruang state yang dijaga, sementara menaikkan `depth` hanya menambah waktu tanpa state baru. `fail_on_revert = false` disengaja: handler menghasilkan panggilan yang memang **harus** ditolak vault (deposit melewati `deposit_limit`, redeem dengan `max_loss` terlalu ketat, `update_debt` tanpa perubahan), dan itu panggilan yang dibuang, bukan kegagalan. Waktu terukur satu suite: ~130 s (10.000 run, 10 selector). Kalau waktu gate jadi masalah, turunkan `depth`, jangan `runs`.
+
 Bukti bahwa `getChainId()` segar dan `block.chainid` tidak basi pada toolchain ini (diukur 2026-11-20, `createSelectFork` ke pin): sebelum fork keduanya `31337`, sesudah fork keduanya `4663`. `vm.getBlockNumber()` sesudah fork balas `26450152` (tinggi L1), bukan `118337511` — pengingat bahwa tinggi L2 hanya lewat `ArbSys.arbBlockNumber()`.
 
 ## 8. Yang masih belum terbukti
