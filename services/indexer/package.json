@@ -1,0 +1,21 @@
+{
+  "name": "@avenor/indexer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Avenor indexer: chain 4663 events -> Postgres, with reconciliation against eth_call.",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "migrate": "node src/migrate.ts",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "pg": "8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/pg": "8.11.10"
+  }
+}

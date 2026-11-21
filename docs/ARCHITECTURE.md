@@ -177,6 +177,38 @@ keduanya berarti dua sumber kebenaran yang cepat atau lambat berbeda. Konsekuens
 - Pembulatan: `convertToAssets` membulatkan ke bawah, sehingga maksimum 1 wei di atas cap bisa
   lolos. Itu arah pembulatan vault sendiri; test menulis `<= 1` alih-alih mengklaim eksak.
 
+**ADR-14 — Data plane memakai SQL mentah, angka sebagai string, dan provenance wajib; SDK
+membangkitkan ABI dari artefak, bukan dari dokumentasi.** Permukaan baca (indexer, API, SDK) adalah
+tempat paling mudah kehilangan kejujuran angka, jadi keputusannya ditulis di kode dan diuji:
+
+- **Migrasi = SQL + runner sendiri** (`services/indexer/src/migrate.ts`), bukan framework. Checksum
+  sha256; migrasi yang diedit sesudah apply ditolak, bukan dilewati. Alasan: skema ini berisi
+  constraint yang menjaga uang (`positions_non_negative`, `fee_kind`), dan framework dengan
+  "baseline" diam-diam akan menyembunyikan migrasi yang berubah.
+- **Tanpa FK dari tabel event ke katalog vault/strategi.** Urutan ingestion tidak boleh menentukan
+  apakah sebuah `Transfer` tercatat; rekonsiliasi yang menangkap katalog bolong. Katalog hanya
+  di-UPDATE, tidak pernah menghapus riwayat event.
+- **`numeric(78,0)`, bukan float, dan bukan `Number` di mana pun.** Semua `uint256` keluar API
+  sebagai string; `JSON.parse` pada supply 27 digit sudah kehilangan presisi sebelum UI melihatnya.
+- **Satu header per chunk** (`ingested_blocks`) menyimpan timestamp, hash batas, dan checkpoint
+  sekaligus. Rollback memakai hash batas itu untuk menemukan ancestor; tidak ada yang cocok di dalam
+  `reorgWindow` → `DeepReorgError`, cursor berhenti. `positions` adalah turunan dan dibangun ulang
+  dari `share_transfers`, dengan zero address dikecualikan (mint bukan saldo).
+- **Rekonsiliasi dengan `toleranceBps` wajib** dan supply dibandingkan eksak; lihat
+  `docs/ACCOUNTING.md` §8.1. "Tidak ada riwayat" dilaporkan `insufficient-history`, bukan lulus.
+- **SDK**: ABI dibangkitkan dari `packages/core/artifacts/VaultV3.json` (artefak yang di-hash
+  `scripts/verify-bytecode.py`) dan dijaga `scripts/gen-sdk-abi.py --check` di gate. `maxLoss` wajib
+  per panggilan withdraw/redeem dan `10_000` ditolak; setiap `prepare*` menjalankan
+  `simulateContract` sebelum mengembalikan request. `maxWithdraw` dan kas idle **tidak** digabung
+  menjadi satu angka "bisa ditarik" (aturan produk 4).
+- **API**: `node:http`, read-only, setiap angka membawa `blockNumber`, `blockTimestamp`, dan `source`;
+  `live` tanpa `?block=` memakai checkpoint terakhir supaya "latest" tidak berarti dua blok berbeda
+  dalam satu sesi. Tidak ada field APY.
+
+Konsekuensi jujur: indexer belum punya penjadwalan/alert (epik 6), reorg diuji pada anvil lokal
+(`scripts/reorg-test.py`), belum pada `4663` — memaksa reorg di chain publik bukan sesuatu yang bisa
+dilakukan dengan jujur dari sini.
+
 ## 5. Alur deployment (deterministik, dapat diulang)
 
 1. Reproduksi bytecode: `scripts/compile-vault.py` (Vyper `0.3.10+commit.9136169`, `--optimize codesize --evm-version paris`) → bandingkan ke `packages/core/artifacts/*.json` (keccak256 runtime). Verifikasi ulang dengan `scripts/verify-bytecode.py all` (harus `14/14 checks passed`). Gagal = stop.

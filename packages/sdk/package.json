@@ -1,0 +1,15 @@
+{
+  "name": "@avenor/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "One read/write path for the Avenor vault: previews, positions, explicit max_loss, 6-decimal formatting.",
+  "engines": { "node": ">=22.6" },
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "gen-abi": "python ../../scripts/gen-sdk-abi.py",
+    "check-abi": "python ../../scripts/gen-sdk-abi.py --check"
+  },
+  "dependencies": { "viem": "2.58.4" }
+}

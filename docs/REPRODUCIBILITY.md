@@ -161,7 +161,21 @@ Implikasi untuk adapter (`docs/VENUE_INTEGRATIONS.md`):
 
 # 3. verifikasi ulang artefak di packages/core/artifacts
 ./.venv-ape/Scripts/python.exe scripts/compile-vault.py --check
+
+# 4. SDK: ABI harus sama dengan artefak, lalu test preview/format/max_loss
+python scripts/gen-sdk-abi.py --check
+node --test packages/sdk/test/sdk.test.ts
+
+# 5. data plane: cluster Postgres ephemeral di .tmp/, anvil nyata untuk reorg
+python scripts/db-test.py       # migrasi + ingestion + reorg + rekonsiliasi + API
+python scripts/reorg-test.py    # rollback reorg pada anvil, bukan fake RPC
 ```
+
+Prasyarat langkah 4–5: Node ≥ 22.6 (diukur pada `v24.19.0`) dan binary Postgres (`initdb`, `pg_ctl`;
+diukur pada `14.5`, ditemukan lewat `PATH` atau `PG_BIN`). `db-test.py` membuat cluster sekali pakai
+di `.tmp/pg-<pid>` pada port loopback acak dan menghapusnya; `--keep` mencetak
+`TEST_DATABASE_URL` untuk diagnosa. Suite ini **gagal keras** bila Postgres tidak ada — bukan
+di-skip — karena gate data plane yang diam-diam hijau lebih buruk daripada gate merah.
 
 `scripts/verify-bytecode.py` membaca `packages/core/artifacts/*.json`, meng-compile ulang dari pin yang tercatat, dan membandingkan hash. Bila pin berubah, script gagal — bukan diam-diam menghasilkan hash baru.
 
@@ -187,4 +201,8 @@ Bukti bahwa `getChainId()` segar dan `block.chainid` tidak basi pada toolchain i
 2. `vault-periphery@672de1c` membangun terhadap `yearn-vaults-v3@5b698f94` (branch `v3.1.0`). Status per modul ada di `docs/COMPATIBILITY_MATRIX.md`: `Accountant` teruji terhadap ABI kita (8 unit test + wiring deploy); `RoleManager`/`TimelockExecutor`/`DebtAllocator` tidak dipakai jalur produk dan karenanya tidak diuji dan tidak diklaim; `Yearn-ERC4626-Router` ditolak (ADR-11).
 3. Fork test Robinhood Chain ada di `packages/contracts/test/fork/` dan dijalankan `python scripts/fork-test.py` (11 test: `VenueProbe` 7 probe venue + `VaultE2E` 4 test e2e vault). `verify-all.py` sengaja tidak menjalankannya tanpa flag — `--with-fork` mendelegasikan ke script itu. Cakupan e2e: deploy lokal di atas fork → deposit → `update_debt` → `report` (gain + fee share ke accountant) → `redeemUnderlying` + `distribute` ke treasury → withdraw penuh dan sebagian. Yang **belum**: pola perubahan kas idle venue antar blok (butuh banyak pin, dan endpoint arsip gratis terus berubah).
 4. Verifikasi source on-chain belum mungkin: explorer diblokir Cloudflare dan RPC publik tidak menyediakan endpoint verifikasi.
-5. `docs/SECURITY_DIFF.md` sudah ditulis (rentang perubahan `yearn-vaults-v3`, perbaikan ChainSecurity, transfer hook, `TokenizedStrategy` 2023 → 2026), tetapi tetap bukan audit: tidak ada auditor yang memeriksa kombinasi pin kita.
+5. Indexer/SDK/API diuji pada database dan node lokal (anvil + fake RPC yang mengikuti bentuk respons
+   `eth_getLogs`/`eth_call`), **bukan** pada rantai `4663`: belum ada deployment indexer, dan reorg
+   publik tidak bisa dipaksa dengan jujur. Yang terbukti: rollback terhadap reorg nyata di anvil,
+   rekonsiliasi terhadap angka `eth_call` yang diinjeksi, dan API yang mengembalikan provenance.
+6. `docs/SECURITY_DIFF.md` sudah ditulis (rentang perubahan `yearn-vaults-v3`, perbaikan ChainSecurity, transfer hook, `TokenizedStrategy` 2023 → 2026), tetapi tetap bukan audit: tidak ada auditor yang memeriksa kombinasi pin kita.

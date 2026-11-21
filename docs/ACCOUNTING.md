@@ -120,3 +120,25 @@ Catatan terpisah, mudah tertukar: `maxWithdraw` **vault** (di atas, jujur karena
 ## 8. Rekonsiliasi indexer
 
 Indexer wajib menyimpan per-event: `chainId`, `blockNumber`, `blockHash`, `txHash`, `logIndex`, `contractAddress`, `contractVersion` (`apiVersion()`), dan `ingestionStatus`. Snapshot `SharePriceSnapshot` dihitung dari `pricePerShare()` pada block tsb, bukan dari agregasi event semata. Rekonsiliasi harian: `totalAssets()`, `totalSupply()`, `totalIdle()`, `totalDebt()`, `strategies(s).currentDebt`, `balanceOf(vault)` dibandingkan dengan hasil event replay; selisih > toleransi = alert, bukan koreksi diam-diam.
+
+### 8.1 Yang benar-benar diimplementasikan (`services/indexer/src/reconcile.ts`)
+
+- **Aset**: `totalAssets` yang diharapkan = snapshot on-chain terakhir + Σ(`gain` − `loss` + refund)
+  di antara kedua block. Hanya `StrategyReported` yang mengubah `totalAssets`; deposit/withdraw
+  memindahkan idle versus supply, dan fee dibakar sebagai share sehingga tidak menambah aset.
+  Tanda `refund` diambil dari `fees.kind = 'refund'` (assets), sesuai `_process_report`
+  (`VaultV3.vy:1350-1356`).
+- **Supply**: mint − burn dari `share_transfers` (transfer dari/ke alamat nol), dibandingkan
+  **eksak**. Toleransi tidak berlaku untuk supply: satu share adalah satu klaim.
+- **`toleranceBps` wajib** di tipe config, tanpa default; `driftBps` membulatkan ke atas sehingga
+  1 wei pada basis 1.000 unit menjadi 10 bps (bukan 0).
+- **`insufficient-history` bukan lulus**: bila belum ada riwayat mint sementara on-chain
+  `totalSupply > 0`, rekonsiliasi melaporkan status itu dan **tidak** menulis snapshot on-chain.
+- Snapshot ditulis `source = 'onchain'` dan upsert pada `(chain_id, vault_address, block_number)`;
+  merekonsiliasi ulang blok yang sama adalah refresh, bukan error constraint.
+- Alert saat ini berupa array di return value, **belum** ada integrasi notifikasi. Penjadwalan harian
+  belum ada; `reconcileNow(...)` siap dipanggil keeper (epik 6).
+
+Provenance yang keluar ke app (`services/indexer/src/api.ts`): setiap respons angka membawa
+`blockNumber`, `blockTimestamp`, dan `source` (`indexed` atau `onchain`), dan setiap `uint256`
+dikirim sebagai string — 27 digit supply tidak boleh melewati `JSON.parse` sebagai number.

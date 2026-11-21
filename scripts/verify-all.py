@@ -7,10 +7,17 @@ Runs, in order, stopping at the first failure:
   1. scripts/check-secrets.py        no private key / mnemonic / URL credential is tracked
   2. scripts/check-vendor.py         vendored dependency hashes + pinned constants
   3. scripts/gen-interfaces.py --check   generated interfaces match the artifacts
-  4. forge build                     compiles with the pinned solc/evm/optimizer
-  5. forge fmt --check               formatting gate
-  6. forge test --no-match-path 'test/fork/*'   unit tests (no network)
-  7. scripts/verify-bytecode.py all  core bytecode evidence (slow; skip with --no-bytecode)
+  4. scripts/gen-sdk-abi.py --check  the SDK's ABI is still the verified artifact's ABI
+  5. forge build                     compiles with the pinned solc/evm/optimizer
+  6. forge fmt --check               formatting gate
+  7. forge test --no-match-path 'test/fork/*'   unit tests (no network)
+  8. node --test packages/sdk        SDK previews, formatting, explicit max_loss
+  9. scripts/db-test.py              indexer schema, ingestion, reorg, reconciliation, API
+ 10. scripts/verify-bytecode.py all  core bytecode evidence (slow; skip with --no-bytecode)
+
+Steps 8 and 9 need Node 22.6+; step 9 also needs a local Postgres (`initdb`/`pg_ctl`) because it
+runs against a real database in `.tmp/`, not a mock. It fails loudly when Postgres is missing
+instead of skipping, because a silently skipped data-plane gate is worse than a red one.
 
 Fork tests are deliberately excluded: they need a live archive RPC and an `anvil` fork with
 three specific flags, so they run through `python scripts/fork-test.py` (which verifies the
@@ -91,6 +98,7 @@ def main() -> int:
         ROOT,
         args.quiet,
     )
+    run("sdk abi matches artifact", [python(), "scripts/gen-sdk-abi.py", "--check"], ROOT, args.quiet)
     run("forge build", [forge(), "build", "--offline"], CONTRACTS, args.quiet)
     run("forge fmt --check", [forge(), "fmt", "--check"], CONTRACTS, args.quiet)
     run(
@@ -99,6 +107,8 @@ def main() -> int:
         CONTRACTS,
         args.quiet,
     )
+    run("sdk tests", ["node", "--test", "packages/sdk/test/sdk.test.ts"], ROOT, args.quiet)
+    run("indexer + data plane tests", [python(), "scripts/db-test.py"], ROOT, args.quiet)
     if args.with_fork:
         run("fork test (pin 118337511)", [python(), "scripts/fork-test.py"], ROOT, args.quiet)
     else:
