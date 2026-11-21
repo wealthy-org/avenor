@@ -55,3 +55,7 @@ referensi/tokenized-strategy/
 referensi/vault-periphery/
 referensi/Yearn-ERC4626-Router/
 referensi/yearn-vaults-v3/
+
+# Next.js
+apps/web/.next/
+apps/web/next-env.d.ts

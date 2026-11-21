@@ -315,8 +315,9 @@ Remapping hanya ada di `remappings.txt` (tidak diduplikasi di `foundry.toml`). `
 | `docs/VENUE_INTEGRATIONS.md` | gate venue + adapter + data lapangan | ✅ |
 | `docs/FEE_CONFIG.md` | tiga lapis fee + parameter v1 | ✅ |
 | `docs/ROLE_PERMISSION_MATRIX.md` | bit role → fungsi → pemegang | ✅ |
-| `docs/SECURITY_DIFF.md` | diff commit 2026 vs audit 2023 | ⛔ belum (butuh `forge`/diff tooling) |
+| `docs/SECURITY_DIFF.md` | diff commit 2026 vs audit 2023 | ✅ (bukan audit) |
 | `docs/ACCEPTANCE_EVIDENCE.md` | tx hash, alamat, screenshot | ⛔ belum (butuh deployment) |
 | `docs/DEPLOYMENT.md` | mode, urutan, env var, assert, pending actions | ✅ |
 | `docs/KEEPER.md` | job, ambang, kill switch, monitor, alert | ✅ |
 | `docs/RUNBOOK.md` | insiden, pause, revoke, migrasi | ✅ (drill HITL belum) |
+| `docs/WEB_APP.md` | shell app, token, primitif angka, penyimpangan tiket 5.1 | ✅ (5.2–5.5 belum) |

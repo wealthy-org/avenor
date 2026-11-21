@@ -14,9 +14,10 @@ Runs, in order, stopping at the first failure:
   8. node --test packages/sdk        SDK previews, formatting, explicit max_loss
   9. scripts/db-test.py              indexer schema, ingestion, reorg, reconciliation, API
  10. node --test services/keeper     keeper planning, simulation gate, nonce, monitoring, alerts
- 11. scripts/verify-bytecode.py all  core bytecode evidence (slow; skip with --no-bytecode)
+ 11. tsc + node --test apps/web      web numeric primitives, components and config validation
+ 12. scripts/verify-bytecode.py all  core bytecode evidence (slow; skip with --no-bytecode)
 
-Steps 8–10 need Node 22.6+; step 9 also needs a local Postgres (`initdb`/`pg_ctl`) because it
+Steps 8–11 need Node 22.6+ (step 11 also needs `apps/web/node_modules`, i.e. `npm install`); step 9 also needs a local Postgres (`initdb`/`pg_ctl`) because it
 runs against a real database in `.tmp/`, not a mock. It fails loudly when Postgres is missing
 instead of skipping, because a silently skipped data-plane gate is worse than a red one.
 
@@ -39,6 +40,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+WEB = ROOT / "apps" / "web"
 CONTRACTS = ROOT / "packages" / "contracts"
 PY = ROOT / ".venv-ape" / "Scripts" / "python.exe"
 if not PY.exists():
@@ -129,6 +131,26 @@ def main() -> int:
             "services/keeper/test/monitor.test.ts",
         ],
         ROOT,
+        args.quiet,
+    )
+    # `npx` is a .cmd shim on Windows, which subprocess cannot exec without a shell; call tsc directly.
+    run(
+        "web typecheck",
+        ["node", "node_modules/typescript/bin/tsc", "--noEmit"],
+        WEB,
+        args.quiet,
+    )
+    run(
+        "web tests",
+        [
+            "node",
+            "--test",
+            "--test-concurrency=1",
+            "test/format.test.ts",
+            "test/vaults.test.ts",
+            "test/components.test.ts",
+        ],
+        WEB,
         args.quiet,
     )
     if args.with_fork:

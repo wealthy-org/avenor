@@ -1,0 +1,28 @@
+{
+  "name": "@avenor/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "node --test --test-concurrency=1 test/format.test.ts test/vaults.test.ts test/components.test.ts"
+  },
+  "dependencies": {
+    "@avenor/sdk": "file:../../packages/sdk",
+    "next": "15.5.4",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "viem": "2.58.4"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.0",
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
+    "typescript": "5.9.2"
+  }
+}

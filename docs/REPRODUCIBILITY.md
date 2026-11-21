@@ -172,14 +172,25 @@ python scripts/reorg-test.py    # rollback reorg pada anvil, bukan fake RPC
 
 # 6. keeper: perencanaan, simulasi, nonce, kill switch, monitor, alert (HTTP nyata)
 node --test --test-concurrency=1 services/keeper/test/keeper.test.ts services/keeper/test/monitor.test.ts
+
+# 7. web: primitif angka, komponen, dan validasi konfigurasi vault
+cd apps/web && npm ci        # sekali per checkout; butuh `@avenor/sdk` lewat file:../../packages/sdk
+node node_modules/typescript/bin/tsc --noEmit
+node --test --test-concurrency=1 test/format.test.ts test/vaults.test.ts test/components.test.ts
+npx next build               # tidak masuk gate (lambat); wajib hijau sebelum klaim app bisa dibangun
 ```
 
-Prasyarat langkah 4–6: Node ≥ 22.6 (diukur pada `v24.19.0`) dan binary Postgres (`initdb`, `pg_ctl`;
+Prasyarat langkah 4–7: Node ≥ 22.6 (diukur pada `v24.19.0`) dan binary Postgres (`initdb`, `pg_ctl`;
 diukur pada `14.5`, ditemukan lewat `PATH` atau `PG_BIN`). `db-test.py` membuat cluster sekali pakai
 di `.tmp/pg-<pid>` pada port loopback acak dan menghapusnya; `--keep` mencetak
 `TEST_DATABASE_URL` untuk diagnosa. Test keeper tidak butuh Postgres maupun RPC: node HTTP lokal di
 `127.0.0.1` dengan port acak berperan sebagai chain dan sebagai receiver alert. Suite ini **gagal keras** bila Postgres tidak ada — bukan
 di-skip — karena gate data plane yang diam-diam hijau lebih buruk daripada gate merah.
+
+Langkah 7 memakai `apps/web/node_modules` (dipasang `npm ci`, di-ignore git). Gate
+`scripts/verify-all.py` menjalankan `tsc --noEmit` + 21 test web; `next build` sengaja di luar gate
+karena menambah ~40 s dan gate ini sudah ~4 menit, tetapi hasil build dicatat saat perubahan app:
+3 rute statis (`/`, `/transparency`, `/_not-found`), First Load JS 102 kB.
 
 `scripts/verify-bytecode.py` membaca `packages/core/artifacts/*.json`, meng-compile ulang dari pin yang tercatat, dan membandingkan hash. Bila pin berubah, script gagal — bukan diam-diam menghasilkan hash baru.
 
