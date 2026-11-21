@@ -107,3 +107,4 @@ Withdraw:
 | W10 | Penarikan di block yang sama dengan report | hasil deterministik; tidak ada profit ganda |
 | W11 | `use_default_queue = false` + user mengirim urutan strategi sendiri | perilaku berbeda harus dilarang di produk (assert konfigurasi) |
 | W12 | Dust/rounding ekstrem (1 unit) | tidak ada revert tak terduga, tidak ada shares gratis |
+| W13 | `deposit_hook` menolak semua deposit (allowlist kosong atau cap 0) | `maxDeposit == 0`, `deposit` revert `exceed deposit limit`, tetapi `maxWithdraw`/`redeem` tetap penuh; dibuktikan `test/unit/DepositCapHook.t.sol::test_rejectEveryoneStillAllowsFullExit` dan `test_capOfZeroDoesNotBlockWithdrawals` |

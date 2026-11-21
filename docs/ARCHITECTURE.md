@@ -154,6 +154,29 @@ memblokir penarikan: memakainya untuk de-risking akan mengubah insiden menjadi a
 Konsekuensi jujur: dua proposer Safe harus dijaga terpisah (aturan §2.1 matriks peran), dan
 `TimelockExecutor` Yearn tidak dipakai sama sekali (ADR-4 tetap).
 
+**ADR-13 — `DepositCapHook` menjadi satu-satunya plafon deposit saat aktif, dan hidup di timelock
+governance.** `VaultV3._max_deposit` membaca `deposit_hook` **menggantikan** `deposit_limit`
+(`:543-546`), dan memasang hook menuntut `deposit_limit == max` (`:1458-1487`). Jadi begitu hook
+dipakai, `deposit_limit` berhenti menjadi angka yang bisa dibaca sebagai batas — mempertahankan
+keduanya berarti dua sumber kebenaran yang cepat atau lambat berbeda. Konsekuensi yang dipilih:
+
+- Tiga batas di hook: allowlist fase terbatas, cap global atas `vault.totalAssets()`, dan cap per
+  wallet atas `convertToAssets(balanceOf(receiver))`. **Diukur langsung, bukan dihitung dari
+  counter**: tidak ada `post_withdraw`, jadi counter akan melenceng dan entah memblokir user jujur
+  atau meloloskan cap. `post_deposit` hanya mencatat (`totalRecordedDeposits`, event) dan
+  memeriksa ulang cap sebagai jaring pengaman.
+- Cap per wallet hanya membatasi `deposit`/`mint`. Share yang masuk lewat `transfer` bisa melewati
+  cap; hook lalu melaporkan `0` sampai posisi turun. Allowlist transfer adalah keputusan
+  `transfer_hook` (matriks peran §1), bukan keputusan deposit — mencampurnya akan memblokir exit.
+- Hook **tidak pernah** menyentuh jalur penarikan (`maxWithdraw`/`redeem` tidak membacanya), jadi
+  cap 0 atau allowlist yang menolak semua tetap mengizinkan exit penuh. ADR-5 bergantung pada ini
+  dan `test/unit/DepositCapHook.t.sol::test_rejectEveryoneStillAllowsFullExit` menguncinya.
+- Semua setter `onlyGovernance` = timelock 48 jam, tanpa delay tambahan di hook: satu tempat
+  menunggu lebih mudah dibuktikan daripada dua. `DEPOSIT_LIMIT_MANAGER` di vault tidak bisa
+  mengganti governance hook maupun membukanya.
+- Pembulatan: `convertToAssets` membulatkan ke bawah, sehingga maksimum 1 wei di atas cap bisa
+  lolos. Itu arah pembulatan vault sendiri; test menulis `<= 1` alih-alih mengklaim eksak.
+
 ## 5. Alur deployment (deterministik, dapat diulang)
 
 1. Reproduksi bytecode: `scripts/compile-vault.py` (Vyper `0.3.10+commit.9136169`, `--optimize codesize --evm-version paris`) → bandingkan ke `packages/core/artifacts/*.json` (keccak256 runtime). Verifikasi ulang dengan `scripts/verify-bytecode.py all` (harus `14/14 checks passed`). Gagal = stop.

@@ -165,7 +165,12 @@ Semua ini sengaja tidak dilakukan script, dan semuanya tercatat di `pendingActio
 2. **`acceptManagement()`** dari `MANAGEMENT_ADDRESS`. Sampai itu terjadi, strategi masih dipegang deployer.
 3. **Accountant** (epik 3): sudah di-deploy script (epik 3) dan di-wire; `assertSafety` membaca balik `defaultConfig` + `vaults(vault)` alih-alih mempercayai niat script.
    Di prod keduanya masuk proposal (call 8 dan 9), jadi sampai timelock mengeksekusi, `vault.accountant()` memang masih `address(0)`.
-4. **Buka deposit** hanya setelah review limited launch: `set_deposit_limit` + `set_deposit_hook` lewat timelock.
+4. **Buka deposit** hanya setelah review limited launch: `set_deposit_hook(hook, override := True)` lewat
+   timelock (bukan `set_deposit_limit` dulu). Override menulis `deposit_limit = max` dalam transaksi
+   yang sama; tanpa itu panggilan revert `"using deposit limit"`. Setelah hook aktif, satu-satunya
+   plafon deposit adalah hook itu sendiri (ADR-13), dan `maxDeposit` = `min(cap global − totalAssets,
+   cap wallet − posisi)`. Rencana angka untuk launch terbatas: cap global 250.000 USDG, cap wallet
+   default 25.000 USDG, allowlist aktif dengan daftar yang direview di luar repo.
 5. **Seed** dead shares bila `SEED_ASSETS == 0`.
 6. **Keeper app** (epik 6) — `KEEPER_ROLES`/allowlist.
 
