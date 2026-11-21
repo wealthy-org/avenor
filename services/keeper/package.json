@@ -1,0 +1,18 @@
+{
+  "name": "@avenor/keeper",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "main": "src/keeper.ts",
+  "scripts": {
+    "start": "node src/main.ts",
+    "test": "node --test --test-concurrency=1 test/keeper.test.ts test/monitor.test.ts"
+  },
+  "dependencies": {
+    "@avenor/sdk": "file:../../packages/sdk",
+    "viem": "2.58.4"
+  }
+}

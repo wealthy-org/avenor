@@ -209,6 +209,35 @@ Konsekuensi jujur: indexer belum punya penjadwalan/alert (epik 6), reorg diuji p
 (`scripts/reorg-test.py`), belum pada `4663` — memaksa reorg di chain publik bukan sesuatu yang bisa
 dilakukan dengan jujur dari sini.
 
+**ADR-15 — Keeper memisahkan "uang bergerak" dari "orang tahu", dan tidak pernah memperbaiki
+sendiri.** Detail operasional di `docs/KEEPER.md`; keputusan yang mengikat:
+
+- **Satu transaksi in-flight, tanpa nonce manager.** Simulasi kedua dihitung pada state yang sudah
+  tidak ada bila transaksi pertama belum masuk blok; menyerialkan lebih jujur daripada mengejar
+  paralelisme yang tidak dibutuhkan 10 transaksi/hari.
+- **Simulasi wajib sebelum tanda tangan.** Revert `"too much loss"`, `"too much gain"`,
+  `"new debt equals current debt"`, atau `"venue illiquid"` berhenti sebagai log `skipped` dengan
+  alasan, bukan transaksi gagal yang membakar gas. Revert on-chain bukan bukti keeper bekerja.
+- **Loss = alert, bukan transaksi.** `Accountant.report` revert di atas `maxLoss`; retry berarti
+  noise, dan `turnOffHealthCheck` berarti menyembunyikan insiden. Keeper tidak punya hak mengubah
+  health check, dan memang tidak diberi.
+- **`maxWithdraw` venue bukan sinyal likuiditas.** Angka itu dicatat, tidak pernah memicu alarm
+  sendiri; pada pin `118337511` ia `0` untuk posisi yang likuid. Alarm yang selalu menyala sama
+  tidak bergunanya dengan alarm yang tidak ada.
+- **Ambang wajib eksplisit.** `minGainBps` divalidasi 0..10000, `maxAssetsDeltaBps` dan
+  `runbookBaseUrl` wajib, `hardIdleFloor` terpisah dari `minimum_total_idle` yang bisa salah
+  konfigurasi ke 0. Tidak ada default yang "biasanya aman".
+- **Kill switch menghentikan job, bukan monitor.** File `.keeper-stop` dan `SIGINT`/`SIGTERM`
+  mematikan pengiriman; pembacaan tetap hidup supaya on-call masih melihat keadaan vault.
+- **Alert delivery adalah bagian dari definisi selesai.** Notifier diuji dengan HTTP round trip
+  nyata; non-2xx adalah kegagalan, bukan sukses diam-diam. Kanal produksi (Slack/PagerDuty) tetap
+  keputusan manusia (HITL).
+
+Konsekuensi jujur: keeper belum pernah mengirim transaksi ke vault yang dideploy. Yang terbukti:
+perilaku terhadap node palsu, pembacaan pada pin nyata, dan jalur fee lewat test fork
+`test_e2e_venueAccrualIsReportedAsGainAndFee` (memanggil kontrak langsung, bukan keeper). Soak 7 hari
+(T5) dan empat drill insiden (T4) menunggu staging.
+
 ## 5. Alur deployment (deterministik, dapat diulang)
 
 1. Reproduksi bytecode: `scripts/compile-vault.py` (Vyper `0.3.10+commit.9136169`, `--optimize codesize --evm-version paris`) → bandingkan ke `packages/core/artifacts/*.json` (keccak256 runtime). Verifikasi ulang dengan `scripts/verify-bytecode.py all` (harus `14/14 checks passed`). Gagal = stop.
@@ -289,4 +318,5 @@ Remapping hanya ada di `remappings.txt` (tidak diduplikasi di `foundry.toml`). `
 | `docs/SECURITY_DIFF.md` | diff commit 2026 vs audit 2023 | ⛔ belum (butuh `forge`/diff tooling) |
 | `docs/ACCEPTANCE_EVIDENCE.md` | tx hash, alamat, screenshot | ⛔ belum (butuh deployment) |
 | `docs/DEPLOYMENT.md` | mode, urutan, env var, assert, pending actions | ✅ |
-| `docs/RUNBOOK.md` | insiden, pause, revoke, migrasi | ⛔ belum |
+| `docs/KEEPER.md` | job, ambang, kill switch, monitor, alert | ✅ |
+| `docs/RUNBOOK.md` | insiden, pause, revoke, migrasi | ✅ (drill HITL belum) |
