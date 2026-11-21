@@ -3,6 +3,7 @@ type: epic
 title: "Slice S5 — Keeper, Monitoring, Runbook & Incident Drills"
 parent: "initiative-avenor-managed-vaults"
 covers: ["S5"]
+status: in-progress
 ---
 
 # Epic 6: Keeper & Operations

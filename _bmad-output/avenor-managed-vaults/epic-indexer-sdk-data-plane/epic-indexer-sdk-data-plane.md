@@ -3,6 +3,7 @@ type: epic
 title: "Slice S3 — Indexer, SDK & Data Plane"
 parent: "initiative-avenor-managed-vaults"
 covers: ["S3"]
+status: done
 ---
 
 # Epic 4: Indexer, SDK & Data Plane

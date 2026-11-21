@@ -3,6 +3,7 @@ type: epic
 title: "Slice S4 — Web App: Katalog, Detail, Transaksi, Portfolio, Transparency"
 parent: "initiative-avenor-managed-vaults"
 covers: ["S4"]
+status: in-progress
 ---
 
 # Epic 5: Web App

@@ -3,6 +3,7 @@ type: epic
 title: "Slice S6 — Security Review, Limited Launch & Transaction Proof"
 parent: "initiative-avenor-managed-vaults"
 covers: ["S6"]
+status: in-progress
 ---
 
 # Epic 7: Security Review, Limited Launch & Transaction Proof

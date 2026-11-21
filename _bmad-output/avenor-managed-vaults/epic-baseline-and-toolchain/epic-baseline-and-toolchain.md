@@ -3,7 +3,7 @@ type: epic
 title: "Slice S0 — Baseline Reproduction, Toolchain & Compatibility Matrix"
 parent: "initiative-avenor-managed-vaults"
 covers: ["S0"]
-status: in-progress
+status: done
 ---
 
 # Epic 1: Baseline Reproduction, Toolchain & Compatibility Matrix
