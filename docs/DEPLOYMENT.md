@@ -44,28 +44,31 @@ Alasan prod tidak memegang kunci: bila script mengeksekusi wiring, ia harus meme
 ## 3. Urutan (yang tidak boleh ditukar)
 
 1. **Blueprint** `VaultV3` — raw `CREATE` runtime artifact. Harus sebelum factory: `VaultFactory.deploy_new_vault` memakai `create_minimal_proxy_to(VAULT_ORIGINAL, …)` (`VaultFactory.vy:130-131`).
-2. **Factory** `VaultFactory(name, blueprint, governance=timelock)`.
-3. **Vault** `deploy_new_vault(asset, name, symbol, role_manager, profit_max_unlock_time=7 hari)`.
+2. **Timelock darurat** `TimelockController(6 jam, proposer=guardian, executor=guardian)` (ADR-12).
+   Dipisah dari timelock governance dan **tidak** bisa menjadi proposer timelock governance.
+3. **Factory** `VaultFactory(name, blueprint, governance=timelock)`.
+4. **Vault** `deploy_new_vault(asset, name, symbol, role_manager, profit_max_unlock_time=7 hari)`.
    `initialize` tidak menyentuh `deposit_limit`, jadi vault baru tertutup **karena konstruksi**; script tetap meng-assert `deposit_limit == 0`.
-4. **Strategi** `new MorphoVaultStrategy(asset, venue, name)`. `venue` immutable — ini sekaligus keputusan venue, tidak bisa diganti tanpa strategi baru.
-5. **Wiring** (dry-run/stage dieksekusi; prod masuk proposal):
-   - `set_role(timelock, 3999)` — semua bit produk, tanpa `EMERGENCY`/`DEBT`/`REPORTING`/`DEBT_PURCHASER`
+5. **Strategi** `new MorphoVaultStrategy(asset, venue, name)`. `venue` immutable — ini sekaligus keputusan venue, tidak bisa diganti tanpa strategi baru.
+6. **Wiring** (dry-run/stage dieksekusi; prod masuk proposal):
+   - `set_role(timelock, 3995)` — semua bit produk, tanpa `EMERGENCY`/`FORCE_REVOKE`/`DEBT`/`REPORTING`/`DEBT_PURCHASER`
+   - `set_role(emergencyTimelock, 4)` — `FORCE_REVOKE_MANAGER` saja (ADR-12)
    - `set_role(guardian, 8192)`, `set_role(keeper, 96)`, `set_role(treasury, 4096)`
    - `set_role(actor, ADD_STRATEGY|QUEUE|MAX_DEBT|DEPOSIT_LIMIT|MINIMUM_IDLE)`
    - `add_strategy(strategy, true)`, `update_max_debt_for_strategy`, `set_minimum_total_idle`, `set_use_default_queue(true)`, `set_deposit_limit(0)`
    - `set_role(actor, 0)` **sebelum** `transfer_role_manager(timelock)`
-6. **Handoff strategi** — `strategy.setPendingManagement(management)` + `strategy.setKeeper(keeper)`.
+7. **Handoff strategi** — `strategy.setPendingManagement(management)` + `strategy.setKeeper(keeper)`.
    Dijalankan di **kedua** mode dan sengaja **di luar** proposal timelock.
    Peran `VaultV3` tidak mengatur strategi sama sekali: `management` strategi bisa
    `emergencyWithdraw` ke `performanceFeeRecipient` selamanya, dan timelock bukan
    `management` strategi sehingga ia tidak bisa memanggil `setPendingManagement`.
    Memberi kendali tidak butuh delay — hanya menariknya kembali yang butuh.
-7. **Seed** dead shares (opsional, `SEED_ASSETS > 0`, ADR-7): buka `set_deposit_limit(seedAssets)`, `deposit`, `transfer(shares, 0xdEaD)`, `set_deposit_limit(0)`, `set_role(actor, 0)`.
-8. **Assert** — `assertSafety()` jalan di setiap mode dan merupakan langkah terakhir, bukan opsional.
+8. **Seed** dead shares (opsional, `SEED_ASSETS > 0`, ADR-7): buka `set_deposit_limit(seedAssets)`, `deposit`, `transfer(shares, 0xdEaD)`, `set_deposit_limit(0)`, `set_role(actor, 0)`.
+9. **Assert** — `assertSafety()` jalan di setiap mode dan merupakan langkah terakhir, bukan opsional.
 
-Langkah 6 juga yang membuat klaim "vault milik timelock" tidak berhenti di vault: tanpa itu, `role_manager` berpindah tapi strategi tetap di tangan deployer, dan strategi bisa menarik semua dana ke `performanceFeeRecipient` tanpa menyentuh peran vault.
+Langkah 7 juga yang membuat klaim "vault milik timelock" tidak berhenti di vault: tanpa itu, `role_manager` berpindah tapi strategi tetap di tangan deployer, dan strategi bisa menarik semua dana ke `performanceFeeRecipient` tanpa menyentuh peran vault.
 
-Urutan 5 (`set_role(actor, 0)`) bukan kerapian: tanpa itu, kunci broadcaster yang dicuri setelah deploy masih bisa menambah strategi.
+Urutan 6 (`set_role(actor, 0)`) bukan kerapian: tanpa itu, kunci broadcaster yang dicuri setelah deploy masih bisa menambah strategi.
 
 ---
 
@@ -133,7 +136,7 @@ forge script script/Deploy.s.sol --tc Deploy \
 ```json
 {
   "deployment": { "chainId", "blockNumber", "timestamp", "mode", "deployer",
-                  "vaultOriginal", "factory", "vault", "strategy", "timelock",
+                  "vaultOriginal", "factory", "vault", "strategy", "timelock", "emergencyTimelock",
                   "guardian", "keeper", "treasury", "strategyManagement",
                   "profitMaxUnlockTime", "maxDebt", "minimumTotalIdle", "seedAssets",
                   "depositLimit", "placeholdersUsed", "vaultRuntimeHash",
@@ -141,7 +144,7 @@ forge script script/Deploy.s.sol --tc Deploy \
   "pendingActions": { "items": [...] },
   "proposalTargets": { "items": [...] },
   "proposalCalldatas": { "items": [...] },
-  "roleMatrix": { "timelock", "guardian", "keeper", "treasury", "deployer",
+  "roleMatrix": { "timelock", "emergencyTimelock", "guardian", "keeper", "treasury", "deployer",
                   "strategyActivation", "strategyMaxDebt", "strategyCurrentDebt" }
 }
 ```
@@ -160,7 +163,8 @@ Semua ini sengaja tidak dilakukan script, dan semuanya tercatat di `pendingActio
 
 1. **`accept_role_manager()`** dari timelock (operasi ber-delay 48 jam). Sampai itu terjadi, `role_manager` masih deployer.
 2. **`acceptManagement()`** dari `MANAGEMENT_ADDRESS`. Sampai itu terjadi, strategi masih dipegang deployer.
-3. **Accountant** (epik 3): belum ada di script, dan `assertSafety` meng-assert `vault.accountant() == address(0)` supaya gap ini terlihat, bukan diasumsikan beres.
+3. **Accountant** (epik 3): sudah di-deploy script (epik 3) dan di-wire; `assertSafety` membaca balik `defaultConfig` + `vaults(vault)` alih-alih mempercayai niat script.
+   Di prod keduanya masuk proposal (call 8 dan 9), jadi sampai timelock mengeksekusi, `vault.accountant()` memang masih `address(0)`.
 4. **Buka deposit** hanya setelah review limited launch: `set_deposit_limit` + `set_deposit_hook` lewat timelock.
 5. **Seed** dead shares bila `SEED_ASSETS == 0`.
 6. **Keeper app** (epik 6) — `KEEPER_ROLES`/allowlist.

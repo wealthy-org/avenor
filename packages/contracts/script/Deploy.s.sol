@@ -94,6 +94,14 @@ contract Deploy is Script {
     /// @dev ADR-4: 48 hours is the floor, not the target.
     uint256 internal constant MIN_TIMELOCK_DELAY = 48 hours;
 
+    /// @notice Fast lane for de-risking (ADR-12, brief "pengurangan eksposur dan tindakan
+    ///         darurat dapat memiliki jalur cepat yang dibatasi"). Deliberately a *separate*
+    ///         timelock with a shorter delay and a disjoint role set: it holds
+    ///         `FORCE_REVOKE_MANAGER` and nothing else, so the worst case is "the strategy is
+    ///         pulled out and its loss is realised now" - never a parameter change, never an
+    ///         opened deposit door, never a moved role manager.
+    uint256 internal constant EMERGENCY_TIMELOCK_DELAY = 6 hours;
+
     uint256 internal constant ONE_USDG = 1e6;
 
     // --- Defaults for chain 4663 (packages/config/4663.json) -----------------
@@ -106,6 +114,7 @@ contract Deploy is Script {
     error RoleManagerIsEoa(string what);
     error TimelockDelayTooShort(uint256 actual, uint256 minimum);
     error GuardianEqualsProposer(address who);
+    error EmergencyTimelockNotFaster(uint256 actual, uint256 maximum);
     error ZeroAddress(string what);
     error DepositLimitNotZero(uint256 actual);
     error AccountantUnexpected(address accountant);
@@ -171,6 +180,7 @@ contract Deploy is Script {
         address accountant;
         address strategy;
         address timelock;
+        address emergencyTimelock;
         address guardian;
         address keeper;
         address treasury;
@@ -220,6 +230,7 @@ contract Deploy is Script {
         // 2. Factory, with the timelock (or dry-run placeholder) as governance.
         d.timelock = cfg.timelock;
         if (d.timelock == address(0)) d.timelock = _deployTimelock(cfg);
+        d.emergencyTimelock = _deployEmergencyTimelock(cfg);
         d.factory = _deployFactory(cfg, d.vaultOriginal, d.timelock);
 
         // 3. Vault. `initialize` never touches `deposit_limit`, so a fresh vault is
@@ -344,6 +355,26 @@ contract Deploy is Script {
         return address(new TimelockController(MIN_TIMELOCK_DELAY, proposers, executors, address(0)));
     }
 
+    /// @dev The bounded fast lane of ADR-12. Proposer and executor are the guardian Safe: the
+    ///      same entity that can pause instantly can also *schedule* a force revoke, but only
+    ///      6h later and only for the one bit it never holds directly.
+    ///
+    ///      Why not grant `FORCE_REVOKE_MANAGER` to the guardian Safe directly: `force_revoke`
+    ///      realises the strategy's loss into the share price. That is destructive-but-necessary
+    ///      during an incident, so it needs a visible delay; a pause is instantaneous but
+    ///      blocks withdrawals, which is why it is not the de-risking tool.
+    function _deployEmergencyTimelock(
+        Config memory cfg
+    ) internal returns (address) {
+        address[] memory proposers = new address[](1);
+        proposers[0] = cfg.guardian;
+        address[] memory executors = new address[](1);
+        executors[0] = cfg.guardian;
+        return address(
+            new TimelockController(EMERGENCY_TIMELOCK_DELAY, proposers, executors, address(0))
+        );
+    }
+
     /// @dev `Accountant` has no upstream deployment artifact, so its bytecode is our own
     ///      build of the pinned source — there is no on-chain hash to compare against. What
     ///      the script *can* prove is that the deployed instance reports the config we
@@ -413,6 +444,7 @@ contract Deploy is Script {
         IVaultV3 vault = IVaultV3(d.vault);
 
         vault.set_role(d.timelock, Roles.governanceRoleSet());
+        vault.set_role(d.emergencyTimelock, Roles.emergencyRoleSet());
         vault.set_role(d.guardian, Roles.EMERGENCY_MANAGER);
         vault.set_role(d.keeper, Roles.keeperRoleSet());
         vault.set_role(d.treasury, Roles.DEBT_PURCHASER);
@@ -518,13 +550,13 @@ contract Deploy is Script {
         Deployment memory d,
         Config memory cfg
     ) internal pure returns (address[] memory targets, bytes[] memory calldatas) {
-        // 7 vault calls + 2 accountant calls + 1 strategy call. The accountant calls are
+        // 8 vault calls + 2 accountant calls + 1 strategy call. The accountant calls are
         // the ones that make `process_report` work at all; queueing only `set_accountant`
         // would revert every report with `"vault not added"` once the timelock executes.
         // The last call is the second half of the strategy management handoff: the script
         // set `pendingManagement`, and only the timelock itself can accept it.
-        targets = new address[](10);
-        calldatas = new bytes[](10);
+        targets = new address[](11);
+        calldatas = new bytes[](11);
         for (uint256 i; i < 7; ++i) {
             targets[i] = d.vault;
         }
@@ -544,6 +576,11 @@ contract Deploy is Script {
         calldatas[8] = abi.encodeCall(IVaultV3.set_accountant, (d.accountant));
         targets[9] = d.strategy;
         calldatas[9] = abi.encodeWithSelector(IStrategyDeploy.acceptManagement.selector);
+        // 11th: hand the bounded fast lane its single bit (ADR-12). Without this call the
+        // emergency timelock exists but can do nothing.
+        targets[10] = d.vault;
+        calldatas[10] =
+            abi.encodeCall(IVaultV3.set_role, (d.emergencyTimelock, Roles.emergencyRoleSet()));
     }
 
     /// @dev ADR-7: deposit a small amount, send the shares to `0xdEaD`, then close the
@@ -662,6 +699,20 @@ contract Deploy is Script {
         // have none, and `assertSafety` is the only place that knows both halves ran.
         _assertAccountantWired(cfg, d, actor);
 
+        // ADR-12: the fast lane must be faster than governance and must be a timelock, not an
+        // EOA, in both modes.
+        TimelockController emergency = TimelockController(payable(d.emergencyTimelock));
+        uint256 emergencyDelay = emergency.getMinDelay();
+        if (emergencyDelay >= MIN_TIMELOCK_DELAY) {
+            revert EmergencyTimelockNotFaster(emergencyDelay, MIN_TIMELOCK_DELAY - 1);
+        }
+        if (!emergency.hasRole(emergency.PROPOSER_ROLE(), d.guardian)) {
+            revert RoleMatrixViolation("emergency proposer", d.guardian, 0, 0);
+        }
+        if (emergency.hasRole(emergency.PROPOSER_ROLE(), cfg.proposer)) {
+            revert GuardianEqualsProposer(cfg.proposer);
+        }
+
         if (d.guardian == address(0)) revert ZeroAddress("guardian");
         if (d.guardian == cfg.proposer) revert GuardianEqualsProposer(d.guardian);
         if (d.keeper == address(0)) revert ZeroAddress("keeper");
@@ -680,6 +731,7 @@ contract Deploy is Script {
             _expectRole(vault, d.guardian, 0, "guardian (pending proposal)");
             _expectRole(vault, d.keeper, 0, "keeper (pending proposal)");
             _expectRole(vault, d.treasury, 0, "treasury (pending proposal)");
+            _expectRole(vault, d.emergencyTimelock, 0, "emergency timelock (pending proposal)");
             if (vault.strategies(d.strategy).activation != 0) {
                 revert StrategyWiringFailed("prod added strategy outside timelock");
             }
@@ -771,6 +823,7 @@ contract Deploy is Script {
         address actor
     ) internal view {
         _expectRole(vault, d.timelock, Roles.governanceRoleSet(), "timelock");
+        _expectRole(vault, d.emergencyTimelock, Roles.emergencyRoleSet(), "emergency timelock");
         _expectRole(vault, d.guardian, Roles.EMERGENCY_MANAGER, "guardian");
         _expectRole(vault, d.keeper, Roles.keeperRoleSet(), "keeper");
         _expectRole(vault, d.treasury, Roles.DEBT_PURCHASER, "treasury");
@@ -831,6 +884,7 @@ contract Deploy is Script {
         vm.serializeAddress("deployment", "strategy", d.strategy);
         vm.serializeAddress("deployment", "accountant", d.accountant);
         vm.serializeAddress("deployment", "timelock", d.timelock);
+        vm.serializeAddress("deployment", "emergencyTimelock", d.emergencyTimelock);
         vm.serializeAddress("deployment", "guardian", d.guardian);
         vm.serializeAddress("deployment", "keeper", d.keeper);
         vm.serializeAddress("deployment", "treasury", d.treasury);
@@ -855,6 +909,7 @@ contract Deploy is Script {
         // Role snapshot read back from the vault, not from what the script thinks it did.
         IVaultV3 v = IVaultV3(d.vault);
         vm.serializeUint("roleMatrix", "timelock", v.roles(d.timelock));
+        vm.serializeUint("roleMatrix", "emergencyTimelock", v.roles(d.emergencyTimelock));
         vm.serializeUint("roleMatrix", "guardian", v.roles(d.guardian));
         vm.serializeUint("roleMatrix", "keeper", v.roles(d.keeper));
         vm.serializeUint("roleMatrix", "treasury", v.roles(d.treasury));

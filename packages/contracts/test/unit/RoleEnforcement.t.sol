@@ -157,33 +157,62 @@ contract RoleEnforcementTest is Test {
         assertEq(vault.roles(address(deployer)), 0, "deploy actor keeps no role");
     }
 
-    /// @notice section 2 row 4 says `FORCE_REVOKE_MANAGER` *should* sit on the emergency Safe behind a
-    ///         6h `TimelockExecutor`. The shipped wiring puts it on the 48h governance
-    ///         timelock instead (`Roles.governanceRoleSet()`), because ADR-4 does not deploy
-    ///         `TimelockExecutor` at all and a role cannot be granted to a contract that does
-    ///         not exist.
-    ///
-    ///         This test asserts what the code does *today* so the divergence is visible in the
-    ///         suite rather than only in a review comment. It is a decision item, not a bug:
-    ///         either the matrix text changes, or epik 4 deploys the executor and this
-    ///         assertion is inverted on purpose. Do not "fix" it by silently editing
-    ///         `governanceRoleSet()`.
-    function test_forceRevokeSitsOnGovernanceTimelockWhileMatrixSaysEmergencySafe() public view {
-        uint256 timelockBits = _vault().roles(d.timelock);
-        assertTrue(
-            timelockBits & Roles.FORCE_REVOKE_MANAGER != 0, "doc divergence: timelock holds it"
-        );
+    /// @notice ADR-12: `FORCE_REVOKE_MANAGER` is not on the 48h governance timelock and not on
+    ///         the guardian Safe. It is on a *separate* 6h timelock proposed by the guardian,
+    ///         which is the brief's "jalur cepat yang dibatasi" for reducing exposure.
+    function test_forceRevokeSitsOnTheBoundedFastLane() public {
+        IVaultV3 vault = _vault();
+        TimelockController emergency = TimelockController(payable(d.emergencyTimelock));
+
         assertEq(
-            _vault().roles(d.guardian) & Roles.FORCE_REVOKE_MANAGER,
+            vault.roles(d.emergencyTimelock),
+            Roles.FORCE_REVOKE_MANAGER,
+            "fast lane holds force revoke only"
+        );
+        assertEq(vault.roles(d.timelock) & Roles.FORCE_REVOKE_MANAGER, 0, "governance cannot yank");
+        assertEq(
+            vault.roles(d.guardian) & Roles.FORCE_REVOKE_MANAGER,
             0,
-            "doc section 2 expects the emergency Safe to hold it"
+            "guardian holds no force revoke: it pauses instead"
         );
-        // The safety property that matters either way: the guardian cannot also rewrite roles.
-        assertEq(
-            _vault().roles(d.guardian) & Roles.EMERGENCY_MANAGER,
-            Roles.EMERGENCY_MANAGER,
-            "guardian can still pause instantly"
-        );
+
+        // Faster than governance, but not instant.
+        uint256 emergencyDelay = emergency.getMinDelay();
+        assertEq(emergencyDelay, 6 hours, "fast lane delay");
+        assertLt(emergencyDelay, TimelockController(payable(d.timelock)).getMinDelay());
+        assertGt(emergencyDelay, 0, "a zero-delay revoke is a guardian key compromise");
+
+        // The guardian proposes it and cannot execute it early; governance cannot propose it.
+        assertTrue(emergency.hasRole(emergency.PROPOSER_ROLE(), d.guardian));
+        assertFalse(emergency.hasRole(emergency.PROPOSER_ROLE(), cfg.proposer));
+        assertFalse(emergency.hasRole(emergency.PROPOSER_ROLE(), d.timelock));
+    }
+
+    /// @notice The fast lane actually works, end to end: schedule, wait 6h, execute, and the
+    ///         strategy is gone without any 48h governance action.
+    function test_guardianCanForceRevokeThroughTheFastLaneInSixHours() public {
+        address[] memory queue = new address[](1);
+        queue[0] = d.strategy;
+        vm.prank(d.timelock);
+        _vault().set_default_queue(queue);
+
+        TimelockController emergency = TimelockController(payable(d.emergencyTimelock));
+        bytes memory data = abi.encodeWithSignature("force_revoke_strategy(address)", d.strategy);
+        bytes32 salt = keccak256("avenor-fast-lane");
+
+        vm.prank(d.guardian);
+        emergency.schedule(d.vault, 0, data, bytes32(0), salt, 6 hours);
+
+        // Too early: the whole point of the delay.
+        vm.prank(d.guardian);
+        vm.expectRevert();
+        emergency.execute(d.vault, 0, data, bytes32(0), salt);
+
+        vm.warp(block.timestamp + 6 hours + 1);
+        vm.prank(d.guardian);
+        emergency.execute(d.vault, 0, data, bytes32(0), salt);
+
+        assertEq(_vault().strategies(d.strategy).activation, 0, "strategy survived the fast lane");
     }
 
     /// @notice Keeper compromise must not be able to remove a strategy, add one, or pause.

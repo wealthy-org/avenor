@@ -34,7 +34,7 @@ Catatan yang sering salah:
 - `transfer_role_manager` dua langkah (`future_role_manager` lalu `accept_role_manager`); tidak ada batas waktu paksa.
 - `buy_debt` = jalur "menyerap bad debt dengan asset treasury" agar loss tidak dilaporkan. Memerlukan dana tunai treasury dan `DEBT_PURCHASER`.
 
-## 2. Penugasan Avenor (rancangan, harus di-encode di deploy script)
+## 2. Penugasan Avenor (di-encode dan di-assert oleh `script/Deploy.s.sol`)
 
 Prinsip: **kunci panas tidak boleh memegang apa pun yang bisa memindahkan dana user.** Keeper hanya boleh melakukan hal yang hasilnya bisa diverifikasi publik dan dibatasi.
 
@@ -42,14 +42,23 @@ Prinsip: **kunci panas tidak boleh memegang apa pun yang bisa memindahkan dana u
 |---|---|---|---|
 | `role_manager` | `TimelockController` (OZ) dengan proposer = Safe 3/5 governance, executor = `TimelockExecutor` periphery | **48 jam** | semua perubahan peran harus terlihat sebelum berlaku |
 | `ADD_STRATEGY_MANAGER`, `QUEUE_MANAGER`, `MAX_DEBT_MANAGER`, `MINIMUM_IDLE_MANAGER`, `ACCOUNTANT_MANAGER`, `PROFIT_UNLOCK_MANAGER`, `DEPOSIT_LIMIT_MANAGER`, `WITHDRAW_LIMIT_MANAGER`, `REVOKE_STRATEGY_MANAGER` | Timelock yang sama | 48 jam | perubahan parameter produk |
-| `FORCE_REVOKE_MANAGER` | **yang berjalan sekarang:** Timelock 48 jam (`Roles.governanceRoleSet()`). Rancangan tabel ini: Safe 3/5 Emergency lewat `TimelockExecutor` | 48 jam (rancangan: 6 jam) | lihat catatan divergensi di bawah tabel |
+| `FORCE_REVOKE_MANAGER` | **Timelock darurat terpisah** (`emergencyTimelock`), proposer = Safe 3/5 guardian, executor = Safe yang sama (`Roles.emergencyRoleSet()`, ADR-12) | **6 jam** | de-risking harus lebih cepat dari 48 jam, tetapi `force_revoke` merealisasikan loss ke harga share sehingga tidak boleh instan |
 | `EMERGENCY_MANAGER` | **Guardian Safe 3/5 terpisah**, diberikan langsung (tanpa timelock) | 0 | pause harus instan saat eksploit aktif; konsekuensinya penarikan ikut berhenti, jadi hanya untuk insiden |
 | `REPORTING_MANAGER` | Keeper hot wallet (EOA, dana gas minimal) | 0 | report rutin; loss hanya bisa dilaporkan, bukan ditarik ke keeper |
 | `DEBT_MANAGER` | Keeper hot wallet (alokasi rutin) **atau** `DebtAllocator` keeper | 0 | alokasi di dalam batas `targetRatio`/`maxRatio` |
 | `DEBT_PURCHASER` | Treasury Safe (bukan keeper) | 0 | butuh kas nyata; hanya saat insiden |
 | Strategi (`TokenizedStrategy.management`/`keeper`) | Keeper hot wallet untuk `tend()`, `management` = Timelock | 0 | `tend` tidak boleh butuh governance |
 
-**Divergensi yang belum diputuskan (2026-11-20).** Tabel di atas menempatkan `FORCE_REVOKE_MANAGER` di Safe Emergency dengan delay 6 jam, tetapi `Roles.governanceRoleSet()` memberikannya ke Timelock 48 jam, dan `script/Deploy.s.sol` tidak mendeploy `TimelockExecutor` sama sekali (ADR-4 memakai OZ `TimelockController` langsung). Yang berjalan hari ini adalah versi 48 jam; itu lebih ketat, bukan lebih longgar, tetapi artinya **force revoke tidak bisa dilakukan lebih cepat dari 48 jam** — pernyataan "likuidasi strategi rusak tidak menunggu 48 jam" pada tabel tidak berlaku. Dua jalan keluar: ubah teks (terima 48 jam) atau deploy executor di epik 4. Selama belum diputuskan, test `test_forceRevokeSitsOnGovernanceTimelockWhileMatrixSaysEmergencySafe` mengunci perilaku sekarang dan menandai divergensinya.
+**Keputusan divergensi (2026-11-20, ADR-12).** Sebelumnya tabel ini menaruh `FORCE_REVOKE_MANAGER`
+di Safe Emergency dengan delay 6 jam, sedangkan `Roles.governanceRoleSet()` memberikannya ke timelock
+48 jam dan `TimelockExecutor` tidak pernah di-deploy. Yang dipilih bukan "terima 48 jam" dan bukan
+"deploy `TimelockExecutor`", melainkan **timelock darurat terpisah ber-delay 6 jam** yang memegang
+satu bit itu saja: brief mengizinkan jalur cepat untuk pengurangan eksposur, tetapi `force_revoke`
+mengakui loss ke pps, jadi delay 6 jam dipertahankan dan Safe guardian tidak memegang bit itu secara
+langsung. `Roles.governanceRoleSet()` sekarang `3995` (tanpa bit 4), `Roles.emergencyRoleSet()` = 4.
+Dikunci dua test: `test_forceRevokeSitsOnTheBoundedFastLane` (penempatan + delay + proposer) dan
+`test_guardianCanForceRevokeThroughTheFastLaneInSixHours` (schedule → 6 jam → execute → strategi
+tercabut, dan execute sebelum 6 jam revert).
 
 Aturan keras:
 
@@ -79,7 +88,7 @@ Aturan keras:
 
 ## 4. Test wajib
 
-- Setiap fungsi di §1 revert untuk caller tanpa bit (fuzz: satu bit saja tidak cukup bila fungsi butuh bit lain). → `test/unit/RoleEnforcement.t.sol` (13 test): 21 fungsi role-gated ditolak `"not allowed"` untuk akun tanpa bit, 14 bit dibuktikan cukup untuk fungsinya sendiri, fuzz 1024 run membuktikan pengecekan bit eksak (bukan "roles != 0"), plus regresi efek samping `shutdown_vault`.
+- Setiap fungsi di §1 revert untuk caller tanpa bit (fuzz: satu bit saja tidak cukup bila fungsi butuh bit lain). → `test/unit/RoleEnforcement.t.sol` (14 test): 21 fungsi role-gated ditolak `"not allowed"` untuk akun tanpa bit, 14 bit dibuktikan cukup untuk fungsinya sendiri, fuzz 1024 run membuktikan pengecekan bit eksak (bukan "roles != 0"), plus regresi efek samping `shutdown_vault`, plus dua test fast lane ADR-12.
 - `role_manager` EOA tidak bisa dipakai di deploy script produksi (assert di script, bukan hanya di dokumen).
 - `shutdown_vault` memberi `DEBT_MANAGER` ke pemanggil (regression test, karena ini efek samping tersembunyi).
 - Setelah `transfer_role_manager` step 1, peran lama tetap berlaku sampai step 2 (`accept_role_manager`).

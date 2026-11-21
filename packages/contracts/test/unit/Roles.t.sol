@@ -20,11 +20,18 @@ contract RolesTest is Test {
 
     function test_governanceSetHasNoOperationalBits() public pure {
         uint256 gov = Roles.governanceRoleSet();
-        assertEq(gov, 3999);
+        assertEq(gov, 3995);
+        assertEq(gov & Roles.FORCE_REVOKE_MANAGER, 0, "fast lane holds force revoke (ADR-12)");
         assertEq(gov & Roles.EMERGENCY_MANAGER, 0, "guardian pauses, not governance");
         assertEq(gov & Roles.DEBT_MANAGER, 0, "keeper allocates");
         assertEq(gov & Roles.REPORTING_MANAGER, 0, "keeper reports");
         assertEq(gov & Roles.DEBT_PURCHASER, 0, "treasury buys debt");
+    }
+
+    function test_emergencySetIsForceRevokeOnly() public pure {
+        assertEq(Roles.emergencyRoleSet(), Roles.FORCE_REVOKE_MANAGER);
+        assertEq(Roles.emergencyRoleSet() & Roles.governanceRoleSet(), 0, "sets must be disjoint");
+        assertEq(Roles.emergencyRoleSet() & Roles.dangerousBits(), Roles.FORCE_REVOKE_MANAGER);
     }
 
     function test_keeperSetIsReportAndAllocateOnly() public {

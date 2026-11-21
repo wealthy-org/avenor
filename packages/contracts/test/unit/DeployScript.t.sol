@@ -296,14 +296,14 @@ contract DeployScriptTest is Test {
         assertEq(vault.roles(address(guardianSafe)), 0);
         assertEq(vault.roles(keeper), 0);
         assertEq(vault.roles(treasury), 0);
+        assertEq(vault.roles(d.emergencyTimelock), 0, "fast lane granted before the proposal");
         assertEq(vault.strategies(d.strategy).activation, 0, "strategy not added by script");
-        // 7 vault calls + addVault(accountant) + set_accountant(vault) + the second half
-        // of the strategy handoff (acceptManagement). The first two extra calls are not
-        // optional: without them the vault reports into a reverting accountant the moment
-        // the proposal executes. The last one is what actually transfers strategy control
-        // to governance — `setPendingManagement` only writes an intent.
-        assertEq(d.proposalTargets.length, 10);
-        assertEq(d.proposalCalldatas.length, 10);
+        // 7 bootstrap vault calls + addVault(accountant) + set_accountant(vault) + the
+        // second half of the strategy handoff (acceptManagement) + the 6h fast lane's single
+        // bit (ADR-12). The accountant pair is not optional: without it the vault reports
+        // into a reverting accountant the moment the proposal executes.
+        assertEq(d.proposalTargets.length, 11);
+        assertEq(d.proposalCalldatas.length, 11);
         for (uint256 i; i < 7; ++i) {
             assertEq(d.proposalTargets[i], d.vault, "vault call");
         }
@@ -322,6 +322,10 @@ contract DeployScriptTest is Test {
             bytes4(d.proposalCalldatas[9]),
             bytes4(keccak256("acceptManagement()")),
             "calldata 9 is acceptManagement"
+        );
+        assertEq(d.proposalTargets[10], d.vault, "fast lane role target is the vault");
+        assertEq(
+            bytes4(d.proposalCalldatas[10]), IVaultV3.set_role.selector, "calldata 10 is set_role"
         );
         // Prod leaves the accountant unowned by the vault until the timelock executes.
         assertEq(vault.accountant(), address(0), "no accountant before the proposal runs");

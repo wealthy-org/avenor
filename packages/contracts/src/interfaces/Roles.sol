@@ -31,14 +31,22 @@ library Roles {
     uint256 internal constant ALL = 16383;
 
     /// @notice Roles the governance timelock holds: everything that changes product
-    ///         parameters, including the ability to add/revoke strategies.
-    /// @dev Excludes `EMERGENCY_MANAGER` (guardian Safe holds it, so pausing never
-    ///      waits 48h) and excludes `DEBT_MANAGER`/`REPORTING_MANAGER` (keeper holds
-    ///      them so routine reports and allocation are not governance-gated).
+    ///         parameters, including the ability to add and (gracefully) revoke strategies.
+    /// @dev Excludes `EMERGENCY_MANAGER` (guardian Safe holds it, so pausing never waits
+    ///      48h), excludes `FORCE_REVOKE_MANAGER` (the 6h emergency timelock holds it, ADR-12),
+    ///      and excludes `DEBT_MANAGER`/`REPORTING_MANAGER` (keeper holds them so routine
+    ///      reports and allocation are not governance-gated).
     function governanceRoleSet() internal pure returns (uint256) {
-        return ADD_STRATEGY_MANAGER | REVOKE_STRATEGY_MANAGER | FORCE_REVOKE_MANAGER
-            | ACCOUNTANT_MANAGER | QUEUE_MANAGER | MAX_DEBT_MANAGER | DEPOSIT_LIMIT_MANAGER
-            | WITHDRAW_LIMIT_MANAGER | MINIMUM_IDLE_MANAGER | PROFIT_UNLOCK_MANAGER;
+        return ADD_STRATEGY_MANAGER | REVOKE_STRATEGY_MANAGER | ACCOUNTANT_MANAGER | QUEUE_MANAGER
+            | MAX_DEBT_MANAGER | DEPOSIT_LIMIT_MANAGER | WITHDRAW_LIMIT_MANAGER
+            | MINIMUM_IDLE_MANAGER | PROFIT_UNLOCK_MANAGER;
+    }
+
+    /// @notice Roles the 6h emergency timelock holds: force-revoke only.
+    /// @dev The only bit that realises a loss without a 48h delay, which is why it sits behind
+    ///      a delay of its own instead of directly on the guardian Safe.
+    function emergencyRoleSet() internal pure returns (uint256) {
+        return FORCE_REVOKE_MANAGER;
     }
 
     /// @notice Roles the keeper hot wallet holds: report and allocate, nothing else.

@@ -45,11 +45,22 @@ context: ['docs/ROLE_PERMISSION_MATRIX.md', 'packages/contracts/src/interfaces/R
 2. **`set_deposit_hook` defaults to `override = false`** (`:1470`), so it reverts
    `"using deposit limit"` unless `deposit_limit` is already `max`; with `override = true` it
    resets the limit to `max` (`:1484-1489`). Limit and hook cannot be set independently.
-3. **`FORCE_REVOKE_MANAGER` divergence**: matrix §2 assigns it to an emergency Safe behind a 6h
-   `TimelockExecutor`; the shipped wiring puts it on the 48h governance timelock because ADR-4
-   does not deploy `TimelockExecutor` at all. Not silently reconciled — recorded as an open
-   decision in §2 and pinned by
-   `test_forceRevokeSitsOnGovernanceTimelockWhileMatrixSaysEmergencySafe`.
+3. **`FORCE_REVOKE_MANAGER` divergence, resolved as ADR-12** (owner decision, brief line 218:
+   de-risking may have a *bounded* fast lane). Shipped wiring before the fix put the bit on the
+   48h governance timelock because ADR-4 does not deploy Yearn's `TimelockExecutor`.
+   Resolution: a **second** `TimelockController` with a 6h delay, proposer/executor = guardian
+   Safe, holding `Roles.emergencyRoleSet()` = `FORCE_REVOKE_MANAGER` only.
+   - `Roles.governanceRoleSet()` drops bit 4 → `3995`; guardian Safe still holds
+     `EMERGENCY_MANAGER` only, so neither a stolen guardian key nor the governance timelock can
+     yank a strategy instantly.
+   - Deploy script deploys it, grants it in both modes (11th prod proposal call), asserts
+     `getMinDelay() < 48h`, asserts the guardian is its proposer and that the governance proposer
+     is not, and records `emergencyTimelock` in `deployment`/`roleMatrix` output.
+   - Tests: `test_forceRevokeSitsOnTheBoundedFastLane` (placement, 6h, proposer split) and
+     `test_guardianCanForceRevokeThroughTheFastLaneInSixHours` (schedule → execute early reverts →
+     warp 6h → execute → `strategies(strategy).activation == 0`).
+   - Damage bound is structural: `force_revoke_strategy` can only realise an existing loss into the
+     share price; it cannot change parameters, open deposits or move `role_manager`.
 
 ## Evidence
 

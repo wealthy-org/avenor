@@ -134,6 +134,26 @@ Keeper = hot wallet dengan gas saja, tanpa izin `REVOKE`/`FORCE_REVOKE`/`EMERGEN
 
 **ADR-11 — `Yearn-ERC4626-Router` ditolak; app memanggil vault langsung.** `BASELINE.md` §1 sempat merencanakan vendor Router `fc96fe36`, tapi tidak ada satu pun kebutuhan produk yang menuntutnya: sembilan panggilan yang dipakai app (`deposit`, `mint`, `withdraw`, `redeem`, `previewDeposit`, `previewRedeem`, `maxWithdraw`, `maxRedeem`, `convertToAssets`) semuanya ada di ABI vault. Router akan menambah kontrak AGPL di jalur transaksi, menambah satu lapisan `approve`/`transferFrom` yang bisa salah, dan menyembunyikan nilai `max_loss` di balik helper — padahal `max_loss` wajib eksplisit di setiap pemanggilan (aturan produk 2). Konsekuensi: `max_loss` disusun SDK per panggilan, dan slippage penarikan menjadi tanggung jawab app, bukan diserahkan ke helper pihak ketiga. Bila kelak dibutuhkan zap multi-langkah, itu ADR baru dengan test kompatibilitas sendiri di `COMPATIBILITY_MATRIX.md`, bukan diam-diam menambah dependency. Bukti matriks: `docs/COMPATIBILITY_MATRIX.md`.
 
+**ADR-12 — Dua kecepatan governance: 48 jam untuk parameter, 6 jam untuk de-risking.** Brief meminta
+jalur cepat yang dibatasi untuk "pengurangan eksposur dan tindakan darurat" (avenor.md baris 218).
+Yang di-deploy karena itu dua `TimelockController` terpisah, dengan himpunan peran yang **tidak
+beririsan**:
+
+| Timelock | Delay | Proposer | Peran |
+|---|---|---|---|
+| governance | 48 jam | Safe 3/5 governance | `role_manager` + 9 bit parameter (`governanceRoleSet()`) |
+| emergency | 6 jam | Safe 3/5 guardian | `FORCE_REVOKE_MANAGER` saja (`emergencyRoleSet()`) |
+
+`FORCE_REVOKE_MANAGER` **tidak** ada di guardian Safe dan **tidak** ada di timelock governance, jadi
+satu kunci yang dicuri tidak bisa menarik strategi seketika, dan timelock governance tidak bisa
+menghindari delay 48 jam untuk aksi yang merugikan pemegang share. Batas kerusakan fast lane sempit
+secara konstruksi: `force_revoke_strategy` hanya bisa mencabut strategi dan merealisasikan loss yang
+sudah ada ke harga share; ia tidak bisa mengubah parameter, membuka deposit, atau memindahkan
+`role_manager`. Pause (`EMERGENCY_MANAGER`) tetap di guardian Safe tanpa delay **karena** ia
+memblokir penarikan: memakainya untuk de-risking akan mengubah insiden menjadi antrean exit.
+Konsekuensi jujur: dua proposer Safe harus dijaga terpisah (aturan §2.1 matriks peran), dan
+`TimelockExecutor` Yearn tidak dipakai sama sekali (ADR-4 tetap).
+
 ## 5. Alur deployment (deterministik, dapat diulang)
 
 1. Reproduksi bytecode: `scripts/compile-vault.py` (Vyper `0.3.10+commit.9136169`, `--optimize codesize --evm-version paris`) → bandingkan ke `packages/core/artifacts/*.json` (keccak256 runtime). Verifikasi ulang dengan `scripts/verify-bytecode.py all` (harus `14/14 checks passed`). Gagal = stop.
