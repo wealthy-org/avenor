@@ -16,7 +16,7 @@ review_source: 'pinned'
 
 ## Hasil
 
-- `apps/web`: **83 test** hijau (sembilan berkas), `tsc --noEmit` 0 error, `next build` hijau:
+- `apps/web`: **86 test** hijau (sepuluh berkas), `tsc --noEmit` 0 error, `next build` hijau:
   `/portfolio` rute dinamis 2,34 kB (209 kB First Load JS).
 - `services/indexer`: **32 test** hijau; route baru `/fees?limit=` dan `/role-events?limit=` membaca
   tabel `fees`/`role_events` dan mengembalikan string + `blockNumber`, `blockTimestamp`,
@@ -41,6 +41,9 @@ review_source: 'pinned'
    yang sama.
 5. Section riwayat yang gagal menampilkan `ErrorState`; tabel kosong dinyatakan sebagai "belum ada
    baris", bukan "biaya 0".
+
+5. Ekspor CSV memakai `portfolioCsv` (3 test): satuan dasar, nomor blok, baris gagal tetap membawa
+   errornya, dan escaping untuk tanda kutip/koma.
 
 ## Batas yang diakui (kenapa `built`, bukan `done`)
 

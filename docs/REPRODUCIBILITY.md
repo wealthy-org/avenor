@@ -189,7 +189,7 @@ di `.tmp/pg-<pid>` pada port loopback acak dan menghapusnya; `--keep` mencetak
 di-skip — karena gate data plane yang diam-diam hijau lebih buruk daripada gate merah.
 
 Langkah 7 memakai `apps/web/node_modules` (dipasang `npm ci`, di-ignore git). Gate
-`scripts/verify-all.py` menjalankan `tsc --noEmit` + 83 test web (sembilan berkas); `next build` sengaja di
+`scripts/verify-all.py` menjalankan `tsc --noEmit` + 86 test web (sepuluh berkas); `next build` sengaja di
 luar gate karena menambah ~40 s dan gate ini sudah ~4 menit, tetapi hasil build dicatat saat
 perubahan app: tiga rute statis (`/`, `/transparency`, `/_not-found`) dan empat rute dinamis
 (`/portfolio`, `/vaults/[address]`, `/vaults/[address]/deposit`, `/vaults/[address]/withdraw`,

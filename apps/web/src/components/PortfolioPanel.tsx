@@ -18,6 +18,7 @@ import {
   switchToAvenorChain,
 } from "@/lib/wallet";
 import { parsePosition, type Position } from "@/lib/vaultView";
+import { portfolioCsv, type CsvRow } from "@/lib/portfolioCsv";
 import { quoteWithdraw, type WithdrawQuote } from "@/lib/withdraw";
 import { blockTime, percentBps } from "@/lib/format";
 
@@ -110,6 +111,33 @@ export function PortfolioPanel({ vaults, base }: PortfolioProps) {
     [base, vaults],
   );
 
+  const download = useCallback(() => {
+    if (account === null) return;
+    const csv = portfolioCsv(
+      rows.map<CsvRow>((row) => ({
+        vault: row.vault.address,
+        account,
+        shares: row.position === null ? "" : row.position.shares.toString(),
+        positionAssets: row.quote === null ? null : row.quote.positionAssets.toString(),
+        maxAssets: row.quote === null ? null : row.quote.maxAssets.toString(),
+        totalIdle: row.quote === null ? null : row.quote.totalIdle.toString(),
+        blockNumber: row.quote === null ? "" : row.quote.blockNumber.toString(),
+        error:
+          row.quoteError !== null
+            ? `${row.quoteError.code}: ${row.quoteError.message}`
+            : row.positionError !== null
+              ? `${row.positionError.code}: ${row.positionError.message}`
+              : null,
+      })),
+    );
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `avenor-positions-${account.slice(0, 8)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, [account, rows]);
+
   const connect = useCallback(async () => {
     setProblem(null);
     setBusy(true);
@@ -142,8 +170,12 @@ export function PortfolioPanel({ vaults, base }: PortfolioProps) {
         <button type="button" onClick={connect} disabled={busy}>
           {account === null ? "Hubungkan wallet" : `Muat ulang posisi ${account.slice(0, 6)}…${account.slice(-4)}`}
         </button>
+        <button type="button" onClick={download} disabled={rows.length === 0}>
+          Unduh CSV
+        </button>
         <span className="provenance">
-          Saldo share dibaca dari indexer; nilai dan batas tarik dibaca dari chain pada satu blok.
+          Saldo share dibaca dari indexer; nilai dan batas tarik dibaca dari chain pada satu blok. CSV memuat satuan
+          dasar (bukan angka yang sudah dibulatkan) dan nomor blok, termasuk baris yang gagal beserta errornya.
         </span>
       </div>
 

@@ -155,6 +155,7 @@ def main() -> int:
             "test/deposit.test.ts",
             "test/withdraw.test.ts",
             "test/evidence.test.ts",
+            "test/portfolioCsv.test.ts",
         ],
         WEB,
         args.quiet,

@@ -3,7 +3,7 @@ title: 'Withdraw flow with explicit max_loss and partial withdrawal UX'
 type: 'implement'
 ticket: 4
 created: '2026-11-22'
-status: built
+status: done
 baseline_revision: '470fc88'
 route: 'oneshot'
 route_source: 'auto'
@@ -16,7 +16,7 @@ review_source: 'pinned'
 
 ## Hasil
 
-- `apps/web`: **83 test** hijau (sembilan berkas), `tsc --noEmit` 0 error, `next build` hijau:
+- `apps/web`: **86 test** hijau (sepuluh berkas), `tsc --noEmit` 0 error, `next build` hijau:
   `/vaults/[address]/withdraw` rute dinamis 4,75 kB (219 kB First Load JS, viem di klien).
 - `apps/web/src/lib/withdraw.ts` (16 → 18 test di `test/withdraw.test.ts`): `parseShareInput`,
   `parseLossBps`, `withdrawBlockers`, `withdrawWarnings`, `quoteWithdraw`, `submitWithdraw`,

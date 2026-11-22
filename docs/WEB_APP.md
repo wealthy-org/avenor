@@ -167,6 +167,8 @@ dengan deposit.
    diklaim setelah `scripts/verify-bytecode.py` pada commit yang sama.
 4. Kedua endpoint riwayat membaca tabel indekser dan mengembalikan string + `blockNumber`,
    `blockTimestamp`, `blockHash`, `source: "indexed"`.
+5. "Unduh CSV" mengekspor saldo share, nilai posisi, plafon tarik, kas idle, dan nomor blok dalam
+   satuan dasar. Baris yang gagal ikut diekspor dengan pesan error, bukan dengan nol.
 
 ## 8. Yang belum, dan tidak diklaim
 
