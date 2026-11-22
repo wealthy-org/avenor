@@ -10,7 +10,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test --test-concurrency=1 test/format.test.ts test/vaults.test.ts test/components.test.ts test/vaultView.test.ts test/api.test.ts test/vaultLoader.test.ts"
+    "test": "node --test --test-concurrency=1 test/format.test.ts test/vaults.test.ts test/components.test.ts test/vaultView.test.ts test/api.test.ts test/vaultLoader.test.ts test/deposit.test.ts"
   },
   "dependencies": {
     "@avenor/sdk": "file:../../packages/sdk",

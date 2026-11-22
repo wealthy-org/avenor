@@ -63,6 +63,9 @@ function setViews(
   node.views.set(`${VAULT}:${SELECTOR.totalAssets}`, wordResult(numbers.totalAssets));
   node.views.set(`${VAULT}:${SELECTOR.totalSupply}`, wordResult(numbers.totalSupply));
   // No accountant is the simple case; the fee read is covered by the API tests.
+  node.views.set(`${VAULT}:${SELECTOR.depositLimit}`, `0x${(1_000_000_000_000n).toString(16).padStart(64, "0")}`);
+  node.views.set(`${VAULT}:${SELECTOR.isPaused}`, `0x${"0".repeat(64)}`);
+  node.views.set(`${VAULT}:${SELECTOR.isShutdown}`, `0x${"0".repeat(64)}`);
   node.views.set(`${VAULT}:${SELECTOR.accountant}`, `0x${"0".repeat(64)}`);
   node.views.set(`${VAULT}:${SELECTOR.totalIdle}`, wordResult(numbers.totalIdle ?? numbers.totalAssets));
   node.views.set(`${VAULT}:${SELECTOR.totalDebt}`, wordResult(numbers.totalDebt ?? 0n));

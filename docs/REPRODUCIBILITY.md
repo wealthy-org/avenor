@@ -176,7 +176,7 @@ node --test --test-concurrency=1 services/keeper/test/keeper.test.ts services/ke
 # 7. web: primitif angka, komponen, dan validasi konfigurasi vault
 cd apps/web && npm ci        # sekali per checkout; butuh `@avenor/sdk` lewat file:../../packages/sdk
 node node_modules/typescript/bin/tsc --noEmit
-node --test --test-concurrency=1 test/format.test.ts test/vaults.test.ts test/components.test.ts   test/vaultView.test.ts test/api.test.ts test/vaultLoader.test.ts
+node --test --test-concurrency=1 test/format.test.ts test/vaults.test.ts test/components.test.ts   test/vaultView.test.ts test/api.test.ts test/vaultLoader.test.ts test/deposit.test.ts
 npx next build               # tidak masuk gate (lambat); wajib hijau sebelum klaim app bisa dibangun
 ```
 
@@ -188,10 +188,11 @@ di `.tmp/pg-<pid>` pada port loopback acak dan menghapusnya; `--keep` mencetak
 di-skip — karena gate data plane yang diam-diam hijau lebih buruk daripada gate merah.
 
 Langkah 7 memakai `apps/web/node_modules` (dipasang `npm ci`, di-ignore git). Gate
-`scripts/verify-all.py` menjalankan `tsc --noEmit` + 45 test web (enam berkas); `next build` sengaja di
+`scripts/verify-all.py` menjalankan `tsc --noEmit` + 59 test web (tujuh berkas); `next build` sengaja di
 luar gate karena menambah ~40 s dan gate ini sudah ~4 menit, tetapi hasil build dicatat saat
-perubahan app: tiga rute statis (`/`, `/transparency`, `/_not-found`) dan satu rute dinamis
-(`/vaults/[address]`, `force-dynamic`), First Load JS 102–105 kB.
+perubahan app: tiga rute statis (`/`, `/transparency`, `/_not-found`) dan dua rute dinamis
+(`/vaults/[address]` dan `/vaults/[address]/deposit`, keduanya `force-dynamic`), First Load JS
+102–213 kB pada rute deposit (viem di klien).
 
 `scripts/verify-bytecode.py` membaca `packages/core/artifacts/*.json`, meng-compile ulang dari pin yang tercatat, dan membandingkan hash. Bila pin berubah, script gagal — bukan diam-diam menghasilkan hash baru.
 

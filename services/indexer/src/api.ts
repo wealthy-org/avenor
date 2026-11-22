@@ -82,6 +82,9 @@ function onchainBody(snapshot: Snapshot) {
     totalDebt: snapshot.totalDebt.toString(),
     performanceFeeBps: snapshot.performanceFeeBps,
     managementFeeBps: snapshot.managementFeeBps,
+    depositLimit: snapshot.depositLimit.toString(),
+    isPaused: snapshot.isPaused,
+    isShutdown: snapshot.isShutdown,
     source: "onchain" as const,
   };
 }

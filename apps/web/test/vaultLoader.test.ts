@@ -52,6 +52,9 @@ const liveBody = {
   totalDebt: "511831598014766",
   performanceFeeBps: 1000,
   managementFeeBps: 0,
+  depositLimit: "1000000000000",
+  isPaused: false,
+  isShutdown: false,
   source: "onchain",
 };
 

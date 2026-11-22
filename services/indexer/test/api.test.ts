@@ -80,6 +80,9 @@ async function seed(chain: FakeChain): Promise<FakeRpcServer> {
   node.views.set(`${VAULT}:${SELECTOR.roleManager}`, addressWordResult(TIMELOCK));
   node.views.set(`${VAULT}:${SELECTOR.futureRoleManager}`, `0x${"0".repeat(64)}`);
   node.views.set(`${TIMELOCK}:${SELECTOR.minDelay}`, wordResult(172_800n));
+  node.views.set(`${VAULT}:${SELECTOR.depositLimit}`, wordResult(1_000_000_000_000n));
+  node.views.set(`${VAULT}:${SELECTOR.isPaused}`, wordResult(0n));
+  node.views.set(`${VAULT}:${SELECTOR.isShutdown}`, wordResult(0n));
   node.views.set(`${VAULT}:${SELECTOR.totalIdle}`, wordResult(27_024_457_979_514n));
   node.views.set(`${VAULT}:${SELECTOR.totalDebt}`, wordResult(511_831_598_014_766n));
   node.views.set(`${VAULT}:${SELECTOR.defaultQueue}`, addressArrayResult([STRATEGY]));
@@ -197,6 +200,10 @@ test("live reads the node at a pinned block and says so", async () => {
   // The fee comes from the accountant at the same block; a configured fee is not a charged fee.
   assert.equal(body.performanceFeeBps, 1000);
   assert.equal(body.managementFeeBps, 0);
+  // The gate travels with the live numbers so a form can refuse without a second round trip.
+  assert.equal(body.depositLimit, "1000000000000");
+  assert.equal(body.isPaused, false);
+  assert.equal(body.isShutdown, false);
   assert.equal(
     BigInt(body.totalIdle) + BigInt(body.totalDebt),
     BigInt(body.totalAssets),

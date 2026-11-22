@@ -103,6 +103,13 @@ export default async function VaultPage({ params }: Params) {
         </p>
       </div>
 
+      <p>
+        <Link href={`/vaults/${vault.address}/deposit`}>Buka form deposit →</Link>{" "}
+        <span className="provenance">
+          Form deposit membaca kapasitasnya sendiri dari chain; halaman ini tidak menampilkan tombol deposit.
+        </span>
+      </p>
+
       <section className="card stack">
         <h2>Nilai vault</h2>
         {live === null ? (

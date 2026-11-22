@@ -148,7 +148,7 @@ atau checkpoint):
 
 | Endpoint | Isi | Selector yang dibaca |
 |---|---|---|
-| `/v1/vaults/<alamat>/live` | `totalAssets`, `totalSupply`, `pricePerShare`, `totalIdle`, `totalDebt`, `performanceFeeBps`, `managementFeeBps` | `totalAssets()`, `totalSupply()`, `convertToAssets(1e18)`, `totalIdle()`, `totalDebt()`, `accountant()`, lalu `getVaultConfig(vault)` pada accountant |
+| `/v1/vaults/<alamat>/live` | `totalAssets`, `totalSupply`, `pricePerShare`, `totalIdle`, `totalDebt`, `performanceFeeBps`, `managementFeeBps`, `depositLimit`, `isPaused`, `isShutdown` | `totalAssets()`, `totalSupply()`, `convertToAssets(1e18)`, `totalIdle()`, `totalDebt()`, `accountant()` + `getVaultConfig(vault)`, `deposit_limit()`, `isPaused()`, `isShutdown()` |
 | `/v1/vaults/<alamat>/allocation?block=` | antrean default, `currentDebt`, `maxDebt`, `venue`, `lastReport` per strategi | `default_queue()`, `strategies(address)`, `venue()` |
 | `/v1/vaults/<alamat>/roles` | `role_manager`, `future_role_manager`, `timelockMinDelaySeconds` | `role_manager()`, `future_role_manager()`, `getMinDelay()` |
 

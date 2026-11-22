@@ -60,6 +60,12 @@ function optionalBps(value: unknown, field: string): number | null {
   return Number(parsed);
 }
 
+function boolean(value: unknown, field: string): boolean {
+  // A gate flag may not arrive as a string: "false" is truthy in the wrong hands.
+  if (typeof value !== "boolean") fail(field, "must be a JSON boolean");
+  return value;
+}
+
 function source(value: unknown, field = "source"): Source {
   if (value !== "indexed" && value !== "onchain") fail(field, "must be indexed or onchain");
   return value;
@@ -117,6 +123,10 @@ export interface Live {
   performanceFeeBps: number | null;
   /** `accountant.getVaultConfig(vault).managementFee` at the same block. */
   managementFeeBps: number | null;
+  /** `deposit_limit()` at the same block; a deposit hook may lower the per-account ceiling further. */
+  depositLimit: bigint;
+  isPaused: boolean;
+  isShutdown: boolean;
   source: Source;
 }
 
@@ -134,6 +144,9 @@ export function parseLive(json: unknown): Live {
     totalDebt: decimal(row.totalDebt, "totalDebt"),
     performanceFeeBps: optionalBps(row.performanceFeeBps, "performanceFeeBps"),
     managementFeeBps: optionalBps(row.managementFeeBps, "managementFeeBps"),
+    depositLimit: decimal(row.depositLimit, "depositLimit"),
+    isPaused: boolean(row.isPaused, "isPaused"),
+    isShutdown: boolean(row.isShutdown, "isShutdown"),
     source: source(row.source),
   };
   if (live.source !== "onchain") fail("live.source", "must be onchain: this number came from a block");

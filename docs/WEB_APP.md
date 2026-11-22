@@ -1,7 +1,7 @@
 # WEB_APP — app shell, primitif angka, dan halaman detail vault
 
-Status: tiket 5.1 dan 5.2 (`epic-web-app-and-transactions`). Tiket 5.3–5.5 (deposit, withdraw,
-portfolio) belum dikerjakan; dokumen ini hanya mengikat apa yang sudah ada di `apps/web`.
+Status: tiket 5.1–5.3 (`epic-web-app-and-transactions`). Tiket 5.4–5.5 (withdraw, portfolio) belum
+dikerjakan; dokumen ini hanya mengikat apa yang sudah ada di `apps/web`.
 
 ## 1. Yang sudah ada
 
@@ -18,6 +18,10 @@ portfolio) belum dikerjakan; dokumen ini hanya mengikat apa yang sudah ada di `a
 | `src/lib/api.ts` | `fetchJson`, `ApiError` | satu pintu HTTP; body non-JSON dan error tanpa kode tetap jadi error berkode |
 | `src/lib/vaultView.ts` | `parseVaultRow`, `parseLive`, `parseAllocation`, `parseRoles`, `parseReports`, `shareBps`, `latestReportBlock` | validasi bentuk API sebelum angka menyentuh komponen |
 | `src/lib/vaultLoader.ts` | `loadVaultDetail` | empat request paralel; kegagalan satu section tidak menjatuhkan yang lain |
+| `app/vaults/[address]/deposit/page.tsx` | halaman deposit (server) | membaca gerbang dari API; tanpa angka chain, form tidak dirender |
+| `src/components/DepositForm.tsx` | form deposit (`"use client"`) | satu-satunya komponen yang memegang wallet |
+| `src/lib/deposit.ts` | `parseAssetInput`, `depositBlockers`, `quoteDeposit`, `submitDeposit`, `readDepositEvent` | logika deposit diuji tanpa React dan tanpa wallet nyata |
+| `src/lib/wallet.ts` | `connectWallet`, `readChainId`, `switchToAvenorChain`, `findInjectedProvider`, `mapWalletError` | tidak ada asumsi `window.ethereum` ada dan tidak ada asumsi chain benar |
 
 ## 2. Keputusan yang menyimpang dari tiket 5.1 (tertulis, bukan diam-diam)
 
@@ -90,12 +94,42 @@ Parameter on-chain yang dibaca (`accountant`, `role_manager`, `future_role_manag
 `packages/contracts/lib/yearn-periphery/src/accountants/Accountant.sol:472`, dan `getMinDelay()` di
 `TimelockController` OpenZeppelin. Selector dihitung dengan `cast sig`, bukan diketik dari ingatan.
 
-## 5. Yang belum, dan tidak diklaim
+## 5. Deposit (tiket 5.3)
 
-1. Deposit, withdraw, portfolio (5.3–5.5) belum ada. Belum ada transaksi dari UI.
-2. Wallet belum terhubung ke app (`window.ethereum` atau connector).
+Urutan yang dipegang form:
+
+1. **Gerbang dibaca sebelum wallet disentuh.** `/v1/vaults/<a>/live` sekarang juga membawa
+   `depositLimit`, `isPaused`, `isShutdown` dari chain pada blok yang sama. `deposit_limit = 0`,
+   `isPaused`, atau `isShutdown` membuat form menampilkan status dan **tidak** merender tombol deposit.
+2. **Kutipan satu blok.** `quoteDeposit` membaca `previewDeposit`, `maxDeposit`, `allowance`,
+   `balanceOf`, `deposit_limit`, `isPaused`, `isShutdown` pada satu `blockNumber`. Angka share adalah
+   perkiraan dan diberi label begitu.
+3. **Blocker bernama.** `depositBlockers` mengembalikan kode + kalimat: `shutdown`, `paused`,
+   `deposit_closed`, `cap_full`, `exceeds_cap`, `insufficient_balance`. Tombol submit mati bila daftar
+   tidak kosong, dan `submitDeposit` memeriksa ulang daftar itu (bukan hanya UI).
+4. **Approve tepat sebesar deposit.** Tidak ada `approve(max)`. `approve` hanya dikirim bila
+   `allowance < assets`, lalu receipt approve diperiksa; approve gagal = berhenti.
+5. **Tidak ada tanda tangan tanpa simulasi.** `prepareApprove`/`prepareDeposit` dari SDK melakukan
+   `simulateContract` lebih dulu, sehingga revert muncul sebagai pesan form.
+6. **Share final dari event.** `readDepositEvent` mendekode `Deposit(sender, owner, assets, shares)`
+   dari receipt, hanya dari log kontrak vault. Receipt sukses tanpa event = `no_event`, bukan 0.
+
+Kode error yang punya pesan sendiri: `no_provider`, `no_account`, `wrong_network`, `rejected`,
+`pending_request`, `invalid_amount`, `insufficient_balance`, `paused`, `shutdown`, `deposit_closed`,
+`cap_full`, `exceeds_cap`, `reverted`, `no_event`, `rpc`.
+
+**Batas yang diakui.** `NEXT_PUBLIC_RPC_URL` wajib diset; tanpa itu form menolak membaca chain dan
+tidak menebak. Simbol aset ditampilkan sebagai "aset" karena database belum menyimpan simbol aset;
+yang ditampilkan adalah alamatnya. Test deposit berjalan pada node JSON-RPC skrip + penanda tangan
+skrip (14 test), bukan browser + wallet nyata, karena belum ada vault terdeploy di chain 4663.
+
+## 6. Yang belum, dan tidak diklaim
+
+1. Withdraw dan portfolio (5.4–5.5) belum ada. Deposit sudah ada tetapi belum pernah dijalankan
+   terhadap vault terdeploy.
+2. Wallet hanya lewat EIP-1193 injected (`window.ethereum`); belum ada connector WalletConnect/Coinbase.
 3. `AVENOR_VAULTS` belum diset di deployment mana pun: app berjalan pada keadaan "belum ada vault".
-4. `next build` belum masuk `scripts/verify-all.py` (waktu). Gate menjalankan `tsc --noEmit` + 45
+4. `next build` belum masuk `scripts/verify-all.py` (waktu). Gate menjalankan `tsc --noEmit` + 59
    test. Build dicatat manual di `docs/REPRODUCIBILITY.md` §7.
 5. Halaman detail belum dijalankan terhadap API + vault nyata: belum ada vault hasil
    `Deploy.s.sol` di chain 4663. Yang terbukti adalah parsing, perhitungan `bigint`, dan perilaku

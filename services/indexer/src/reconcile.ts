@@ -31,6 +31,9 @@ export const SELECTOR = {
   strategies: "0x39ebf823",
   venue: "0xa270a737",
   accountant: "0x4fb3ccc5",
+  depositLimit: "0xe46a5797",
+  isPaused: "0xb187bd26",
+  isShutdown: "0xbf86d690",
   // The Yearn accountant has no `performanceFee()` getter; the config comes back as a
   // `(managementFee, performanceFee, refundRatio, maxFee, maxGain, maxLoss, custom)` tuple.
   vaultConfig: "0xde1eb9a3",
@@ -73,6 +76,10 @@ export interface Snapshot {
   performanceFeeBps: number | null;
   /** `accountant.getVaultConfig(vault).managementFee` in basis points, same block. */
   managementFeeBps: number | null;
+  /** Effective `deposit_limit()`; a deposit hook can lower it further per account. */
+  depositLimit: bigint;
+  isPaused: boolean;
+  isShutdown: boolean;
 }
 
 export interface VaultRoles {
@@ -131,7 +138,7 @@ export function driftBps(indexed: bigint, onchain: bigint): number {
 }
 
 export async function readVaultOnchain(rpc: RpcClient, cfg: VaultConfig, block: bigint): Promise<Snapshot> {
-  const [totalAssetsRaw, totalSupplyRaw, priceRaw, idleRaw, debtRaw, header, accountantRaw] = await Promise.all([
+  const [totalAssetsRaw, totalSupplyRaw, priceRaw, idleRaw, debtRaw, header, accountantRaw, limitRaw, pausedRaw, shutdownRaw] = await Promise.all([
     rpc.call(cfg.vault, SELECTOR.totalAssets, block),
     rpc.call(cfg.vault, SELECTOR.totalSupply, block),
     rpc.call(cfg.vault, `${SELECTOR.convertToAssets}${(10n ** BigInt(cfg.shareDecimals)).toString(16).padStart(64, "0")}`, block),
@@ -139,6 +146,9 @@ export async function readVaultOnchain(rpc: RpcClient, cfg: VaultConfig, block: 
     rpc.call(cfg.vault, SELECTOR.totalDebt, block),
     rpc.blockByNumber(block),
     rpc.call(cfg.vault, SELECTOR.accountant, block),
+    rpc.call(cfg.vault, SELECTOR.depositLimit, block),
+    rpc.call(cfg.vault, SELECTOR.isPaused, block),
+    rpc.call(cfg.vault, SELECTOR.isShutdown, block),
   ]);
   if (!header) throw new Error(`no header for block ${block}`);
 
@@ -171,6 +181,9 @@ export async function readVaultOnchain(rpc: RpcClient, cfg: VaultConfig, block: 
     totalDebt: decodeWord(debtRaw),
     performanceFeeBps,
     managementFeeBps,
+    depositLimit: decodeWord(limitRaw),
+    isPaused: decodeWord(pausedRaw) !== 0n,
+    isShutdown: decodeWord(shutdownRaw) !== 0n,
   };
 }
 
