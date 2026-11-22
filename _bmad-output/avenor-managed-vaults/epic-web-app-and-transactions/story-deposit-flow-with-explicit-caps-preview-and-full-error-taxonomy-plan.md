@@ -3,7 +3,7 @@ title: 'Deposit flow with explicit caps, preview and full error taxonomy'
 type: 'implement'
 ticket: 3
 created: '2026-11-22'
-status: built
+status: done
 baseline_revision: '470fc88'
 route: 'oneshot'
 route_source: 'auto'

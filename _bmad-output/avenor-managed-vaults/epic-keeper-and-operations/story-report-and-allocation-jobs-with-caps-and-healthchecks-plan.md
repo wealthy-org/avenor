@@ -1,7 +1,7 @@
 ---
 title: "Report and allocation jobs with caps and healthchecks"
 ticket: 2
-status: built
+status: done
 baseline_revision: '8ceb03880b022eba5fb5087c29cddde9c9aaf0de'
 route: 'full'
 risk: 'high'
