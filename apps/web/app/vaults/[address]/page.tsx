@@ -7,8 +7,10 @@
 //      "not known" are different answers and only one of them is safe.
 
 import Link from "next/link";
+import { createPublicClient, http } from "viem";
 import { notFound } from "next/navigation";
 import { Amount, AddressText, BlockProvenance, ErrorState, Percent, StatusPill } from "@/components/primitives";
+import { readEvidence, type ContractEvidence } from "@/lib/evidence";
 import { ApiError } from "@/lib/api";
 import { loadVaultDetail } from "@/lib/vaultLoader";
 import { blockTime, liquiditySplit, percentBps } from "@/lib/format";
@@ -78,6 +80,23 @@ export default async function VaultPage({ params }: Params) {
   }
 
   const { vault, live, liveError, allocation, allocationError, reports, reportsError, roles, rolesError } = detail;
+  const { fees, feesError, roleEvents, roleEventsError } = detail;
+
+  // Read straight from the chain: the artifact in this repo describes what we built, not what the
+  // address runs. When the read fails the section says so instead of quoting a local hash.
+  let evidence: ContractEvidence | null = null;
+  let evidenceError: unknown = null;
+  const rpc = process.env.NEXT_PUBLIC_RPC_URL;
+  if (typeof rpc !== "string" || rpc.trim() === "") {
+    evidenceError = new Error("NEXT_PUBLIC_RPC_URL belum diset, jadi bukti on-chain tidak dibaca");
+  } else {
+    try {
+      const client = createPublicClient({ transport: http(rpc.trim()) });
+      evidence = await readEvidence(client, vault.address as `0x${string}`, live === null ? undefined : live.blockNumber);
+    } catch (error) {
+      evidenceError = error;
+    }
+  }
   const split = live === null ? null : liquiditySplit({ idle: live.totalIdle, totalAssets: live.totalAssets });
   const lastReport = allocation === null ? null : latestReportBlock(allocation);
   const pendingDeposits = vault.depositLimit === 0n;
@@ -104,9 +123,10 @@ export default async function VaultPage({ params }: Params) {
       </div>
 
       <p>
-        <Link href={`/vaults/${vault.address}/deposit`}>Buka form deposit →</Link>{" "}
+        <Link href={`/vaults/${vault.address}/deposit`}>Buka form deposit →</Link>{" · "}
+        <Link href={`/vaults/${vault.address}/withdraw`}>Buka form penarikan →</Link>{" "}
         <span className="provenance">
-          Form deposit membaca kapasitasnya sendiri dari chain; halaman ini tidak menampilkan tombol deposit.
+          Kedua form membaca kapasitasnya sendiri dari chain; halaman ini tidak menampilkan tombol transaksi.
         </span>
       </p>
 
@@ -374,6 +394,116 @@ export default async function VaultPage({ params }: Params) {
       </section>
 
       <section className="card stack">
+        <h2>Riwayat biaya</h2>
+        {feesError !== null ? (
+          <SectionError error={feesError} what="Riwayat biaya tidak terbaca" />
+        ) : fees.length === 0 ? (
+          <p>Belum ada event biaya yang terindeks. Kosong berarti tidak ada baris, bukan nol biaya.</p>
+        ) : (
+          <table className="data">
+            <thead>
+              <tr>
+                <th>Blok</th>
+                <th>Waktu</th>
+                <th>Jenis</th>
+                <th>Penerima</th>
+                <th>Share</th>
+                <th>Aset</th>
+                <th>Tx</th>
+              </tr>
+            </thead>
+            <tbody>
+              {fees.map((fee) => (
+                <tr key={`${fee.txHash}:${fee.kind}:${fee.blockNumber.toString()}`}>
+                  <td>{fee.blockNumber.toString()}</td>
+                  <td>{blockTime(fee.blockTimestamp)}</td>
+                  <td>{fee.kind}</td>
+                  <td>{fee.recipient === null ? "—" : <AddressText address={fee.recipient as `0x${string}`} />}</td>
+                  <td>{fee.shares === null ? "—" : <Amount value={fee.shares} kind="shares" />}</td>
+                  <td>{fee.assets === null ? "—" : <Amount value={fee.assets} kind="usdg" />}</td>
+                  <td className="provenance">{fee.txHash}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="card stack">
+        <h2>Riwayat peran</h2>
+        {roleEventsError !== null ? (
+          <SectionError error={roleEventsError} what="Riwayat peran tidak terbaca" />
+        ) : roleEvents.length === 0 ? (
+          <p>Belum ada event peran yang terindeks.</p>
+        ) : (
+          <table className="data">
+            <thead>
+              <tr>
+                <th>Blok</th>
+                <th>Waktu</th>
+                <th>Akun</th>
+                <th>Bit</th>
+                <th>Aksi</th>
+                <th>Tx</th>
+              </tr>
+            </thead>
+            <tbody>
+              {roleEvents.map((event) => (
+                <tr key={`${event.txHash}:${event.blockNumber.toString()}`}>
+                  <td>{event.blockNumber.toString()}</td>
+                  <td>{blockTime(event.blockTimestamp)}</td>
+                  <td>
+                    <AddressText address={event.account as `0x${string}`} />
+                  </td>
+                  <td>{event.roleBit === null ? "bitmap" : event.roleBit}</td>
+                  <td>{event.granted === null ? "perubahan" : event.granted ? "diberi" : "dicabut"}</td>
+                  <td className="provenance">{event.txHash}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="card stack">
+        <h2>Bukti kontrak</h2>
+        {evidenceError !== null ? (
+          <SectionError error={evidenceError} what="Bukti on-chain tidak terbaca" />
+        ) : evidence === null ? (
+          <p>Tidak ada bukti yang bisa ditampilkan.</p>
+        ) : (
+          <dl className="facts">
+            <dt>Alamat vault</dt>
+            <dd>
+              <AddressText address={evidence.address as `0x${string}`} />
+            </dd>
+            <dt>apiVersion()</dt>
+            <dd>
+              {evidence.apiVersion ?? (
+                <span className="provenance">tidak terbaca: {evidence.apiVersionError}</span>
+              )}
+            </dd>
+            <dt>Hash runtime code</dt>
+            <dd>
+              {evidence.codeHash === null ? (
+                <span className="provenance">tidak ada kode pada blok ini</span>
+              ) : (
+                <code>{evidence.codeHash}</code>
+              )}
+            </dd>
+            <dt>Ukuran code</dt>
+            <dd>{evidence.codeSize} byte</dd>
+            <dt>Dibaca pada blok</dt>
+            <dd>{evidence.blockNumber.toString()}</dd>
+          </dl>
+        )}
+        <p className="provenance">
+          Hash di atas dihitung dari `eth_getCode` pada blok tersebut, bukan dari artefak build lokal. Kecocokan dengan
+          artefak hanya boleh diklaim setelah `scripts/verify-bytecode.py` dijalankan pada commit yang sama.
+        </p>
+      </section>
+
+      <section className="card stack">
         <h2>Dokumentasi dan batasan</h2>
         <ul>
           <li>Penarikan: docs/WITHDRAWAL_SEMANTICS.md (12 kasus uji, termasuk max_loss).</li>
@@ -381,8 +511,8 @@ export default async function VaultPage({ params }: Params) {
           <li>Biaya dan batas: docs/FEE_CONFIG.md.</li>
         </ul>
         <p>
-          Tidak ada klaim audit untuk kombinasi pin ini. Transaksi deposit dan penarikan belum tersedia di halaman ini;
-          itu tiket berikutnya, bukan fitur yang tersembunyi.
+          Tidak ada klaim audit untuk kombinasi pin ini. Form deposit dan penarikan ada di rute terpisah dan mengirim
+          parameter eksplisit; tidak ada tombol transaksi di halaman ini.
         </p>
         <p>
           <Link href="/">Kembali ke katalog</Link>

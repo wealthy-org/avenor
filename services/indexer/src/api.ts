@@ -233,6 +233,48 @@ async function route(pool: Pool, rpc: RpcClient | null, cfg: ApiConfig, request:
     }));
   }
 
+  if (resource === "fees") {
+    const limit = limitParam(url.searchParams.get("limit"));
+    const result = await pool.query(
+      `SELECT block_number::text, block_hash, block_time, tx_hash, fee_kind, recipient,
+              shares::text, assets::text
+         FROM fees WHERE chain_id = $1 AND vault_address = $2
+        ORDER BY block_number DESC, log_index DESC LIMIT $3`,
+      [cfg.chainId, vault, limit],
+    );
+    return result.rows.map((row) => ({
+      blockNumber: row.block_number,
+      blockHash: row.block_hash,
+      blockTimestamp: new Date(row.block_time).toISOString(),
+      txHash: row.tx_hash,
+      kind: row.fee_kind,
+      recipient: row.recipient,
+      shares: row.shares,
+      assets: row.assets,
+      source: "indexed" as const,
+    }));
+  }
+
+  if (resource === "role-events") {
+    const limit = limitParam(url.searchParams.get("limit"));
+    const result = await pool.query(
+      `SELECT block_number::text, block_hash, block_time, tx_hash, account, role_bit, granted
+         FROM role_events WHERE chain_id = $1 AND vault_address = $2
+        ORDER BY block_number DESC, log_index DESC LIMIT $3`,
+      [cfg.chainId, vault, limit],
+    );
+    return result.rows.map((row) => ({
+      blockNumber: row.block_number,
+      blockHash: row.block_hash,
+      blockTimestamp: new Date(row.block_time).toISOString(),
+      txHash: row.tx_hash,
+      account: row.account,
+      roleBit: row.role_bit,
+      granted: row.granted,
+      source: "indexed" as const,
+    }));
+  }
+
   if (resource === "live") {
     if (!rpc) throw new HttpError(503, "no_rpc", "this API was started without an RPC client");
     const checkpoint = await latestCheckpoint(pool, cfg.chainId);

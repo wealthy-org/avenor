@@ -150,6 +150,8 @@ atau checkpoint):
 |---|---|---|
 | `/v1/vaults/<alamat>/live` | `totalAssets`, `totalSupply`, `pricePerShare`, `totalIdle`, `totalDebt`, `performanceFeeBps`, `managementFeeBps`, `depositLimit`, `isPaused`, `isShutdown` | `totalAssets()`, `totalSupply()`, `convertToAssets(1e18)`, `totalIdle()`, `totalDebt()`, `accountant()` + `getVaultConfig(vault)`, `deposit_limit()`, `isPaused()`, `isShutdown()` |
 | `/v1/vaults/<alamat>/allocation?block=` | antrean default, `currentDebt`, `maxDebt`, `venue`, `lastReport` per strategi | `default_queue()`, `strategies(address)`, `venue()` |
+| `/v1/vaults/<alamat>/fees?limit=` | riwayat biaya per event (`fee_kind`, `recipient`, `shares`, `assets`) | tabel `fees` (hasil ingest), bukan hitungan ulang |
+| `/v1/vaults/<alamat>/role-events?limit=` | riwayat perubahan peran (`account`, `role_bit`, `granted`) | tabel `role_events` (hasil ingest) |
 | `/v1/vaults/<alamat>/roles` | `role_manager`, `future_role_manager`, `timelockMinDelaySeconds` | `role_manager()`, `future_role_manager()`, `getMinDelay()` |
 
 `totalIdle + totalDebt == totalAssets` bukan asumsi: `readVaultOnchain` membaca keduanya dan

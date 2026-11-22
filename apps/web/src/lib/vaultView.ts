@@ -290,6 +290,82 @@ export function parseReports(json: unknown): ReportRow[] {
   });
 }
 
+export interface FeeRow {
+  blockNumber: bigint;
+  blockTimestamp: string;
+  txHash: string;
+  kind: string;
+  recipient: string | null;
+  shares: bigint | null;
+  assets: bigint | null;
+  source: Source;
+}
+
+export function parseFees(json: unknown): FeeRow[] {
+  if (!Array.isArray(json)) fail("fees", "must be an array");
+  return json.map((entry, index) => {
+    if (typeof entry !== "object" || entry === null) fail(`fees[${index}]`, "must be an object");
+    const row = entry as Record<string, unknown>;
+    return {
+      blockNumber: decimal(row.blockNumber, `fees[${index}].blockNumber`),
+      blockTimestamp: iso(row.blockTimestamp, `fees[${index}].blockTimestamp`),
+      txHash: text(row.txHash, `fees[${index}].txHash`),
+      kind: text(row.kind, `fees[${index}].kind`),
+      recipient: optionalAddress(row.recipient, `fees[${index}].recipient`),
+      shares: row.shares === null || row.shares === undefined ? null : decimal(row.shares, `fees[${index}].shares`),
+      assets: row.assets === null || row.assets === undefined ? null : decimal(row.assets, `fees[${index}].assets`),
+      source: source(row.source, `fees[${index}].source`),
+    };
+  });
+}
+
+export interface RoleEventRow {
+  blockNumber: bigint;
+  blockTimestamp: string;
+  txHash: string;
+  account: string;
+  roleBit: number | null;
+  granted: boolean | null;
+  source: Source;
+}
+
+export function parseRoleEvents(json: unknown): RoleEventRow[] {
+  if (!Array.isArray(json)) fail("roleEvents", "must be an array");
+  return json.map((entry, index) => {
+    if (typeof entry !== "object" || entry === null) fail(`roleEvents[${index}]`, "must be an object");
+    const row = entry as Record<string, unknown>;
+    return {
+      blockNumber: decimal(row.blockNumber, `roleEvents[${index}].blockNumber`),
+      blockTimestamp: iso(row.blockTimestamp, `roleEvents[${index}].blockTimestamp`),
+      txHash: text(row.txHash, `roleEvents[${index}].txHash`),
+      account: address(row.account, `roleEvents[${index}].account`),
+      roleBit: row.roleBit === null || row.roleBit === undefined ? null : count(row.roleBit, `roleEvents[${index}].roleBit`),
+      granted: row.granted === null || row.granted === undefined ? null : boolean(row.granted, `roleEvents[${index}].granted`),
+      source: source(row.source, `roleEvents[${index}].source`),
+    };
+  });
+}
+
+export interface Position {
+  account: string;
+  shares: bigint;
+  firstSeenBlock: bigint;
+  lastActivityBlock: bigint;
+  source: Source;
+}
+
+export function parsePosition(json: unknown): Position {
+  if (typeof json !== "object" || json === null) fail("position", "must be an object");
+  const row = json as Record<string, unknown>;
+  return {
+    account: address(row.account, "position.account"),
+    shares: decimal(row.shares, "position.shares"),
+    firstSeenBlock: decimal(row.firstSeenBlock, "position.firstSeenBlock"),
+    lastActivityBlock: decimal(row.lastActivityBlock, "position.lastActivityBlock"),
+    source: source(row.source, "position.source"),
+  };
+}
+
 /**
  * Highest `lastReport` block across the queue; `null` when no strategy ever reported. This is a
  * block number, not a duration: "how stale" needs the current head, and the page must not compute

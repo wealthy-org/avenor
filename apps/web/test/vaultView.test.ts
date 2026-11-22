@@ -11,6 +11,9 @@ import {
   parseRoles,
   parseVaultRow,
   shareBps,
+  parseFees,
+  parseRoleEvents,
+  parsePosition,
 } from "../src/lib/vaultView.ts";
 
 const VAULT = "0xBeEff033F34C046626B8D0A041844C5d1A5409dd";
@@ -193,4 +196,101 @@ test("reports are parsed as strings and keep their own provenance", () => {
   assert.equal(report!.totalFees, 78n);
   assert.equal(report!.source, "indexed");
   assert.throws(() => parseReports([{ ...raw, gain: 1234 }]), /JSON number/);
+});
+test("fee and role history keep strings as strings and reject money as JSON numbers", () => {
+  const fees = parseFees([
+    {
+      blockNumber: "118337511",
+      blockHash: "0xfee",
+      blockTimestamp: "2026-11-19T07:54:14.000Z",
+      txHash: "0xfeeTx",
+      kind: "performance",
+      recipient: "0x1111111111111111111111111111111111111111",
+      shares: "100",
+      assets: "250",
+      source: "indexed",
+    },
+  ]);
+  assert.equal(fees[0].assets, 250n);
+  assert.equal(fees[0].shares, 100n);
+
+  assert.throws(
+    () =>
+      parseFees([
+        {
+          blockNumber: "1",
+          blockTimestamp: "2026-11-19T07:54:14.000Z",
+          txHash: "0x",
+          kind: "performance",
+          recipient: null,
+          shares: null,
+          assets: 250,
+          source: "indexed",
+        },
+      ]),
+    /fees\[0\]\.assets/,
+  );
+});
+
+test("role events expose a bitmap change when the event carries no single bit", () => {
+  const events = parseRoleEvents([
+    {
+      blockNumber: "20",
+      blockTimestamp: "2026-11-19T07:54:14.000Z",
+      txHash: "0xrole",
+      account: "0xaaaa00000000000000000000000000000000aaaa",
+      roleBit: null,
+      granted: null,
+      source: "indexed",
+    },
+    {
+      blockNumber: "21",
+      blockTimestamp: "2026-11-19T07:54:14.000Z",
+      txHash: "0xrole2",
+      account: "0xaaaa00000000000000000000000000000000aaaa",
+      roleBit: 7,
+      granted: false,
+      source: "indexed",
+    },
+  ]);
+  assert.equal(events[0].roleBit, null);
+  assert.equal(events[1].granted, false);
+  assert.throws(
+    () =>
+      parseRoleEvents([
+        {
+          blockNumber: "21",
+          blockTimestamp: "2026-11-19T07:54:14.000Z",
+          txHash: "0xrole2",
+          account: "0xaaaa00000000000000000000000000000000aaaa",
+          roleBit: 7,
+          granted: "false",
+          source: "indexed",
+        },
+      ]),
+    /granted/,
+  );
+});
+
+test("a position is shares plus the blocks it was seen in", () => {
+  const position = parsePosition({
+    account: "0xaaaa00000000000000000000000000000000aaaa",
+    shares: "531418644510854399888342585",
+    firstSeenBlock: "150",
+    lastActivityBlock: "220",
+    source: "indexed",
+  });
+  assert.equal(position.shares, 531418644510854399888342585n);
+  assert.equal(position.lastActivityBlock, 220n);
+  assert.throws(
+    () =>
+      parsePosition({
+        account: "0xaaaa00000000000000000000000000000000aaaa",
+        shares: 5,
+        firstSeenBlock: "150",
+        lastActivityBlock: "220",
+        source: "indexed",
+      }),
+    /position\.shares/,
+  );
 });

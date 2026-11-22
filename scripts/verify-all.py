@@ -153,6 +153,8 @@ def main() -> int:
             "test/api.test.ts",
             "test/vaultLoader.test.ts",
             "test/deposit.test.ts",
+            "test/withdraw.test.ts",
+            "test/evidence.test.ts",
         ],
         WEB,
         args.quiet,

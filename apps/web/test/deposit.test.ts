@@ -1,21 +1,6 @@
-// Deposit tests run against a scripted JSON-RPC node and a scripted signer: the real viem encoder
-// and decoder are exercised, so a wrong ABI, a wrong argument order, or a missing event is a test
-// failure instead of a bug found in a browser.
-
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  createPublicClient,
-  custom,
-  decodeFunctionData,
-  encodeEventTopics,
-  encodeFunctionResult,
-  erc20Abi,
-  type Abi,
-  type Address,
-  type Hex,
-} from "viem";
-import { vaultV3Abi } from "@avenor/sdk";
+import type { Address } from "viem";
 import {
   DepositError,
   depositBlockers,
@@ -26,126 +11,7 @@ import {
   submitDeposit,
 } from "../src/lib/deposit.ts";
 import { connectWallet, findInjectedProvider, mapWalletError, switchToAvenorChain, WalletError } from "../src/lib/wallet.ts";
-
-const VAULT = "0xBeEff033F34C046626B8D0A041844C5d1A5409dd" as Address;
-const ASSET = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168" as Address;
-const USER = "0x1111111111111111111111111111111111111111" as Address;
-const BLOCK = 0x70dafe7n;
-
-type Handler = (args: readonly unknown[]) => unknown;
-
-interface FakeChain {
-  calls: string[];
-  handlers: Map<string, Handler>;
-  revert: Set<string>;
-  receipts: Hex[];
-  sent: unknown[];
-}
-
-interface Client {
-  client: ReturnType<typeof createPublicClient>;
-  chain: FakeChain;
-}
-
-function depositLog(owner: Address, assets: bigint, shares: bigint): { address: Address; data: Hex; topics: Hex[] } {
-  const topics = encodeEventTopics({
-    abi: vaultV3Abi,
-    eventName: "Deposit",
-    args: { sender: USER, owner },
-  }) as Hex[];
-  const data = `0x${[assets, shares].map((word) => word.toString(16).padStart(64, "0")).join("")}` as Hex;
-  return { address: VAULT, data, topics };
-}
-
-function createFakeChain(handlers: Record<string, Handler>, options: { withEvent?: boolean } = {}): Client {
-  const chain: FakeChain = {
-    calls: [],
-    handlers: new Map(Object.entries(handlers)),
-    revert: new Set(),
-    receipts: [],
-    sent: [],
-  };
-
-  const transport = custom({
-    async request({ method, params }) {
-      switch (method) {
-        case "eth_chainId":
-          return "0x1237";
-        case "eth_blockNumber":
-          return `0x${BLOCK.toString(16)}`;
-        case "eth_getBlockByNumber":
-          return {
-            number: `0x${BLOCK.toString(16)}`,
-            hash: "0xbaa980ab",
-            parentHash: `0x${"11".repeat(32)}`,
-            nonce: "0x0000000000000000",
-            sha3Uncles: `0x${"22".repeat(32)}`,
-            logsBloom: `0x${"00".repeat(256)}`,
-            transactionsRoot: `0x${"33".repeat(32)}`,
-            stateRoot: `0x${"44".repeat(32)}`,
-            receiptsRoot: `0x${"55".repeat(32)}`,
-            miner: "0x0000000000000000000000000000000000000000",
-            difficulty: "0x0",
-            totalDifficulty: "0x0",
-            extraData: "0x",
-            size: "0x1",
-            gasLimit: "0x1c9c380",
-            gasUsed: "0x0",
-            timestamp: "0x6b0a05a6",
-            transactions: [],
-            uncles: [],
-            baseFeePerGas: "0x1",
-          };
-        case "eth_getTransactionReceipt": {
-          const hash = (params as [Hex])[0];
-          const logs = options.withEvent === false ? [] : [depositLog(USER, 100_000_000n, 99_700_000n)];
-          return {
-            transactionHash: hash,
-            transactionIndex: "0x0",
-            blockHash: "0xbaa980ab",
-            blockNumber: `0x${BLOCK.toString(16)}`,
-            from: USER,
-            to: VAULT,
-            cumulativeGasUsed: "0x5208",
-            gasUsed: "0x5208",
-            effectiveGasPrice: "0x1",
-            contractAddress: null,
-            logs,
-            logsBloom: `0x${"00".repeat(256)}`,
-            status: "0x1",
-            type: "0x2",
-          };
-        }
-        case "eth_call": {
-          const call = (params as [{ to: Address; data: Hex }, string])[0];
-          let decoded: { functionName: string; args: readonly unknown[] } | null = null;
-          let abi: Abi = vaultV3Abi;
-          for (const candidate of [vaultV3Abi, erc20Abi] as Abi[]) {
-            try {
-              const result = decodeFunctionData({ abi: candidate, data: call.data });
-              decoded = { functionName: result.functionName, args: (result.args ?? []) as readonly unknown[] };
-              abi = candidate;
-              break;
-            } catch {
-              // next ABI
-            }
-          }
-          if (!decoded) throw new Error(`fake chain cannot decode ${call.data.slice(0, 10)}`);
-          const signature = `${call.to.toLowerCase()}:${decoded.functionName}`;
-          chain.calls.push(signature);
-          if (chain.revert.has(decoded.functionName)) throw new Error("execution reverted");
-          const handler = chain.handlers.get(decoded.functionName);
-          if (!handler) throw new Error(`fake chain has no handler for ${decoded.functionName}`);
-          return encodeFunctionResult({ abi, functionName: decoded.functionName, result: handler(decoded.args) });
-        }
-        default:
-          throw new Error(`fake chain does not implement ${method}`);
-      }
-    },
-  });
-
-  return { client: createPublicClient({ transport }), chain };
-}
+import { ASSET, BLOCK, USER, VAULT, createFakeChain, depositLog, scriptedSigner, type Handler } from "./fakeChain.ts";
 
 function defaultHandlers(overrides: Record<string, Handler> = {}): Record<string, Handler> {
   return {
@@ -159,20 +25,6 @@ function defaultHandlers(overrides: Record<string, Handler> = {}): Record<string
     approve: () => true,
     deposit: () => 997_000_00n,
     ...overrides,
-  };
-}
-
-function scriptedSigner(chain: FakeChain, options: { reject?: boolean } = {}) {
-  return {
-    account: USER,
-    async sendTransaction(request: unknown): Promise<Hex> {
-      if (options.reject === true) {
-        throw Object.assign(new Error("User rejected the request."), { code: 4001 });
-      }
-      chain.sent.push(request);
-      const hash = `0x${chain.sent.length.toString(16).padStart(64, "0")}` as Hex;
-      return hash;
-    },
   };
 }
 
@@ -271,7 +123,8 @@ test("an existing allowance skips the approve transaction", async () => {
 });
 
 test("a receipt without the Deposit event is an error, not zero shares", async () => {
-  const { client, chain } = createFakeChain(defaultHandlers(), { withEvent: false });
+  const { client, chain } = createFakeChain(defaultHandlers());
+  chain.logs = [];
   const quote = await quoteDeposit(client, { vault: VAULT, asset: ASSET, account: USER, assets: 100_000_000n });
   await assert.rejects(
     submitDeposit({

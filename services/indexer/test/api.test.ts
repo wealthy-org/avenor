@@ -121,6 +121,19 @@ async function seed(chain: FakeChain): Promise<FakeRpcServer> {
     [VAULT],
   );
   await pool.query(
+    `INSERT INTO fees (chain_id, vault_address, strategy_address, block_number, block_hash, block_time,
+                       tx_hash, log_index, fee_kind, recipient, shares, assets)
+     VALUES (4663, $1, '0xstrategy', 20, '0xfee', to_timestamp(1795103654),
+             '0xfeeTx', 0, 'performance', $2, 100, 250)`,
+    [VAULT, TIMELOCK],
+  );
+  await pool.query(
+    `INSERT INTO role_events (chain_id, vault_address, account, role_bit, granted, block_number,
+                              block_hash, block_time, tx_hash, log_index)
+     VALUES (4663, $1, $2, 7, true, 20, '0xrole', to_timestamp(1795103654), '0xroleTx', 0)`,
+    [VAULT, ALICE],
+  );
+  await pool.query(
     `INSERT INTO ingested_blocks (chain_id, stream, block_number, block_hash)
      VALUES (4663, $1, 20, '0xhead')`,
     [`vault:${VAULT}`],
@@ -318,4 +331,21 @@ test("bad input is rejected with a code, not an empty 200", async () => {
 
   const missingRoute = await get("/v1/nope");
   assert.equal(missingRoute.status, 404);
+});
+test("fee and role history are strings with provenance, never JSON numbers", async () => {
+  await seed(fakeChain());
+  const base = api!.url;
+  const fees = (await (await fetch(`${base}/v1/vaults/${VAULT}/fees`)).json()) as Record<string, unknown>[];
+  assert.equal(fees.length, 1);
+  assert.equal(fees[0].kind, "performance");
+  assert.equal(fees[0].assets, "250");
+  assert.equal(fees[0].source, "indexed");
+  assert.equal(typeof fees[0].blockNumber, "string");
+
+  const roles = (await (await fetch(`${base}/v1/vaults/${VAULT}/role-events`)).json()) as Record<string, unknown>[];
+  assert.equal(roles.length, 1);
+  assert.equal(roles[0].roleBit, 7);
+  assert.equal(roles[0].granted, true);
+  assert.equal(roles[0].account, ALICE);
+  assert.equal(typeof roles[0].blockTimestamp, "string");
 });

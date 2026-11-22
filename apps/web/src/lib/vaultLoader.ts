@@ -5,13 +5,17 @@
 import { ApiError, fetchJson } from "./api.ts";
 import {
   parseAllocation,
+  parseFees,
   parseLive,
   parseReports,
+  parseRoleEvents,
   parseRoles,
   parseVaultRow,
   type Allocation,
+  type FeeRow,
   type Live,
   type ReportRow,
+  type RoleEventRow,
   type Roles,
   type VaultRow,
 } from "./vaultView.ts";
@@ -24,6 +28,10 @@ export interface VaultDetail {
   allocationError: unknown;
   reports: ReportRow[];
   reportsError: unknown;
+  fees: FeeRow[];
+  feesError: unknown;
+  roleEvents: RoleEventRow[];
+  roleEventsError: unknown;
   roles: Roles | null;
   rolesError: unknown;
 }
@@ -40,11 +48,13 @@ function describe(error: unknown): string {
  */
 export async function loadVaultDetail(base: string, address: string): Promise<VaultDetail> {
   const path = `/v1/vaults/${address}`;
-  const [vaultResult, liveResult, reportsResult, rolesResult] = await Promise.allSettled([
+  const [vaultResult, liveResult, reportsResult, rolesResult, feesResult, roleEventsResult] = await Promise.allSettled([
     fetchJson(`${base}${path}`),
     fetchJson(`${base}${path}/live`),
     fetchJson(`${base}${path}/reports?limit=5`),
     fetchJson(`${base}${path}/roles`),
+    fetchJson(`${base}${path}/fees?limit=5`),
+    fetchJson(`${base}${path}/role-events?limit=5`),
   ]);
 
   if (vaultResult.status === "rejected") throw vaultResult.reason;
@@ -92,5 +102,37 @@ export async function loadVaultDetail(base: string, address: string): Promise<Va
     rolesError = error;
   }
 
-  return { vault, live, liveError, allocation, allocationError, reports, reportsError, roles, rolesError };
+  let fees: FeeRow[] = [];
+  let feesError: unknown = null;
+  try {
+    if (feesResult.status === "rejected") throw feesResult.reason;
+    fees = parseFees(feesResult.value);
+  } catch (error) {
+    feesError = error;
+  }
+
+  let roleEvents: RoleEventRow[] = [];
+  let roleEventsError: unknown = null;
+  try {
+    if (roleEventsResult.status === "rejected") throw roleEventsResult.reason;
+    roleEvents = parseRoleEvents(roleEventsResult.value);
+  } catch (error) {
+    roleEventsError = error;
+  }
+
+  return {
+    vault,
+    live,
+    liveError,
+    allocation,
+    allocationError,
+    reports,
+    reportsError,
+    fees,
+    feesError,
+    roleEvents,
+    roleEventsError,
+    roles,
+    rolesError,
+  };
 }

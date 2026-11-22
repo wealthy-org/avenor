@@ -320,4 +320,4 @@ Remapping hanya ada di `remappings.txt` (tidak diduplikasi di `foundry.toml`). `
 | `docs/DEPLOYMENT.md` | mode, urutan, env var, assert, pending actions | ✅ |
 | `docs/KEEPER.md` | job, ambang, kill switch, monitor, alert | ✅ |
 | `docs/RUNBOOK.md` | insiden, pause, revoke, migrasi | ✅ (drill HITL belum) |
-| `docs/WEB_APP.md` | shell app, token, primitif angka, halaman detail vault, penyimpangan tiket 5.1/5.2 | ✅ (5.3–5.5 belum) |
+| `docs/WEB_APP.md` | shell app, token, primitif angka, detail vault, deposit, penarikan, portofolio, penyimpangan tiket 5.1/5.2 | ✅ (5.1–5.5 kode selesai; belum dijalankan ke vault terdeploy) |
