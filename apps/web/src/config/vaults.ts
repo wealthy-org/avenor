@@ -6,6 +6,8 @@ export interface VaultConfig {
   label: string;
   /** Where the operator says this vault is in its lifecycle. Never "live/audited" by default. */
   phase: "limited-launch" | "research";
+  /** Operator-written description. Shown as the operator's words, never as an on-chain fact. */
+  mandate?: string;
 }
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
@@ -38,7 +40,14 @@ export function parseVaultList(raw: string | undefined): VaultConfig[] {
     if (phase !== "limited-launch" && phase !== "research") {
       throw new Error(`AVENOR_VAULTS[${index}].phase must be limited-launch or research`);
     }
-    return { address: address as `0x${string}`, label: label.trim(), phase };
+    let mandate: string | undefined;
+    if (candidate.mandate !== undefined) {
+      if (typeof candidate.mandate !== "string" || candidate.mandate.trim() === "") {
+        throw new Error(`AVENOR_VAULTS[${index}].mandate must be a non-empty string when present`);
+      }
+      mandate = candidate.mandate.trim();
+    }
+    return { address: address as `0x${string}`, label: label.trim(), phase, ...(mandate === undefined ? {} : { mandate }) };
   });
 }
 

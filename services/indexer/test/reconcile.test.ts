@@ -50,11 +50,22 @@ function convertKey(shareDecimals: number): string {
 
 function setViews(
   node: FakeRpcServer,
-  numbers: { totalAssets: bigint; totalSupply: bigint; pricePerShare: bigint },
+  numbers: {
+    totalAssets: bigint;
+    totalSupply: bigint;
+    pricePerShare: bigint;
+    /** Defaults to "everything is idle", the only case where the split is unambiguous. */
+    totalIdle?: bigint;
+    totalDebt?: bigint;
+  },
   shareDecimals = 18,
 ): void {
   node.views.set(`${VAULT}:${SELECTOR.totalAssets}`, wordResult(numbers.totalAssets));
   node.views.set(`${VAULT}:${SELECTOR.totalSupply}`, wordResult(numbers.totalSupply));
+  // No accountant is the simple case; the fee read is covered by the API tests.
+  node.views.set(`${VAULT}:${SELECTOR.accountant}`, `0x${"0".repeat(64)}`);
+  node.views.set(`${VAULT}:${SELECTOR.totalIdle}`, wordResult(numbers.totalIdle ?? numbers.totalAssets));
+  node.views.set(`${VAULT}:${SELECTOR.totalDebt}`, wordResult(numbers.totalDebt ?? 0n));
   node.views.set(convertKey(shareDecimals), wordResult(numbers.pricePerShare));
 }
 

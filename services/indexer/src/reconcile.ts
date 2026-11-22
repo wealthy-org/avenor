@@ -23,6 +23,20 @@ export const SELECTOR = {
   decimals: "0x313ce567",
   asset: "0x38d52e0f",
   balanceOf: "0x70a08231",
+  // Allocation is read from the vault itself, not inferred from events: a strategy can hold debt
+  // that no event in our range explains, and the UI must show what the vault reports.
+  totalIdle: "0x9aa7df94",
+  totalDebt: "0xfc7b9c18",
+  defaultQueue: "0xcb1722ce",
+  strategies: "0x39ebf823",
+  venue: "0xa270a737",
+  accountant: "0x4fb3ccc5",
+  // The Yearn accountant has no `performanceFee()` getter; the config comes back as a
+  // `(managementFee, performanceFee, refundRatio, maxFee, maxGain, maxLoss, custom)` tuple.
+  vaultConfig: "0xde1eb9a3",
+  roleManager: "0x79b98917",
+  futureRoleManager: "0x9a98f418",
+  minDelay: "0xf27a0c92",
 } as const;
 
 const ZERO = "0x0000000000000000000000000000000000000000";
@@ -47,6 +61,50 @@ export interface Snapshot {
   totalAssets: bigint;
   totalSupply: bigint;
   pricePerShare: bigint;
+  /** Cash the vault can move without touching a strategy. */
+  totalIdle: bigint;
+  /** Assets the vault believes are deployed. `totalIdle + totalDebt == totalAssets`. */
+  totalDebt: bigint;
+  /**
+   * `accountant.performanceFee()` in basis points at the same block, or `null` when the vault has no
+   * accountant. Read from the contract, never from our config: a fee we configured is not a fee the
+   * vault charges.
+   */
+  performanceFeeBps: number | null;
+  /** `accountant.getVaultConfig(vault).managementFee` in basis points, same block. */
+  managementFeeBps: number | null;
+}
+
+export interface VaultRoles {
+  blockNumber: bigint;
+  blockHash: string;
+  blockTime: Date;
+  roleManager: string;
+  /** Set while a role-manager transfer is pending; the zero address means none. */
+  futureRoleManager: string;
+  /** `role_manager.getMinDelay()` in seconds; `null` when the address does not answer it. */
+  timelockMinDelaySeconds: number | null;
+  /** Why the delay is unknown. Kept so "not a timelock" and "RPC failed" stay distinguishable. */
+  timelockError: string | null;
+}
+
+export interface AllocationEntry {
+  address: string;
+  activation: bigint;
+  lastReport: bigint;
+  currentDebt: bigint;
+  maxDebt: bigint;
+  /** Address the strategy reports as its venue; `null` when the call failed (not every strategy has one). */
+  venue: string | null;
+  /** Why `venue` is null. Kept so a transport failure is visible instead of looking like "no venue". */
+  venueError: string | null;
+}
+
+export interface Allocation {
+  blockNumber: bigint;
+  blockHash: string;
+  blockTime: Date;
+  strategies: AllocationEntry[];
 }
 
 export interface ReconcileReport {
@@ -73,13 +131,34 @@ export function driftBps(indexed: bigint, onchain: bigint): number {
 }
 
 export async function readVaultOnchain(rpc: RpcClient, cfg: VaultConfig, block: bigint): Promise<Snapshot> {
-  const [totalAssetsRaw, totalSupplyRaw, priceRaw, header] = await Promise.all([
+  const [totalAssetsRaw, totalSupplyRaw, priceRaw, idleRaw, debtRaw, header, accountantRaw] = await Promise.all([
     rpc.call(cfg.vault, SELECTOR.totalAssets, block),
     rpc.call(cfg.vault, SELECTOR.totalSupply, block),
     rpc.call(cfg.vault, `${SELECTOR.convertToAssets}${(10n ** BigInt(cfg.shareDecimals)).toString(16).padStart(64, "0")}`, block),
+    rpc.call(cfg.vault, SELECTOR.totalIdle, block),
+    rpc.call(cfg.vault, SELECTOR.totalDebt, block),
     rpc.blockByNumber(block),
+    rpc.call(cfg.vault, SELECTOR.accountant, block),
   ]);
   if (!header) throw new Error(`no header for block ${block}`);
+
+  const accountant = decodeAddress(accountantRaw);
+  let performanceFeeBps: number | null = null;
+  let managementFeeBps: number | null = null;
+  if (accountant !== ZERO) {
+    // A fee read that fails must fail the whole snapshot: showing assets without the fee that is
+    // taken from them would misstate the position.
+    const raw = await rpc.call(accountant, `${SELECTOR.vaultConfig}${cfg.vault.slice(2).padStart(64, "0")}`, block);
+    const body = raw.slice(2);
+    if (body.length < 64 * 7) throw new Error(`getVaultConfig returned ${body.length} hex chars, want 7 words`);
+    const fee = (index: number): number => {
+      const value = decodeWord(`0x${body.slice(index * 64, (index + 1) * 64)}`);
+      if (value > 10_000n) throw new Error(`fee at word ${index} is ${value}, which is not basis points`);
+      return Number(value);
+    };
+    managementFeeBps = fee(0);
+    performanceFeeBps = fee(1);
+  }
 
   return {
     blockNumber: block,
@@ -88,6 +167,115 @@ export async function readVaultOnchain(rpc: RpcClient, cfg: VaultConfig, block: 
     totalAssets: decodeWord(totalAssetsRaw),
     totalSupply: decodeWord(totalSupplyRaw),
     pricePerShare: decodeWord(priceRaw),
+    totalIdle: decodeWord(idleRaw),
+    totalDebt: decodeWord(debtRaw),
+    performanceFeeBps,
+    managementFeeBps,
+  };
+}
+
+/**
+ * Role holders, with the timelock claim tested instead of assumed. An address is a
+ * `TimelockController` only if it answers `getMinDelay()`; otherwise the page must not call it one.
+ */
+export async function readRoles(rpc: RpcClient, cfg: VaultConfig, block: bigint): Promise<VaultRoles> {
+  const [roleRaw, futureRaw, header] = await Promise.all([
+    rpc.call(cfg.vault, SELECTOR.roleManager, block),
+    rpc.call(cfg.vault, SELECTOR.futureRoleManager, block),
+    rpc.blockByNumber(block),
+  ]);
+  if (!header) throw new Error(`no header for block ${block}`);
+  const roleManager = decodeAddress(roleRaw);
+
+  let timelockMinDelaySeconds: number | null = null;
+  let timelockError: string | null = null;
+  if (roleManager === ZERO) {
+    timelockError = "role_manager is the zero address";
+  } else {
+    try {
+      const delay = decodeWord(await rpc.call(roleManager, SELECTOR.minDelay, block));
+      if (delay > 30n * 24n * 60n * 60n) throw new Error(`getMinDelay ${delay} is not seconds`);
+      timelockMinDelaySeconds = Number(delay);
+    } catch (error) {
+      timelockError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  return {
+    blockNumber: block,
+    blockHash: header.hash.toLowerCase(),
+    blockTime: new Date(Number(BigInt(header.timestamp)) * 1000),
+    roleManager,
+    futureRoleManager: decodeAddress(futureRaw),
+    timelockMinDelaySeconds,
+    timelockError,
+  };
+}
+
+/** Address from the low 20 bytes of an ABI word. */
+function decodeAddress(hex: string): string {
+  const body = hex.slice(2, 66);
+  if (body.length !== 64) throw new Error(`not an ABI word: ${hex}`);
+  return `0x${body.slice(24)}`.toLowerCase();
+}
+
+/** Decode `address[]` returned by `default_queue()`. */
+function decodeAddressArray(hex: string): string[] {
+  const body = hex.startsWith("0x") ? hex.slice(2) : hex;
+  if (body.length < 128) throw new Error(`not an ABI-encoded address[]: ${hex}`);
+  const offset = Number(BigInt(`0x${body.slice(0, 64)}`)) * 2;
+  const length = Number(BigInt(`0x${body.slice(offset, offset + 64)}`));
+  const items: string[] = [];
+  for (let i = 0; i < length; i += 1) {
+    const start = offset + 64 + i * 64;
+    items.push(`0x${body.slice(start + 24, start + 64)}`.toLowerCase());
+  }
+  return items;
+}
+
+/**
+ * Debt per strategy, pinned to one block. `venue()` is read per strategy and allowed to fail: the
+ * adapter exposes it, a bare Yearn strategy does not, and a missing venue is reported as `null`
+ * rather than as a wrong address.
+ */
+export async function readAllocation(rpc: RpcClient, cfg: VaultConfig, block: bigint): Promise<Allocation> {
+  const [queueRaw, header] = await Promise.all([
+    rpc.call(cfg.vault, SELECTOR.defaultQueue, block),
+    rpc.blockByNumber(block),
+  ]);
+  if (!header) throw new Error(`no header for block ${block}`);
+  const queue = decodeAddressArray(queueRaw);
+
+  const strategies = await Promise.all(
+    queue.map(async (address): Promise<AllocationEntry> => {
+      const raw = await rpc.call(cfg.vault, `${SELECTOR.strategies}${address.slice(2).padStart(64, "0")}`, block);
+      if (raw.length < 2 + 64 * 4) throw new Error(`strategies(${address}) returned ${raw.length - 2} hex chars`);
+      const body = raw.slice(2);
+      const words = [0, 1, 2, 3].map((index) => decodeWord(`0x${body.slice(index * 64, (index + 1) * 64)}`));
+      let venue: string | null = null;
+      let venueError: string | null = null;
+      try {
+        venue = decodeAddress(await rpc.call(address, SELECTOR.venue, block));
+      } catch (error) {
+        venueError = error instanceof Error ? error.message : String(error);
+      }
+      return {
+        address,
+        activation: words[0]!,
+        lastReport: words[1]!,
+        currentDebt: words[2]!,
+        maxDebt: words[3]!,
+        venue,
+        venueError,
+      };
+    }),
+  );
+
+  return {
+    blockNumber: block,
+    blockHash: header.hash.toLowerCase(),
+    blockTime: new Date(Number(BigInt(header.timestamp)) * 1000),
+    strategies,
   };
 }
 

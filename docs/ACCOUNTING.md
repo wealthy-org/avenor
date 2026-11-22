@@ -142,3 +142,18 @@ Indexer wajib menyimpan per-event: `chainId`, `blockNumber`, `blockHash`, `txHas
 Provenance yang keluar ke app (`services/indexer/src/api.ts`): setiap respons angka membawa
 `blockNumber`, `blockTimestamp`, dan `source` (`indexed` atau `onchain`), dan setiap `uint256`
 dikirim sebagai string — 27 digit supply tidak boleh melewati `JSON.parse` sebagai number.
+
+Endpoint on-chain yang menambahkan pembacaan di epik 5 (semua `source: 'onchain'`, blok eksplisit
+atau checkpoint):
+
+| Endpoint | Isi | Selector yang dibaca |
+|---|---|---|
+| `/v1/vaults/<alamat>/live` | `totalAssets`, `totalSupply`, `pricePerShare`, `totalIdle`, `totalDebt`, `performanceFeeBps`, `managementFeeBps` | `totalAssets()`, `totalSupply()`, `convertToAssets(1e18)`, `totalIdle()`, `totalDebt()`, `accountant()`, lalu `getVaultConfig(vault)` pada accountant |
+| `/v1/vaults/<alamat>/allocation?block=` | antrean default, `currentDebt`, `maxDebt`, `venue`, `lastReport` per strategi | `default_queue()`, `strategies(address)`, `venue()` |
+| `/v1/vaults/<alamat>/roles` | `role_manager`, `future_role_manager`, `timelockMinDelaySeconds` | `role_manager()`, `future_role_manager()`, `getMinDelay()` |
+
+`totalIdle + totalDebt == totalAssets` bukan asumsi: `readVaultOnchain` membaca keduanya dan
+konsumen menolak angka yang tidak menjumlah. `performanceFeeBps` berasal dari
+`Accountant.getVaultConfig(vault)` (tuple `Fee`, word ke-1), bukan dari getter `performanceFee()`
+yang tidak ada di `Accountant.sol:472`. `venue()` yang gagal tidak menjadi alamat palsu: field
+`venue` menjadi `null` dan `venueError` menyebut alasannya.

@@ -10,12 +10,27 @@ import { migrate } from "../src/migrate.ts";
 import { httpRpc } from "../src/rpc.ts";
 import { startApi, type ApiHandle } from "../src/api.ts";
 import { SELECTOR } from "../src/reconcile.ts";
-import { FakeRpcServer, fakeChain, mine, uintWord, wordResult, type FakeChain } from "./fakeRpc.ts";
+import {
+  addressArrayResult,
+  addressWordResult,
+  FakeRpcServer,
+  fakeChain,
+  mine,
+  strategiesResult,
+  uintWord,
+  wordResult,
+  type FakeChain,
+} from "./fakeRpc.ts";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const MIGRATIONS = path.join(ROOT, "migrations");
 const VAULT = "0xbeef00000000000000000000000000000000beef";
 const ALICE = "0xaaaa00000000000000000000000000000000aaaa";
+const STRATEGY = "0xcccc00000000000000000000000000000000cccc";
+const VENUE = "0xdddd00000000000000000000000000000000dddd";
+const ACCOUNTANT = "0xeeee00000000000000000000000000000000eeee";
+const TIMELOCK = "0xffff00000000000000000000000000000000ffff";
+const NEXT_ROLE_MANAGER = "0x9999000000000000000000000000000000009999";
 const SUPPLY = 531_418_644_510_854_399_888_342_585n;
 
 let pool: Pool;
@@ -50,12 +65,34 @@ async function seed(chain: FakeChain): Promise<FakeRpcServer> {
   const node = new FakeRpcServer(chain);
   await node.start();
   server = node;
-  node.views.set(`${VAULT}:${SELECTOR.totalAssets}`, wordResult(538_856_055_994n));
+  node.views.set(`${VAULT}:${SELECTOR.totalAssets}`, wordResult(538_856_055_994_280n));
   node.views.set(`${VAULT}:${SELECTOR.totalSupply}`, wordResult(SUPPLY));
   node.views.set(
     `${VAULT}:${SELECTOR.convertToAssets}${uintWord(10n ** 18n)}`,
     wordResult(1_002_699n),
   );
+  node.views.set(`${VAULT}:${SELECTOR.accountant}`, addressWordResult(ACCOUNTANT));
+  node.views.set(
+    `${ACCOUNTANT}:${SELECTOR.vaultConfig}${VAULT.slice(2).padStart(64, "0")}`,
+    // (managementFee, performanceFee, refundRatio, maxFee, maxGain, maxLoss, custom)
+    `0x${[0n, 1_000n, 1_500n, 2_000n, 100_000n, 1_500n, 0n].map((word) => uintWord(word)).join("")}`,
+  );
+  node.views.set(`${VAULT}:${SELECTOR.roleManager}`, addressWordResult(TIMELOCK));
+  node.views.set(`${VAULT}:${SELECTOR.futureRoleManager}`, `0x${"0".repeat(64)}`);
+  node.views.set(`${TIMELOCK}:${SELECTOR.minDelay}`, wordResult(172_800n));
+  node.views.set(`${VAULT}:${SELECTOR.totalIdle}`, wordResult(27_024_457_979_514n));
+  node.views.set(`${VAULT}:${SELECTOR.totalDebt}`, wordResult(511_831_598_014_766n));
+  node.views.set(`${VAULT}:${SELECTOR.defaultQueue}`, addressArrayResult([STRATEGY]));
+  node.views.set(
+    `${VAULT}:${SELECTOR.strategies}${STRATEGY.slice(2).padStart(64, "0")}`,
+    strategiesResult({
+      activation: 33n,
+      lastReport: 1_700_000_020n,
+      currentDebt: 511_831_598_014_766n,
+      maxDebt: 600_000_000_000_000n,
+    }),
+  );
+  node.views.set(`${STRATEGY}:${SELECTOR.venue}`, addressWordResult(VENUE));
 
   await pool.query(
     `INSERT INTO vaults (chain_id, address, name, symbol, asset_address, asset_decimals, share_decimals,
@@ -150,9 +187,21 @@ test("live reads the node at a pinned block and says so", async () => {
   assert.equal(status, 200);
   assert.equal(body.source, "onchain");
   assert.equal(body.blockNumber, "20");
-  assert.equal(body.totalAssets, "538856055994");
+  assert.equal(body.totalAssets, "538856055994280");
   assert.equal(body.totalSupply, SUPPLY.toString());
   assert.equal(body.pricePerShare, "1002699");
+  // Idle and debt are separate answers: a UI that adds them is making up a total the vault did not
+  // report, and at the venue pin the "withdrawable" figure is not derivable from either.
+  assert.equal(body.totalIdle, "27024457979514");
+  assert.equal(body.totalDebt, "511831598014766");
+  // The fee comes from the accountant at the same block; a configured fee is not a charged fee.
+  assert.equal(body.performanceFeeBps, 1000);
+  assert.equal(body.managementFeeBps, 0);
+  assert.equal(
+    BigInt(body.totalIdle) + BigInt(body.totalDebt),
+    BigInt(body.totalAssets),
+    "idle + debt must equal totalAssets or the reads came from different blocks",
+  );
   assert.equal(body.blockTimestamp, new Date(Number(chain.blocks.get(20)!.timestamp) * 1000).toISOString());
 });
 
@@ -162,6 +211,68 @@ test("live defaults to the checkpoint so 'latest' cannot mean two different bloc
   await seed(chain);
   const { body } = await get(`/v1/vaults/${VAULT}/live`);
   assert.equal(body.blockNumber, "20");
+});
+
+test("allocation reads the queue, debt and venue at one pinned block", async () => {
+  const chain = fakeChain();
+  mine(chain, 21);
+  await seed(chain);
+  const { status, body } = await get(`/v1/vaults/${VAULT}/allocation?block=20`);
+  assert.equal(status, 200);
+  assert.equal(body.source, "onchain");
+  assert.equal(body.blockNumber, "20");
+  assert.equal(body.strategies.length, 1);
+  const [strategy] = body.strategies;
+  assert.equal(strategy.address, STRATEGY);
+  assert.equal(strategy.currentDebt, "511831598014766");
+  assert.equal(strategy.maxDebt, "600000000000000");
+  assert.equal(strategy.activation, "33");
+  assert.equal(strategy.lastReport, "1700000020");
+  assert.equal(strategy.venue, VENUE);
+});
+
+test("allocation does not invent a venue when the strategy has none", async () => {
+  const chain = fakeChain();
+  mine(chain, 21);
+  const node = await seed(chain);
+  node.views.delete(`${STRATEGY}:${SELECTOR.venue}`);
+  const { status, body } = await get(`/v1/vaults/${VAULT}/allocation?block=20`);
+  assert.equal(status, 200);
+  assert.equal(body.strategies[0].venue, null);
+  assert.match(body.strategies[0].venueError, /no fake eth_call result/);
+  assert.equal(body.strategies[0].currentDebt, "511831598014766");
+});
+
+test("roles prove the timelock by asking it, not by trusting the address", async () => {
+  const chain = fakeChain();
+  mine(chain, 21);
+  await seed(chain);
+  const { status, body } = await get(`/v1/vaults/${VAULT}/roles?block=20`);
+  assert.equal(status, 200);
+  assert.equal(body.roleManager, TIMELOCK);
+  assert.equal(body.futureRoleManager, "0x0000000000000000000000000000000000000000");
+  assert.equal(body.timelockMinDelaySeconds, 172_800);
+  assert.equal(body.timelockError, null);
+  assert.equal(body.source, "onchain");
+});
+
+test("roles surface a pending role-manager transfer", async () => {
+  const chain = fakeChain();
+  mine(chain, 21);
+  const node = await seed(chain);
+  node.views.set(`${VAULT}:${SELECTOR.futureRoleManager}`, addressWordResult(NEXT_ROLE_MANAGER));
+  const { body } = await get(`/v1/vaults/${VAULT}/roles?block=20`);
+  assert.equal(body.futureRoleManager, NEXT_ROLE_MANAGER);
+});
+
+test("roles report an address that does not answer getMinDelay instead of calling it a timelock", async () => {
+  const chain = fakeChain();
+  mine(chain, 21);
+  const node = await seed(chain);
+  node.views.delete(`${TIMELOCK}:${SELECTOR.minDelay}`);
+  const { body } = await get(`/v1/vaults/${VAULT}/roles?block=20`);
+  assert.equal(body.timelockMinDelaySeconds, null);
+  assert.match(body.timelockError, /no fake eth_call result/);
 });
 
 test("reports expose gains, losses and refunds as strings", async () => {

@@ -11,7 +11,15 @@
 
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { Pool } from "pg";
-import { readVaultOnchain, type Snapshot, type VaultConfig } from "./reconcile.ts";
+import {
+  readAllocation,
+  readRoles,
+  readVaultOnchain,
+  type Allocation,
+  type Snapshot,
+  type VaultConfig,
+  type VaultRoles,
+} from "./reconcile.ts";
 import type { RpcClient } from "./rpc.ts";
 
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
@@ -70,7 +78,42 @@ function onchainBody(snapshot: Snapshot) {
     totalAssets: snapshot.totalAssets.toString(),
     totalSupply: snapshot.totalSupply.toString(),
     pricePerShare: snapshot.pricePerShare.toString(),
+    totalIdle: snapshot.totalIdle.toString(),
+    totalDebt: snapshot.totalDebt.toString(),
+    performanceFeeBps: snapshot.performanceFeeBps,
+    managementFeeBps: snapshot.managementFeeBps,
     source: "onchain" as const,
+  };
+}
+
+function rolesBody(roles: VaultRoles) {
+  return {
+    blockNumber: roles.blockNumber.toString(),
+    blockHash: roles.blockHash,
+    blockTimestamp: roles.blockTime.toISOString(),
+    source: "onchain" as const,
+    roleManager: roles.roleManager,
+    futureRoleManager: roles.futureRoleManager,
+    timelockMinDelaySeconds: roles.timelockMinDelaySeconds,
+    timelockError: roles.timelockError,
+  };
+}
+
+function allocationBody(allocation: Allocation) {
+  return {
+    blockNumber: allocation.blockNumber.toString(),
+    blockHash: allocation.blockHash,
+    blockTimestamp: allocation.blockTime.toISOString(),
+    source: "onchain" as const,
+    strategies: allocation.strategies.map((entry) => ({
+      address: entry.address,
+      activation: entry.activation.toString(),
+      lastReport: entry.lastReport.toString(),
+      currentDebt: entry.currentDebt.toString(),
+      maxDebt: entry.maxDebt.toString(),
+      venue: entry.venue,
+      venueError: entry.venueError,
+    })),
   };
 }
 
@@ -192,6 +235,20 @@ async function route(pool: Pool, rpc: RpcClient | null, cfg: ApiConfig, request:
     const checkpoint = await latestCheckpoint(pool, cfg.chainId);
     const block = blockParam(url.searchParams.get("block"), checkpoint ?? (await rpc.blockNumber()));
     return onchainBody(await readVaultOnchain(rpc, cfg, block));
+  }
+
+  if (resource === "roles") {
+    if (!rpc) throw new HttpError(503, "no_rpc", "this API was started without an RPC client");
+    const checkpoint = await latestCheckpoint(pool, cfg.chainId);
+    const block = blockParam(url.searchParams.get("block"), checkpoint ?? (await rpc.blockNumber()));
+    return rolesBody(await readRoles(rpc, cfg, block));
+  }
+
+  if (resource === "allocation") {
+    if (!rpc) throw new HttpError(503, "no_rpc", "this API was started without an RPC client");
+    const checkpoint = await latestCheckpoint(pool, cfg.chainId);
+    const block = blockParam(url.searchParams.get("block"), checkpoint ?? (await rpc.blockNumber()));
+    return allocationBody(await readAllocation(rpc, cfg, block));
   }
 
   throw new HttpError(404, "not_found", `no route for ${url.pathname}`);

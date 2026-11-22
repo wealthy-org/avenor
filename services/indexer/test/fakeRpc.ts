@@ -73,6 +73,30 @@ export function uintWord(value: bigint): string {
   return value.toString(16).padStart(64, "0");
 }
 
+/** Encode a single `address` as an ABI word (left-padded, unlike a `uint256` cast of the address). */
+export function addressWordResult(address: string): string {
+  if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new Error(`${address} is not a 20-byte address`);
+  return `0x${address.slice(2).toLowerCase().padStart(64, "0")}`;
+}
+
+/** Encode `address[]`, including the offset word, the way solc returns it. */
+export function addressArrayResult(addresses: string[]): string {
+  const offset = uintWord(32n);
+  const length = uintWord(BigInt(addresses.length));
+  const items = addresses.map((address) => address.replace(/^0x/, "").toLowerCase().padStart(64, "0")).join("");
+  return `0x${offset}${length}${items}`;
+}
+
+/** Encode the `strategies(address)` tuple `(activation, last_report, current_debt, max_debt)`. */
+export function strategiesResult(values: {
+  activation: bigint;
+  lastReport: bigint;
+  currentDebt: bigint;
+  maxDebt: bigint;
+}): string {
+  return `0x${uintWord(values.activation)}${uintWord(values.lastReport)}${uintWord(values.currentDebt)}${uintWord(values.maxDebt)}`;
+}
+
 /** Encode a `uint256` return value the way an ABI-encoded `eth_call` result looks. */
 export function wordResult(value: bigint): string {
   return `0x${uintWord(value)}`;

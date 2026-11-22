@@ -36,3 +36,16 @@ test("default phase is research, never a launch claim", () => {
 test("an unset API URL is an error where it is used, not an empty string in a fetch", () => {
   assert.throws(() => apiUrl("/health"), /AVENOR_API_URL is not set/);
 });
+
+test("mandate is the operator's words and is kept only when non-empty", () => {
+  const [withMandate] = parseVaultList(
+    JSON.stringify([{ address: "0x1111111111111111111111111111111111111111", label: "A", mandate: " USDG, batas 500rb " }]),
+  );
+  assert.equal(withMandate!.mandate, "USDG, batas 500rb");
+  const [without] = parseVaultList(JSON.stringify([{ address: "0x1111111111111111111111111111111111111111", label: "A" }]));
+  assert.equal(without!.mandate, undefined);
+  assert.throws(
+    () => parseVaultList(JSON.stringify([{ address: "0x1111111111111111111111111111111111111111", label: "A", mandate: "  " }])),
+    /mandate must be a non-empty string/,
+  );
+});
