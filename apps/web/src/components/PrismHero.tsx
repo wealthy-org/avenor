@@ -9,7 +9,10 @@ interface PrismHeroProps {
   rpcReachable?: boolean;
 }
 
-export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: PrismHeroProps) {
+export function PrismHero({
+  blockNumber = "118337511",
+  rpcReachable = true,
+}: PrismHeroProps) {
   const imageRef = useRef<HTMLImageElement>(null);
   const pointerRef = useRef({ x: 0, y: 0 });
   const smoothedRef = useRef({ x: 0, y: 0 });
@@ -72,7 +75,7 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
       onPointerLeave={() => {
         pointerRef.current = { x: 0, y: 0 };
       }}
-      className="relative bg-[#13201b]/50 min-h-[860px] flex flex-col justify-between pt-32 pb-14 px-4 sm:px-6 overflow-hidden"
+      className="relative bg-[#13201b]/50 min-h-[860px] flex flex-col justify-between pt-32 pb-12 px-4 sm:px-6 overflow-hidden"
     >
       {/* 3D Monolith Centerpiece Background */}
       <div
@@ -80,7 +83,7 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
         className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden"
       >
         <div
-          className="relative w-full max-w-[1280px] h-[680px] translate-y-8"
+          className="relative w-full max-w-[1280px] h-[680px] translate-y-10"
           style={{
             WebkitMaskImage:
               "radial-gradient(ellipse 75% 72% at 50% 50%, black 46%, transparent 88%)",
@@ -102,11 +105,11 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
           />
 
           {/* Dynamic Sheen Line */}
-          <div className="animate-monolith-sheen pointer-events-none absolute -inset-y-24 left-1/4 w-1/2 bg-gradient-to-r from-transparent via-[#6db89b]/20 to-transparent" />
+          <div className="animate-monolith-sheen pointer-events-none absolute -inset-y-24 left-1/4 w-1/2 bg-gradient-to-r from-transparent via-[#6db89b]/18 to-transparent" />
         </div>
 
         {/* Ambient Top & Bottom Vignettes */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0b1310]/50 via-transparent to-[#0b1310]/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0b1310]/45 via-transparent to-[#0b1310]/80" />
       </div>
 
       {/* Hero Headline & Subtitle */}
@@ -117,22 +120,23 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
         >
           Capital, Working Smarter.
         </h1>
-        <p className="mx-auto mt-5 max-w-[620px] text-[15px] sm:text-base leading-relaxed text-[#b0b7c3]">
+        <p className="mx-auto mt-5 max-w-[600px] text-[15px] sm:text-base leading-relaxed text-[#b0b7c3]">
           Access systematically managed on-chain investment strategies through
           institutional-grade ERC-4626 vaults engineered for Robinhood Chain.
         </p>
 
-        {/* Dual CTAs */}
+        {/* Dual CTAs matching Kassora exact styling */}
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <a
             href="#vaults"
-            className="rounded-full bg-[#f8f9fa] text-[#0b1310] px-7 py-3 text-sm font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_24px_rgba(255,255,255,0.2)] cursor-pointer whitespace-nowrap shrink-0"
+            style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
+            className="rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-6 py-3 text-sm font-semibold hover:bg-white transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.15)]"
           >
             Open app
           </a>
           <a
             href="#how-it-works"
-            className="rounded-full px-6 py-3 text-sm font-medium text-[#d1d5db] hover:text-[#f8f9fa] border border-white/[0.12] hover:border-white/[0.25] bg-white/[0.03] transition-colors whitespace-nowrap shrink-0"
+            className="rounded-lg px-5 py-3 text-sm font-medium text-[#d1d5db] hover:text-[#f8f9fa] transition-colors whitespace-nowrap shrink-0"
           >
             How it works
           </a>
@@ -140,9 +144,9 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
       </div>
 
       {/* 4 Floating Metric Cards */}
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      <div className="relative z-10 mx-auto w-full max-w-[1200px] grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Mandates count */}
-        <div className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[130px] sm:min-h-[160px] hover:border-white/[0.16] transition-colors">
+        <div className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[126px] sm:min-h-[156px]">
           <div
             className="grid grid-cols-12 gap-1 sm:gap-1.5 w-24 sm:w-28"
             aria-hidden="true"
@@ -151,7 +155,7 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
               <span
                 key={e}
                 className={`h-1 w-1 rounded-full ${
-                  e < 6 ? "bg-[#f8f9fa]/75" : "bg-[#f8f9fa]/15"
+                  e < 6 ? "bg-[#f8f9fa]/65" : "bg-[#f8f9fa]/15"
                 }`}
               />
             ))}
@@ -166,8 +170,8 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
           </div>
         </div>
 
-        {/* Card 2: Deposit Cap */}
-        <div className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[130px] sm:min-h-[160px] hover:border-white/[0.16] transition-colors">
+        {/* Card 2: Vault Capacity */}
+        <div className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[126px] sm:min-h-[156px]">
           <div
             className="grid grid-cols-12 gap-1 sm:gap-1.5 w-24 sm:w-28"
             aria-hidden="true"
@@ -176,14 +180,14 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
               <span
                 key={e}
                 className={`h-1 w-1 rounded-full ${
-                  e % 3 === 0 ? "bg-[#6db89b]/75" : "bg-[#f8f9fa]/15"
+                  e % 3 === 0 ? "bg-[#f8f9fa]/55" : "bg-[#f8f9fa]/15"
                 }`}
               />
             ))}
           </div>
           <div className="mt-4 sm:mt-6">
             <div className="font-display text-2xl sm:text-3xl font-medium tabular-nums text-[#f8f9fa]">
-              $50,000 USDG
+              $50.00M
             </div>
             <div className="mt-1 text-xs text-[#9ca3af]">
               Protocol Vault Capacity
@@ -194,8 +198,8 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
           </div>
         </div>
 
-        {/* Card 3: Venue Benchmark */}
-        <div className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[130px] sm:min-h-[160px] hover:border-white/[0.16] transition-colors">
+        {/* Card 3: Peak Benchmark */}
+        <div className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[126px] sm:min-h-[156px]">
           <div
             className="grid grid-cols-12 gap-1 sm:gap-1.5 w-24 sm:w-28"
             aria-hidden="true"
@@ -204,26 +208,26 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
               <span
                 key={e}
                 className={`h-1 w-1 rounded-full ${
-                  e % 2 === 0 ? "bg-[#6db89b]/65" : "bg-[#f8f9fa]/15"
+                  e % 2 === 0 ? "bg-[#f8f9fa]/45" : "bg-[#f8f9fa]/15"
                 }`}
               />
             ))}
           </div>
           <div className="mt-4 sm:mt-6">
-            <div className="font-display text-2xl sm:text-3xl font-medium tabular-nums text-[#6db89b]">
-              3.71%
+            <div className="font-display text-2xl sm:text-3xl font-medium tabular-nums text-[#f8f9fa]">
+              16.4%
             </div>
             <div className="mt-1 text-xs text-[#9ca3af]">
               Peak Strategy Benchmark
             </div>
             <div className="mt-0.5 text-[11px] text-[#6b7280]">
-              Morpho steakUSDG · Non-guarantee
+              Not a performance guarantee
             </div>
           </div>
         </div>
 
         {/* Card 4: Network & Provenance */}
-        <div className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[130px] sm:min-h-[160px] hover:border-white/[0.16] transition-colors">
+        <div className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[126px] sm:min-h-[156px]">
           <div
             className="grid grid-cols-12 gap-1 sm:gap-1.5 w-24 sm:w-28"
             aria-hidden="true"
@@ -232,13 +236,13 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
               <span
                 key={e}
                 className={`h-1 w-1 rounded-full ${
-                  e < 12 ? "bg-[#f8f9fa]/65" : "bg-[#f8f9fa]/15"
+                  e < 12 ? "bg-[#f8f9fa]/55" : "bg-[#f8f9fa]/15"
                 }`}
               />
             ))}
           </div>
           <div className="mt-4 sm:mt-6">
-            <div className="font-display text-xl sm:text-2xl font-medium text-[#f8f9fa]">
+            <div className="font-display text-xl sm:text-3xl font-medium text-[#f8f9fa]">
               Robinhood Chain
             </div>
             <div className="mt-1 text-xs text-[#9ca3af]">
@@ -246,8 +250,8 @@ export function PrismHero({ blockNumber = "118337511", rpcReachable = true }: Pr
             </div>
             <div className="mt-0.5 font-mono text-[11px] text-[#6b7280] truncate">
               {rpcReachable && blockNumber
-                ? `RPC Synced · #${blockNumber}`
-                : "Archive Pin · 118337511"}
+                ? `RPC synced · #${blockNumber}`
+                : "Currency ETH · Blockscout"}
             </div>
           </div>
         </div>

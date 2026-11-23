@@ -52,8 +52,12 @@ body {
 }
 
 a {
-  color: inherit;
   text-decoration: none;
+}
+
+.btn-open-app {
+  background-color: #f8f9fa !important;
+  color: #0b1310 !important;
 }
 
 :focus-visible {

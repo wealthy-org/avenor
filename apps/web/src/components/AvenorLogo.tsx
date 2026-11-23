@@ -25,7 +25,7 @@ export function AvenorLogo({ className = "" }: { className?: string }) {
         />
         <circle cx="16" cy="13.5" r="1.5" fill="#f8f9fa" />
       </svg>
-      <span className="font-display text-[13px] font-semibold tracking-[0.28em] text-[#f8f9fa] uppercase">
+      <span className="font-display text-[13px] font-medium tracking-[0.28em] text-[#f8f9fa] uppercase">
         AVENOR
       </span>
     </span>
