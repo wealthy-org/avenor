@@ -3,8 +3,12 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-const defaultApiUrl = process.env.AVENOR_API_URL || (vercelHost ? `https://${vercelHost}` : "https://avenor-kappa.vercel.app");
+// No `env` block here on purpose. Pinning AVENOR_VAULTS / AVENOR_API_URL / NEXT_PUBLIC_RPC_URL in this
+// file inlines them into both bundles, so a value written here wins over the environment and over
+// .env.local. That is how a deployed API base and a recorded block number from an older capture ended up
+// rendered on a page that never read them: the app was reading a remote service while the page claimed a
+// local fork. Configuration now comes from the environment alone; when a variable is missing the app says
+// so instead of falling back to someone else's server.
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -13,18 +17,6 @@ const nextConfig = {
   typescript: {
     // Monorepo packages outside root are typechecked via verify-all.py
     ignoreBuildErrors: true,
-  },
-  env: {
-    AVENOR_VAULTS: process.env.AVENOR_VAULTS || JSON.stringify([
-      {
-        address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
-        label: "Avenor USDG Managed Vault (Staging)",
-        phase: "research",
-        mandate: "Staging fork — all numbers read directly from Robinhood Chain mainnet pinned block 118337511. Not intended for public deposit.",
-      },
-    ]),
-    AVENOR_API_URL: defaultApiUrl,
-    NEXT_PUBLIC_RPC_URL: process.env.NEXT_PUBLIC_RPC_URL || "https://robinhood.api.onfinality.io/public",
   },
   webpack: (config) => {
     config.resolve.modules.push(path.resolve(__dirname, "node_modules"));

@@ -72,7 +72,7 @@ export async function loadVaultDetail(base: string, address: string): Promise<Va
   let allocation: Allocation | null = null;
   let allocationError: unknown = null;
   if (live === null) {
-    allocationError = new Error("alokasi tidak dibaca karena angka live tidak tersedia");
+    allocationError = new Error("allocation was not read because the live numbers are unavailable");
   } else {
     try {
       allocation = parseAllocation(
