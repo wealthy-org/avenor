@@ -91,3 +91,29 @@ Konsekuensi yang mengikat dokumen lain: `maxDeposit = 0` tidak boleh dipercaya (
 - Belum ada capture Kassora visual; klaim "parity" belum punya dasar.
 - Belum ada bukti bahwa Yearn V3 factory resmi sudah dideploy di `4663`; kemungkinan besar kita deploy factory sendiri (keputusan di `ARCHITECTURE.md`).
 - Belum ada verifikasi source USDG dari sumber resmi Robinhood (lihat §3).
+
+## 6. Capture yang dipakai aplikasi web (fork lokal, bukan mainnet)
+
+Angka di UI sebelumnya diambil dari capture tanpa provenance dan sebagian tidak dapat direproduksi. Capture pengganti diambil dari fork lokal di blok **`118337663`**, hash `0x1793d732f77546f084089ab84f4282959b513315a926a854c9ddb21d2b38d0b9`, timestamp `1795496277` = `2026-11-24T04:57:57Z`.
+
+| Objek | Nilai terukur | Cara |
+|---|---|---|
+| Vault `0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA` | EIP-1167 minimal proxy, body 45 byte | `eth_getCode` |
+| Implementation `0xd3aF095DE5D1419ADabE47a48d6110e37236A97F` | 23.462 byte runtime, keccak `0x6909c58e42814ae46cadd909f29f19163751b77ff4a2ccf62c5a87e933e02be6` | `eth_getCode` di alamat impl |
+| `apiVersion` / `name` / `symbol` / `decimals` | `3.1.1` / `Avenor USDG Managed Vault` / `avUSDG` / `6` | `eth_call` |
+| `totalAssets` / `totalSupply` / `totalIdle` / `totalDebt` | `1800000000` / `1800000000` / `1800000000` / `0` | `eth_call` |
+| `pricePerShare` / `deposit_limit` | `1000000` / `50000000000` | `eth_call` |
+| `performanceFeeBps` / `managementFeeBps` | `1000` / `0` | `accountant.getVaultConfig(vault)` |
+| `role_manager` | `0x2C328D592819524F741A88A18572372CCE196782`, `getMinDelay` `172800` | `eth_call` |
+| Default queue | `["0xf070f5a2Ddf4d106502235597bd42fd9eDaF7bFE"]` | `get_default_queue()` |
+| Strategy | `ysUSDG`, `activation`/`lastReport` `1795104188` (unix, bukan tinggi blok), `currentDebt` `0`, `maxDebt` `100000000000` | `strategies(address)` |
+| USDG | `0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 desimal, `Global Dollar` | `eth_call` |
+
+Catatan fabrikasi yang diperbaiki:
+
+- `538.856,055994` yang tampil sebagai "nilai vault" adalah `totalAssets` **venue** `steakUSDG` (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`, Morpho Vault V2, 18 desimal), bukan saldo vault Avenor.
+- `511.831,60` berasal dari API deployment jarak jauh yang disuntikkan lewat blok `env` di `next.config.mjs`; blok itu dihapus, dan halaman kini membaca node per request (`src/lib/vaultRead.ts`).
+- Alamat tanpa kode (`0xB56Ec0F9…`, `0x2C328D59…491f`, `0xdEc68A40…c287`) tidak lagi dipakai sebagai sumber angka.
+- `eth_getCode` vault di mainnet Robinhood Chain mengembalikan `0x`: semua angka adalah angka fork, dan UI menyebutnya begitu.
+
+Regenerasi capture: `node apps/web/scripts/capture-fork-snapshot.mjs` (butuh anvil fork pada `RPC_URL`, default `http://127.0.0.1:8545`). Hasilnya `apps/web/src/lib/forkSnapshot.json`, dan hanya dipakai sebagai fallback berlabel `source: "captured"` ketika node tidak dapat dibaca.

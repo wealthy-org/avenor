@@ -63,3 +63,6 @@ referensi/yearn-vaults-v3/
 apps/web/.next/
 apps/web/next-env.d.ts
 *.tsbuildinfo
+
+# tangkapan layar masukan (bukan artefak aplikasi)
+ss/
