@@ -210,186 +210,589 @@ export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
   const lossTooHigh = customLoss.trim() !== "" ? Number(customLoss) >= MAX_LOSS_BPS : lossBps >= MAX_LOSS_BPS;
 
   return (
-    <div className="stack">
-      <dl className="facts">
-        <dt>Nilai posisi</dt>
-        <dd>{quote === null ? "—" : <Amount value={quote.positionAssets} kind="usdg" />}</dd>
-        <dt>Dapat ditarik sekarang</dt>
-        <dd>{quote === null ? "—" : <Amount value={quote.maxAssets} kind="usdg" />}</dd>
-        <dt>Kas idle vault</dt>
-        <dd>
-          <Amount value={live.totalIdle} kind="usdg" /> ({quote === null ? "—" : percentBps(idleCoverageBps(quote))} dari permintaan)
-        </dd>
-        <dt>Toleransi loss</dt>
-        <dd>
-          {quote === null ? `${lossBps} bps` : `${quote.maxLossBps} bps = ${maxLossAssets(quote).toString()} unit aset`}
-        </dd>
-      </dl>
-      <p className="provenance">
-        Angka vault dari chain pada blok {live.blockNumber.toString()} ({blockTime(live.blockTimestamp)}). Nilai posisi
-        bukan janji likuiditas: {assetSymbol} yang bisa ditarik sekarang dibatasi `maxWithdraw`/`maxRedeem`, dan angka itu
-        bergerak bersama kas venue.
-      </p>
+    <div className="stack" style={{ background: "#0b1310", color: "#f8f9fa", minHeight: "100%" }}>
 
+      {/* ── 1. Paused Alert Banner ── */}
       {live.isPaused ? (
-        <p role="alert">
-          Vault dijeda. `withdraw` dan `redeem` revert selama pause (`assert not self.paused` di `VaultV3.vy`), jadi tidak
-          ada tombol kirim. Ini bukan sekadar UI: chain akan menolak.
-        </p>
-      ) : null}
-
-      <div className="row">
-        <label htmlFor="withdraw-mode">Jenis</label>
-        <select
-          id="withdraw-mode"
-          value={mode}
-          onChange={(event) => {
-            setMode(event.target.value === "shares" ? "shares" : "assets");
-            setQuote(null);
+        <div
+          role="alert"
+          style={{
+            background: "rgba(220,38,38,0.12)",
+            border: "1px solid rgba(220,38,38,0.4)",
+            borderRadius: "0.75rem",
+            padding: "0.875rem 1.25rem",
+            display: "flex",
+            gap: "0.75rem",
+            alignItems: "flex-start",
           }}
         >
-          <option value="assets">Tarik aset ({assetSymbol})</option>
-          <option value="shares">Bakar share (redeem)</option>
-        </select>
-        <button type="button" onClick={connect} disabled={account !== null}>
-          {account === null ? "Hubungkan wallet" : `Terhubung: ${account.slice(0, 6)}…${account.slice(-4)}`}
-        </button>
-      </div>
+          <span style={{ color: "#f87171", fontSize: "1.1rem", lineHeight: 1.4 }}>⚠</span>
+          <p style={{ margin: 0, fontSize: "0.875rem", color: "#fca5a5", lineHeight: 1.5 }}>
+            <strong style={{ color: "#f87171" }}>Vault Paused.</strong>{" "}
+            <code>withdraw</code> and <code>redeem</code> functions will revert on-chain (<code>assert not self.paused</code> in{" "}
+            <code>VaultV3.vy</code>). This is an on-chain protocol invariant: transactions will be rejected by the node.
+          </p>
+        </div>
+      ) : null}
 
-      <div className="row">
-        <label htmlFor="withdraw-amount">Jumlah ({mode === "assets" ? assetSymbol : "share"})</label>
-        <input
-          id="withdraw-amount"
-          inputMode="decimal"
-          autoComplete="off"
-          value={amount}
-          onChange={(event) => {
-            setAmount(event.target.value);
-            setQuote(null);
+      {/* ── 2. Position Summary Card ── */}
+      <div
+        style={{
+          background: "#101b16",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "1rem",
+          padding: "1.25rem 1.5rem",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        {/* Two large stats */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: "1.25rem",
+            marginBottom: "1rem",
           }}
-          placeholder="0.00"
-        />
-        <button type="button" onClick={setMax} disabled={quote === null}>
-          Maks
-        </button>
+        >
+          <div>
+            <p style={{ margin: "0 0 0.25rem", fontSize: "0.75rem", color: "#8b929e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Position Value
+            </p>
+            <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#f8f9fa" }}>
+              {quote === null ? "—" : <Amount value={quote.positionAssets} kind="usdg" />}
+            </p>
+          </div>
+          <div>
+            <p style={{ margin: "0 0 0.25rem", fontSize: "0.75rem", color: "#8b929e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              Immediately Withdrawable
+            </p>
+            <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#6db89b" }}>
+              {quote === null ? "—" : <Amount value={quote.maxAssets} kind="usdg" />}
+            </p>
+          </div>
+        </div>
+
+        {/* Smaller muted stats */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "1rem",
+            paddingTop: "0.75rem",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            marginBottom: "0.75rem",
+          }}
+        >
+          <span style={{ fontSize: "0.78rem", color: "#8b929e" }}>
+            <span style={{ color: "#adb5bd" }}>Vault Idle Reserves:</span>{" "}
+            <Amount value={live.totalIdle} kind="usdg" />
+            {quote !== null && <> ({percentBps(idleCoverageBps(quote))} of requested assets)</>}
+          </span>
+          <span style={{ fontSize: "0.78rem", color: "#8b929e" }}>
+            <span style={{ color: "#adb5bd" }}>Loss Tolerance:</span>{" "}
+            {quote === null
+              ? `${lossBps} bps`
+              : `${quote.maxLossBps} bps = ${maxLossAssets(quote).toString()} asset units`}
+          </span>
+        </div>
+
+        {/* Important warning badge */}
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            background: "rgba(251,191,36,0.08)",
+            border: "1px solid rgba(251,191,36,0.25)",
+            borderRadius: "9999px",
+            padding: "0.2rem 0.75rem",
+            fontSize: "0.72rem",
+            color: "#fbbf24",
+            marginBottom: "0.75rem",
+          }}
+        >
+          ⚠ Position Value ≠ Immediately Withdrawable Amount
+        </div>
+
+        <p className="provenance" style={{ margin: 0, fontSize: "0.72rem", color: "#6b7280" }}>
+          On-chain vault metrics verified at block #{live.blockNumber.toString()} ({blockTime(live.blockTimestamp)} UTC). Position value
+          is not an instant liquidity guarantee: immediately withdrawable {assetSymbol} is bounded by{" "}
+          <code>maxWithdraw</code>/<code>maxRedeem</code>, which dynamically track venue liquidity queues.
+        </p>
       </div>
 
-      <fieldset className="row">
-        <legend>Toleransi loss (dikirim sebagai `max_loss`, wajib eksplisit)</legend>
-        {PRESETS.map((preset) => (
-          <label key={preset}>
-            <input
-              type="radio"
-              name="loss"
-              checked={customLoss.trim() === "" && lossBps === preset}
-              onChange={() => {
-                setLossBps(preset);
-                setCustomLoss("");
+      {/* ── 3. Mode Selector ── */}
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        {(["assets", "shares"] as WithdrawMode[]).map((m) => {
+          const selected = mode === m;
+          return (
+            <button
+              key={m}
+              type="button"
+              onClick={() => {
+                setMode(m);
                 setQuote(null);
               }}
-            />
-            {preset} bps
-          </label>
-        ))}
-        <label htmlFor="loss-custom">lain (0–9999)</label>
-        <input
-          id="loss-custom"
-          inputMode="numeric"
-          value={customLoss}
-          onChange={(event) => {
-            setCustomLoss(event.target.value);
-            setQuote(null);
-          }}
-          placeholder="9999"
-        />
-      </fieldset>
-      {lossTooHigh ? (
-        <p role="alert">10000 bps berarti menerima kehilangan seluruh nilai. SDK menolaknya; angka itu tidak dikirim.</p>
-      ) : null}
-      <p className="provenance">
-        `withdraw` di chain punya default 0 dan `redeem` default 10000. Form ini selalu mengirim nilai pilihan Anda, jadi
-        tidak ada default yang tidak terlihat.
-      </p>
+              style={{
+                flex: 1,
+                minHeight: "44px",
+                borderRadius: "10px",
+                border: selected ? "none" : "1px solid rgba(255,255,255,0.14)",
+                background: selected ? "#f8f9fa" : "#14221c",
+                color: selected ? "#0b1310" : "#adb5bd",
+                fontWeight: selected ? 700 : 500,
+                fontSize: "0.875rem",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {m === "assets" ? "Withdraw USDG" : "Redeem Shares (avUSDG)"}
+            </button>
+          );
+        })}
+      </div>
 
-      <button type="button" onClick={reprice} disabled={phase === "quoting" || phase === "signing"}>
-        {phase === "quoting" ? "Membaca chain…" : "Hitung penarikan"}
+      {/* ── 4. Connect Wallet row ── */}
+      {account === null ? (
+        <button
+          type="button"
+          onClick={connect}
+          className="button"
+          style={{
+            width: "100%",
+            minHeight: "48px",
+            background: "#f8f9fa",
+            color: "#0b1310",
+            fontWeight: 700,
+            fontSize: "0.9375rem",
+            borderRadius: "10px",
+          }}
+        >
+          Connect Wallet
+        </button>
+      ) : null}
+
+      {/* ── 5. Amount Input Card ── */}
+      <div
+        style={{
+          background: "#14221c",
+          border: "1px solid rgba(255,255,255,0.14)",
+          borderRadius: "12px",
+          padding: "1rem",
+        }}
+      >
+        {/* Label row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+          <label
+            htmlFor="withdraw-amount"
+            style={{ fontSize: "0.78rem", color: "#8b929e", textTransform: "uppercase", letterSpacing: "0.06em" }}
+          >
+            Amount ({mode === "assets" ? assetSymbol : "shares"})
+          </label>
+          {account !== null && (
+            <span
+              style={{
+                fontFamily: "monospace",
+                fontSize: "0.72rem",
+                background: "rgba(109,184,155,0.1)",
+                border: "1px solid rgba(109,184,155,0.25)",
+                color: "#6db89b",
+                borderRadius: "9999px",
+                padding: "0.15rem 0.6rem",
+              }}
+            >
+              {account.slice(0, 6)}…{account.slice(-4)}
+            </span>
+          )}
+        </div>
+        {/* Input + MAX */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <input
+            id="withdraw-amount"
+            inputMode="decimal"
+            autoComplete="off"
+            value={amount}
+            onChange={(event) => {
+              setAmount(event.target.value);
+              setQuote(null);
+            }}
+            placeholder="0.00"
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              fontSize: "1.5rem",
+              fontFamily: "monospace",
+              fontVariantNumeric: "tabular-nums",
+              color: "#f8f9fa",
+            }}
+          />
+          <button
+            type="button"
+            onClick={setMax}
+            disabled={quote === null}
+            style={{
+              background: "rgba(109,184,155,0.12)",
+              border: "1px solid rgba(109,184,155,0.3)",
+              color: "#6db89b",
+              borderRadius: "0.5rem",
+              padding: "0.35rem 0.75rem",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              cursor: quote === null ? "not-allowed" : "pointer",
+              opacity: quote === null ? 0.4 : 1,
+            }}
+          >
+            MAX
+          </button>
+        </div>
+      </div>
+
+      {/* ── 6. Loss Tolerance Fieldset ── */}
+      <fieldset
+        style={{
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: "12px",
+          padding: "1rem",
+          background: "#101b16",
+        }}
+      >
+        <legend style={{ padding: "0 0.5rem", fontSize: "0.78rem", color: "#8b929e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          Loss Tolerance Budget (Enforced as explicit <code>max_loss</code>)
+        </legend>
+
+        {/* Preset pill chips */}
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+          {PRESETS.map((preset) => {
+            const isSelected = customLoss.trim() === "" && lossBps === preset;
+            return (
+              <label
+                key={preset}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  cursor: "pointer",
+                  border: isSelected ? "1px solid #6db89b" : "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "9999px",
+                  padding: "0.3rem 0.875rem",
+                  fontSize: "0.8125rem",
+                  color: isSelected ? "#6db89b" : "#8b929e",
+                  background: isSelected ? "rgba(109,184,155,0.08)" : "transparent",
+                  transition: "all 0.15s",
+                }}
+              >
+                <input
+                  type="radio"
+                  name="loss"
+                  checked={isSelected}
+                  onChange={() => {
+                    setLossBps(preset);
+                    setCustomLoss("");
+                    setQuote(null);
+                  }}
+                  style={{ display: "none" }}
+                />
+                {preset} bps {preset === 0 ? "(Recommended)" : ""}
+              </label>
+            );
+          })}
+        </div>
+
+        {/* Custom input */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <label
+            htmlFor="loss-custom"
+            style={{ fontSize: "0.78rem", color: "#8b929e", whiteSpace: "nowrap" }}
+          >
+            Custom bps (0–9999)
+          </label>
+          <input
+            id="loss-custom"
+            inputMode="numeric"
+            value={customLoss}
+            onChange={(event) => {
+              setCustomLoss(event.target.value);
+              setQuote(null);
+            }}
+            placeholder="9999"
+            style={{
+              width: "5.5rem",
+              background: "#14221c",
+              border: "1px solid rgba(255,255,255,0.14)",
+              borderRadius: "0.5rem",
+              padding: "0.3rem 0.6rem",
+              color: "#f8f9fa",
+              fontSize: "0.875rem",
+              fontFamily: "monospace",
+              outline: "none",
+            }}
+          />
+        </div>
+
+        {/* lossTooHigh warning */}
+        {lossTooHigh ? (
+          <p
+            role="alert"
+            style={{
+              marginTop: "0.75rem",
+              marginBottom: 0,
+              fontSize: "0.8125rem",
+              color: "#fbbf24",
+              background: "rgba(251,191,36,0.08)",
+              border: "1px solid rgba(251,191,36,0.2)",
+              borderRadius: "0.5rem",
+              padding: "0.5rem 0.75rem",
+            }}
+          >
+            10000 bps indicates total 100% loss acceptance. The Avenor SDK rejects this parameter: value is not sent.
+          </p>
+        ) : null}
+
+        <p className="provenance" style={{ marginBottom: 0, marginTop: "0.75rem", fontSize: "0.72rem", color: "#6b7280" }}>
+          Yearn V3 on-chain defaults are 0 for <code>withdraw</code> and 10000 for <code>redeem</code>. This interface always transmits
+          your explicitly selected bound, eliminating hidden default slippage.
+        </p>
+      </fieldset>
+
+      {/* ── 7. Calculate Button ── */}
+      <button
+        type="button"
+        onClick={reprice}
+        disabled={phase === "quoting" || phase === "signing"}
+        style={{
+          width: "100%",
+          minHeight: "48px",
+          background: "rgba(109,184,155,0.06)",
+          border: "1px solid #6db89b",
+          color: "#6db89b",
+          fontWeight: 600,
+          fontSize: "0.9375rem",
+          borderRadius: "10px",
+          cursor: phase === "quoting" || phase === "signing" ? "not-allowed" : "pointer",
+          opacity: phase === "quoting" || phase === "signing" ? 0.6 : 1,
+          transition: "all 0.15s",
+        }}
+      >
+        {phase === "quoting" ? "Quoting On-Chain Liquidity…" : "Calculate Withdrawal Quote"}
       </button>
 
+      {/* ── 8. Chain Warning ── */}
       {chainId !== null && chainId !== AVENOR_CHAIN_ID ? (
-        <p role="alert">Wallet di chain {chainId}. Form hanya mengirim ke chain {AVENOR_CHAIN_ID}.</p>
+        <div
+          role="alert"
+          style={{
+            background: "rgba(251,191,36,0.08)",
+            border: "1px solid rgba(251,191,36,0.25)",
+            borderRadius: "0.75rem",
+            padding: "0.75rem 1rem",
+            fontSize: "0.875rem",
+            color: "#fbbf24",
+            display: "flex",
+            gap: "0.5rem",
+            alignItems: "center",
+          }}
+        >
+          <span>⚠</span>
+          <span>
+            Wallet connected to Chain ID <strong>{chainId}</strong>. Avenor requires Robinhood Chain (<strong>{AVENOR_CHAIN_ID}</strong>).
+          </span>
+        </div>
       ) : null}
 
+      {/* ── 9. Quote Result Card ── */}
       {quote !== null ? (
-        <>
-          <dl className="facts">
-            <dt>Aset yang akan diterima (perkiraan)</dt>
-            <dd>
-              <Amount value={quote.assets} kind="usdg" />
-            </dd>
-            <dt>Share yang dibakar (perkiraan)</dt>
-            <dd>
-              <Amount value={quote.shares} kind="shares" />
-            </dd>
-            <dt>Batas atas aset</dt>
-            <dd>
-              <Amount value={quote.maxAssets} kind="usdg" />
-            </dd>
-            <dt>Batas atas share</dt>
-            <dd>
-              <Amount value={quote.maxShares} kind="shares" />
-            </dd>
-            <dt>Saldo share</dt>
-            <dd>
-              <Amount value={quote.shareBalance} kind="shares" />
-            </dd>
+        <div
+          style={{
+            background: "#101b16",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "1rem",
+            padding: "1.25rem",
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <span style={{ fontSize: "0.75rem", color: "#6db89b", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+              On-Chain Withdrawal Preview
+            </span>
+            <span style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "#8b929e" }}>
+              Block #{quote.blockNumber.toString()}
+            </span>
+          </div>
+
+          <dl style={{ margin: 0 }}>
+            {[
+              { label: "Estimated Assets to Receive", value: <Amount value={quote.assets} kind="usdg" /> },
+              { label: "Estimated Shares to Burn", value: <Amount value={quote.shares} kind="shares" /> },
+              { label: "Maximum Asset Ceiling", value: <Amount value={quote.maxAssets} kind="usdg" /> },
+              { label: "Maximum Share Ceiling", value: <Amount value={quote.maxShares} kind="shares" /> },
+              { label: "Current Share Balance", value: <Amount value={quote.shareBalance} kind="shares" /> },
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  padding: "0.4rem 0",
+                  borderBottom: "1px solid rgba(255,255,255,0.04)",
+                  gap: "1rem",
+                }}
+              >
+                <dt style={{ fontSize: "0.8125rem", color: "#8b929e", margin: 0 }}>{label}</dt>
+                <dd style={{ fontFamily: "monospace", fontSize: "0.8125rem", color: "#f8f9fa", margin: 0, fontVariantNumeric: "tabular-nums" }}>
+                  {value}
+                </dd>
+              </div>
+            ))}
           </dl>
-          {withdrawWarnings(quote, { isPaused: live.isPaused, isShutdown: live.isShutdown }).map((warning) => (
-            <p key={warning.case} role={warning.case === "W6" ? "alert" : undefined}>
-              <strong>{warning.case}</strong>: {warning.message}
-              {warning.case === "idle" ? ` Kas idle menutup ${percentBps(idleCoverageBps(quote))} permintaan.` : ""}
-            </p>
-          ))}
-        </>
+
+          {/* Withdrawal warnings as amber pill-badges */}
+          {withdrawWarnings(quote, { isPaused: live.isPaused, isShutdown: live.isShutdown }).length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.875rem" }}>
+              {withdrawWarnings(quote, { isPaused: live.isPaused, isShutdown: live.isShutdown }).map((warning) => (
+                <span
+                  key={warning.case}
+                  role={warning.case === "W6" ? "alert" : undefined}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    background: "rgba(251,191,36,0.08)",
+                    border: "1px solid rgba(251,191,36,0.25)",
+                    borderRadius: "9999px",
+                    padding: "0.2rem 0.75rem",
+                    fontSize: "0.75rem",
+                    color: "#fbbf24",
+                  }}
+                >
+                  <strong>{warning.case}</strong>: {warning.message}
+                  {warning.case === "idle"
+                    ? ` Idle reserves cover ${percentBps(idleCoverageBps(quote))} of requested amount.`
+                    : ""}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       ) : null}
 
+      {/* ── 10. Blockers list ── */}
       {blocked.length > 0 ? (
-        <ul>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
           {blocked.map((entry) => (
-            <li key={entry.code}>
-              <strong>{entry.code}</strong>: {entry.message}
-            </li>
+            <div
+              key={entry.code}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                background: "rgba(220,38,38,0.08)",
+                border: "1px solid rgba(220,38,38,0.25)",
+                borderRadius: "8px",
+                padding: "0.5rem 0.875rem",
+                fontSize: "0.8125rem",
+                color: "#f87171",
+              }}
+            >
+              <strong>{entry.code.toUpperCase()}</strong>: {entry.message}
+            </div>
           ))}
-        </ul>
+        </div>
       ) : null}
 
+      {/* ── 11. Submit Button ── */}
       <button
         type="button"
         onClick={submit}
         disabled={quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing"}
+        style={{
+          width: "100%",
+          minHeight: "48px",
+          background:
+            quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing"
+              ? "rgba(248,249,250,0.1)"
+              : "#f8f9fa",
+          color: quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing" ? "#6b7280" : "#0b1310",
+          fontWeight: 700,
+          fontSize: "0.9375rem",
+          border: "none",
+          borderRadius: "10px",
+          cursor:
+            quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing"
+              ? "not-allowed"
+              : "pointer",
+          transition: "all 0.15s",
+        }}
       >
-        {phase === "signing" ? "Menunggu tanda tangan…" : mode === "assets" ? "Withdraw" : "Redeem"}
+        {phase === "signing"
+          ? "Awaiting Wallet Signature…"
+          : mode === "assets"
+          ? "Withdraw USDG"
+          : "Redeem Shares"}
       </button>
-      <p className="provenance">
-        Share di atas adalah perkiraan pada blok {quote === null ? "—" : quote.blockNumber.toString()}. Angka final hanya
-        dari event Withdraw di receipt.
+      <p className="provenance" style={{ margin: 0, fontSize: "0.72rem", color: "#6b7280" }}>
+        Share numbers above are previews evaluated at block #{quote === null ? "—" : quote.blockNumber.toString()}. Final realized numbers derive strictly from the on-chain Withdraw event receipt.
       </p>
 
+      {/* ── 12. Problem / Error ── */}
       {problem !== null ? (
-        <div role="alert">
-          <strong>{problem.code}</strong>: {problem.message}
-          {problem.detail === null ? null : <span className="provenance"> ({problem.detail})</span>}
+        <div
+          role="alert"
+          style={{
+            background: "rgba(220,38,38,0.08)",
+            border: "1px solid rgba(220,38,38,0.3)",
+            borderRadius: "0.75rem",
+            padding: "0.875rem 1.25rem",
+            fontSize: "0.875rem",
+            color: "#fca5a5",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontSize: "0.75rem",
+              background: "rgba(220,38,38,0.2)",
+              borderRadius: "0.25rem",
+              padding: "0.1rem 0.4rem",
+              marginRight: "0.5rem",
+              color: "#f87171",
+            }}
+          >
+            {problem.code}
+          </span>
+          {problem.message}
+          {problem.detail === null ? null : (
+            <span className="provenance" style={{ display: "block", marginTop: "0.3rem", fontSize: "0.72rem", color: "#9ca3af" }}>
+              {problem.detail}
+            </span>
+          )}
         </div>
       ) : null}
 
+      {/* ── 13. Receipt success card ── */}
       {receipt !== null ? (
-        <div role="status">
-          <p>
-            Penarikan masuk di blok {receipt.blockNumber.toString()}, dengan `max_loss` {receipt.maxLossBps} bps. Dari
-            event: <Amount value={receipt.assets} kind="usdg" /> untuk <Amount value={receipt.shares} kind="shares" />.
+        <div
+          role="status"
+          style={{
+            background: "rgba(109,184,155,0.08)",
+            border: "1px solid rgba(109,184,155,0.3)",
+            borderRadius: "0.75rem",
+            padding: "1rem 1.25rem",
+          }}
+        >
+          <p style={{ margin: "0 0 0.5rem", fontWeight: 700, color: "#6db89b", fontSize: "0.9375rem" }}>
+            ✓ Withdrawal Confirmed on-Chain
           </p>
-          <p className="provenance">
-            tx {receipt.withdrawTx as Hex} · penerima <AddressText address={receipt.receiver} />
-            {live.isShutdown ? " · vault shutdown: penarikan tetap jalan, deposit tidak" : ""}
+          <p style={{ margin: "0 0 0.5rem", fontSize: "0.875rem", color: "#d1fae5" }}>
+            Mined at block <strong>#{receipt.blockNumber.toString()}</strong> with{" "}
+            <code>max_loss</code> parameter {receipt.maxLossBps} bps. Realized event payload:{" "}
+            <Amount value={receipt.assets} kind="usdg" /> for{" "}
+            <Amount value={receipt.shares} kind="shares" />.
+          </p>
+          <p className="provenance" style={{ margin: 0, fontSize: "0.72rem", color: "#6b7280", fontFamily: "monospace" }}>
+            Tx: {receipt.withdrawTx as Hex} · Receiver: <AddressText address={receipt.receiver} />
+            {live.isShutdown ? " · vault shutdown: redemptions remain functional; deposits disabled" : ""}
           </p>
         </div>
       ) : null}

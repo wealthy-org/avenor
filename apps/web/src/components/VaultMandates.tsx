@@ -180,10 +180,34 @@ export function VaultMandates() {
           </p>
         </div>
 
+        {/* Mobile Horizontal Tab Strip */}
+        <div className="mt-6 flex lg:hidden overflow-x-auto gap-2 pb-2 no-scrollbar">
+          {MANDATES.map((mandate, idx) => {
+            const isSelected = idx === selectedIndex;
+            return (
+              <button
+                key={mandate.slug}
+                type="button"
+                onClick={() => setSelectedIndex(idx)}
+                className={`whitespace-nowrap px-3.5 py-2 rounded-full text-xs font-medium shrink-0 transition-all cursor-pointer border ${
+                  isSelected
+                    ? "bg-[#14221c] text-[#f8f9fa] border-white/[0.2] shadow-[0_0_12px_rgba(255,255,255,0.08)]"
+                    : "bg-[#101b16]/70 text-[#8b929e] border-white/[0.08] hover:text-[#f8f9fa]"
+                }`}
+              >
+                <span>{mandate.name}</span>
+                <span className="ml-1.5 font-mono text-[11px]" style={{ color: mandate.accentColor }}>
+                  {mandate.benchmark}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Split Grid Browser */}
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8 items-start">
-          {/* Left Column: Selector List */}
-          <div className="space-y-2">
+        <div className="mt-4 lg:mt-12 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8 items-start">
+          {/* Left Column: Selector List (Desktop) */}
+          <div className="hidden lg:block space-y-2">
             <div className="px-3 pb-2 font-mono text-xs tabular-nums text-[#8b929e]">
               {String(selectedIndex + 1).padStart(2, "0")} /{" "}
               {String(MANDATES.length).padStart(2, "0")}
@@ -343,23 +367,27 @@ export function VaultMandates() {
               </div>
 
               {/* Action Buttons */}
-              <div className="mt-8 pt-6 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-4">
+              <div className="mt-8 pt-6 border-t border-white/[0.08] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
                 <div className="text-xs text-[#8b929e] font-mono">
                   Robinhood Chain (4663) · ERC-4626
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   {activeMandate.vaultAddress ? (
                     <>
                       <Link
                         href={`/vaults/${activeMandate.vaultAddress}`}
-                        className="rounded-full bg-[#f8f9fa] text-[#0b1310] px-5 py-2.5 text-xs font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_16px_rgba(255,255,255,0.15)]"
+                        style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f8f9fa] !text-[#0b1310] px-6 py-2.5 text-xs font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_16px_rgba(255,255,255,0.15)] cursor-pointer text-center"
                       >
-                        Open Vault Interface
+                        <span className="text-[#0b1310] font-semibold">Open Vault Interface</span>
+                        <svg className="w-3.5 h-3.5 text-[#0b1310]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
                       </Link>
                       <Link
                         href={`/vaults/${activeMandate.vaultAddress}/deposit`}
-                        className="rounded-full px-4 py-2.5 text-xs font-medium text-[#d1d5db] hover:text-[#f8f9fa] border border-white/[0.12] hover:border-white/[0.2] bg-white/[0.03] transition-colors"
+                        className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-xs font-medium text-[#d1d5db] hover:text-[#f8f9fa] border border-white/[0.12] hover:border-white/[0.2] bg-white/[0.03] transition-colors text-center"
                       >
                         Deposit USDG
                       </Link>
@@ -368,7 +396,7 @@ export function VaultMandates() {
                     <button
                       type="button"
                       disabled
-                      className="rounded-full bg-white/[0.05] text-[#6b7280] border border-white/[0.08] px-5 py-2.5 text-xs font-medium cursor-not-allowed"
+                      className="rounded-full bg-white/[0.05] text-[#6b7280] border border-white/[0.08] px-5 py-2.5 text-xs font-medium cursor-not-allowed text-center"
                     >
                       Mandate In Development
                     </button>

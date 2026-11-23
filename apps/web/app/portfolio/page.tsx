@@ -34,7 +34,7 @@ export default function PortfolioPage() {
         address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
         label: "Avenor USDG Managed Vault (Staging)",
         phase: "research",
-        mandate: "Staging fork — semua angka langsung dari Robinhood Chain mainnet pin blok 118337511. Bukan untuk deposit publik.",
+        mandate: "Staging fork — all numbers read directly from Robinhood Chain mainnet pinned block 118337511. Not intended for public deposit.",
       },
     ];
   }
@@ -57,10 +57,9 @@ export default function PortfolioPage() {
       </div>
 
       <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 backdrop-blur-sm shadow-xl">
-        <h1 className="font-display text-2xl font-medium text-[#f8f9fa]">Portofolio</h1>
+        <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">Institutional Portfolio</h1>
         <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl">
-          Halaman ini memisahkan dua hal yang sering dicampur: nilai posisi menurut vault, dan jumlah yang benar-benar bisa
-          ditarik sekarang. Keduanya dibaca pada blok yang sama, dan blok itu ditampilkan.
+          This interface rigorously differentiates accounting position valuation from immediately withdrawable liquidity. Both metrics are evaluated synchronously on-chain from the same verified block.
         </p>
       </header>
 
@@ -73,7 +72,7 @@ export default function PortfolioPage() {
 
       <p className="provenance">
         <Link href="/#vaults" className="text-[#6db89b] hover:underline">
-          ← Kembali ke katalog
+          ← Back to Vault Catalog
         </Link>
       </p>
     </div>

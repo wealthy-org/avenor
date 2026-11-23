@@ -20,7 +20,7 @@ const nextConfig = {
         address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
         label: "Avenor USDG Managed Vault (Staging)",
         phase: "research",
-        mandate: "Staging fork — semua angka langsung dari Robinhood Chain mainnet pin blok 118337511. Bukan untuk deposit publik.",
+        mandate: "Staging fork — all numbers read directly from Robinhood Chain mainnet pinned block 118337511. Not intended for public deposit.",
       },
     ]),
     AVENOR_API_URL: defaultApiUrl,

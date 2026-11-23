@@ -43,7 +43,7 @@ export default async function WithdrawPage({ params }: Params) {
         address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
         label: "Avenor USDG Managed Vault (Staging)",
         phase: "research",
-        mandate: "Staging fork — semua angka langsung dari Robinhood Chain mainnet pin blok 118337511. Bukan untuk deposit publik.",
+        mandate: "Staging fork — all numbers read directly from Robinhood Chain mainnet pinned block 118337511. Not intended for public deposit.",
       },
     ];
   }
@@ -83,20 +83,18 @@ export default async function WithdrawPage({ params }: Params) {
     <div className="shell stack">
       <div className="flex items-center gap-2 text-xs font-mono text-[#8b929e] mb-2">
         <Link href={`/vaults/${config.address}`} className="hover:text-[#6db89b] transition-colors">
-          ← Kembali ke detail vault
+          ← Back to Vault Detail
         </Link>
         <span>/</span>
         <span className="text-[#f8f9fa]">Withdraw</span>
       </div>
 
       <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 backdrop-blur-sm shadow-xl">
-        <h1 className="font-display text-2xl font-medium text-[#f8f9fa]">
-          Penarikan dari {detail.vault === null ? config.label : detail.vault.name} ({detail.vault === null ? "?" : detail.vault.symbol})
+        <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">
+          Withdraw from {detail.vault === null ? config.label : detail.vault.name} ({detail.vault === null ? "?" : detail.vault.symbol})
         </h1>
-        <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed">
-          Penarikan butuh dana dari strategi bila kas idle tidak cukup. Toleransi loss dikirim sebagai <code>max_loss</code>{" "}
-          eksplisit; tidak ada nilai default yang tersembunyi. Bila toleransi terlalu kecil, penarikan bisa berhenti
-          sebagian; bila chain menolak sepenuhnya, transaksi revert.
+        <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl">
+          Withdrawals draw capital from underlying strategies when unallocated idle reserves are depleted. Loss tolerance is parameterized as an explicit <code>max_loss</code> budget; no hidden default haircuts are applied.
         </p>
       </header>
 
@@ -116,14 +114,14 @@ export default async function WithdrawPage({ params }: Params) {
       </section>
 
       <section className="card stack">
-        <h2>Batas yang diakui</h2>
-        <ul>
-          <li>`maxWithdraw`/`maxRedeem` dibaca dari vault pada satu blok; nilainya bergerak bersama kas venue.</li>
-          <li>Estimasi waktu untuk dana di luar kas idle tidak ditampilkan: tidak ada data yang cukup untuk mengarangnya.</li>
-          <li>Preview bukan janji: `max_loss` mengukur loss yang direalisasi saat penarikan, bukan slippage atau perubahan pps.</li>
+        <h2 className="text-lg font-medium text-[#f8f9fa]">Protocol Withdrawal Semantics & Bounds</h2>
+        <ul className="space-y-2 text-sm text-[#b0b7c3] list-disc pl-5">
+          <li><strong>Dynamic Venue Capacity:</strong> <code>maxWithdraw</code> and <code>maxRedeem</code> limits are queried directly on-chain at the verified block height and fluctuate with venue liquidity.</li>
+          <li><strong>Zero Speculative Estimates:</strong> Unallocated venue liquidity timelines are not estimated or fabricated.</li>
+          <li><strong>Explicit Loss Bounding:</strong> The <code>max_loss</code> parameter measures realized debt liquidation loss during strategy unwinds, not price-per-share variance.</li>
         </ul>
-        <p className="provenance">
-          Vault <AddressText address={config.address} /> · aset{" "}
+        <p className="provenance pt-2">
+          Vault Contract: <AddressText address={config.address} /> · Underlying Asset:{" "}
           <AddressText address={(detail.vault === null ? config.address : detail.vault.assetAddress) as `0x${string}`} />
         </p>
       </section>

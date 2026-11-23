@@ -166,96 +166,139 @@ export function PortfolioPanel({ vaults, base }: PortfolioProps) {
 
   return (
     <div className="stack">
-      <div className="row">
-        <button type="button" onClick={connect} disabled={busy}>
-          {account === null ? "Hubungkan wallet" : `Muat ulang posisi ${account.slice(0, 6)}…${account.slice(-4)}`}
-        </button>
-        <button type="button" onClick={download} disabled={rows.length === 0}>
-          Unduh CSV
-        </button>
-        <span className="provenance">
-          Saldo share dibaca dari indexer; nilai dan batas tarik dibaca dari chain pada satu blok. CSV memuat satuan
-          dasar (bukan angka yang sudah dibulatkan) dan nomor blok, termasuk baris yang gagal beserta errornya.
-        </span>
+      {/* Top action bar — stacks vertically on mobile */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <button
+            type="button"
+            onClick={connect}
+            disabled={busy}
+            style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
+            className="w-full sm:w-auto rounded-full bg-[#f8f9fa] !text-[#0b1310] px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-white disabled:opacity-50 min-h-[44px] cursor-pointer"
+          >
+            {account === null ? "Connect Wallet" : `Refresh Positions (${account.slice(0, 6)}…${account.slice(-4)})`}
+          </button>
+          <button
+            type="button"
+            onClick={download}
+            disabled={rows.length === 0}
+            className="w-full sm:w-auto rounded-full border border-[#6db89b] px-5 py-2.5 text-sm font-semibold text-[#6db89b] transition-colors hover:bg-[#6db89b]/10 disabled:opacity-40 min-h-[44px] cursor-pointer"
+          >
+            Export CSV
+          </button>
+        </div>
+        <p className="text-xs text-[#8b929e] leading-relaxed sm:max-w-xs sm:text-right">
+          Share balances indexed on-chain; valuations and immediate liquidity limits are evaluated synchronously at a single block. CSV includes unrounded base units, verified block numbers, and explicit error codes.
+        </p>
       </div>
 
       {problem !== null ? (
-        <div role="alert">
-          <strong>{problem.code}</strong>: {problem.message}
-          {problem.detail === null ? null : <span className="provenance"> ({problem.detail})</span>}
+        <div
+          role="alert"
+          className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
+          <code className="rounded bg-red-500/20 px-1.5 py-0.5 font-mono text-xs text-red-400">
+            {problem.code}
+          </code>{" "}
+          {problem.message}
+          {problem.detail === null ? null : (
+            <span className="provenance ml-1">({problem.detail})</span>
+          )}
         </div>
       ) : null}
 
-      {rows.length === 0 && account !== null ? <p>Tidak ada vault di konfigurasi aplikasi.</p> : null}
+      {rows.length === 0 && account !== null ? (
+        <p className="text-sm text-[#8b929e]">No allocator vaults configured in this application.</p>
+      ) : null}
 
       {rows.map((row) => (
-        <section key={row.vault.address} className="card stack">
-          <h2>{row.vault.label}</h2>
-          <p className="provenance">
-            <AddressText address={row.vault.address as `0x${string}`} />
-          </p>
-          {row.positionError !== null ? (
-            <p role="alert">
-              <strong>{row.positionError.code}</strong>: {row.positionError.message}
+        <section
+          key={row.vault.address}
+          className="rounded-xl border border-white/[0.08] bg-[#101b16]/85 p-5 sm:p-6 flex flex-col gap-4 shadow-xl"
+        >
+          {/* Card header */}
+          <div className="flex flex-col gap-1 pb-3 border-b border-white/[0.06]">
+            <h2 className="text-lg font-medium text-[#f8f9fa]">{row.vault.label}</h2>
+            <p className="font-mono text-xs text-[#6db89b] break-all">
+              <AddressText address={row.vault.address as `0x${string}`} />
             </p>
+          </div>
+
+          {row.positionError !== null ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+            >
+              <code className="rounded bg-red-500/20 px-1.5 py-0.5 font-mono text-xs text-red-400">
+                {row.positionError.code}
+              </code>{" "}
+              {row.positionError.message}
+            </div>
           ) : row.position === null ? null : (
-            <dl className="facts">
-              <dt>Share (indekser)</dt>
-              <dd>
+            <dl className="facts grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              <dt className="text-[#8b929e]">Indexed Shares</dt>
+              <dd className="font-mono text-[#f8f9fa] sm:text-right">
                 <Amount value={row.position.shares} kind="shares" />
               </dd>
-              <dt>Aktivitas terakhir</dt>
-              <dd>blok {row.position.lastActivityBlock.toString()}</dd>
+              <dt className="text-[#8b929e]">Last Activity Block</dt>
+              <dd className="font-mono text-[#f8f9fa] sm:text-right">Block #{row.position.lastActivityBlock.toString()}</dd>
               {row.quoteError !== null ? (
                 <>
-                  <dt>Nilai posisi</dt>
-                  <dd>
-                    <span className="provenance">
-                      tidak terbaca ({row.quoteError.code}): {row.quoteError.message}
+                  <dt className="text-[#8b929e]">Position Valuation</dt>
+                  <dd className="sm:text-right">
+                    <span className="provenance text-xs text-[#8b929e]">
+                      unreadable on-chain ({row.quoteError.code}): {row.quoteError.message}
                     </span>
                   </dd>
-                  <dt>Dapat ditarik sekarang</dt>
-                  <dd>
-                    <span className="provenance">tidak diisi dengan angka karangan</span>
+                  <dt className="text-[#8b929e]">Immediately Withdrawable</dt>
+                  <dd className="sm:text-right">
+                    <span className="provenance text-xs text-[#8b929e]">unestimated (zero-fabrication rule)</span>
                   </dd>
                 </>
               ) : row.quote === null ? (
                 <>
-                  <dt>Nilai posisi</dt>
-                  <dd>share nol, tidak ada posisi untuk dihitung</dd>
+                  <dt className="text-[#8b929e]">Position Valuation</dt>
+                  <dd className="text-[#f8f9fa] sm:text-right">Zero balance; no active positions to evaluate</dd>
                 </>
               ) : (
                 <>
-                  <dt>Nilai posisi</dt>
-                  <dd>
+                  <dt className="text-[#8b929e]">Position Valuation</dt>
+                  <dd className="font-mono text-[#f8f9fa] sm:text-right">
                     <Amount value={row.quote.positionAssets} kind="usdg" />
                   </dd>
-                  <dt>Dapat ditarik sekarang</dt>
-                  <dd>
-                    <Amount value={row.quote.maxAssets} kind="usdg" /> (
-                    {percentBps(row.quote.positionAssets === 0n ? 0 : Number((row.quote.maxAssets * 10_000n) / row.quote.positionAssets))}{" "}
-                    dari nilai posisi)
+                  <dt className="text-[#8b929e]">Immediately Withdrawable</dt>
+                  <dd className="font-mono text-[#f8f9fa] sm:text-right">
+                    <Amount value={row.quote.maxAssets} kind="usdg" />{" "}
+                    <span className="text-[#8b929e] text-xs">
+                      ({percentBps(row.quote.positionAssets === 0n ? 0 : Number((row.quote.maxAssets * 10_000n) / row.quote.positionAssets))}{" "}
+                      of position value)
+                    </span>
                   </dd>
-                  <dt>Kas idle vault</dt>
-                  <dd>
+                  <dt className="text-[#8b929e]">Vault Idle Reserves</dt>
+                  <dd className="font-mono text-[#f8f9fa] sm:text-right">
                     <Amount value={row.quote.totalIdle} kind="usdg" />
                   </dd>
-                  <dt>Dibaca pada blok</dt>
-                  <dd>{row.quote.blockNumber.toString()}</dd>
+                  <dt className="text-[#8b929e]">Evaluated at Block</dt>
+                  <dd className="font-mono text-[#f8f9fa] sm:text-right">#{row.quote.blockNumber.toString()}</dd>
                 </>
               )}
             </dl>
           )}
+
+          {/* Illiquidity warning */}
           {row.quote !== null && row.quote.positionAssets > row.quote.maxAssets ? (
-            <p role="alert">
-              Sebagian nilai posisi tidak bisa ditarik sekarang: batas mengikuti likuiditas venue, bukan kemauan UI.
-              Keluar penuh butuh `max_loss` eksplisit dan bisa parsial.
-            </p>
+            <div
+              role="alert"
+              className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-300 leading-relaxed"
+            >
+              Partial immediate redemption constraint: withdrawable amount is bounded by underlying venue liquidity. Full exits require explicit max_loss parameterization and may involve strategy queue resolution.
+            </div>
           ) : null}
+
+          {/* Provenance note */}
           {row.position === null || row.positionError !== null ? null : (
             <p className="provenance">
-              Dibaca {blockTime(new Date().toISOString())} untuk ditampilkan; bukti angka ada di blok yang disebut di
-              atas, bukan di jam ini.
+              Evaluated {blockTime(new Date().toISOString())} UTC for display. Authoritative on-chain numbers originate from the verified block height stated above.
             </p>
           )}
         </section>

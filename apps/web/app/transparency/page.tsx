@@ -6,34 +6,34 @@ import Link from "next/link";
 
 const ITEMS = [
   {
-    label: "Chain",
-    value: "Robinhood Chain 4663",
-    note: "vault dan adapter hanya untuk chain ini",
+    label: "Network & Chain ID",
+    value: "Robinhood Chain (4663)",
+    note: "Core allocator vaults and peripheral strategy adapters deployed strictly for Chain 4663",
   },
   {
-    label: "Aset",
-    value: "USDG, 6 desimal",
-    note: "semua nominal di app adalah bigint 6 desimal, bukan float",
+    label: "Underlying Asset",
+    value: "USDG, 6 Decimals",
+    note: "All protocol math enforced in fixed-point BigInt 6 decimals; zero floating point precision",
   },
   {
-    label: "Share",
-    value: "18 desimal",
-    note: "share bukan uang; tidak pernah dijumlahkan dengan saldo USDG",
+    label: "Vault Shares",
+    value: "ERC-4626, 18 Decimals",
+    note: "Pro-rata ownership claim tokens; strictly segregated from underlying USDG cash accounting",
   },
   {
-    label: "Artefak VaultV3",
+    label: "VaultV3 Runtime Artifact",
     value: "runtimeKeccak256 0x6909c58e…",
-    note: "bukti lengkap di docs/BASELINE.md dan scripts/verify-bytecode.py",
+    note: "Bytecode verification verifiable in docs/BASELINE.md and scripts/verify-bytecode.py",
   },
   {
-    label: "Status audit",
-    value: "tidak diklaim",
-    note: "audit upstream 2023 disebut dengan cakupan dan tanggal; pin 2026 tidak diaudit",
+    label: "Security Audit Status",
+    value: "Explicit Scope Statement",
+    note: "Upstream Yearn V3 core audited 2023; 2026 Robinhood pin and custom adapters are unaudited",
   },
   {
-    label: "Kode",
+    label: "Client & Service Code",
     value: "packages/sdk, services/indexer, services/keeper",
-    note: "angka di app berasal dari SDK yang membaca rantai, atau API yang menandai bloknya",
+    note: "All displayed figures derive from live RPC reads or verified block event indexers",
   },
 ];
 
@@ -45,19 +45,18 @@ export default function Page() {
           ← Back to Vaults
         </Link>
         <span>/</span>
-        <span className="text-[#f8f9fa]">Transparansi</span>
+        <span className="text-[#f8f9fa]">Transparency</span>
       </div>
 
       <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 backdrop-blur-sm shadow-xl">
         <span className="font-mono text-xs uppercase tracking-wider text-[#6db89b]">
-          Transparansi & Verifikasi
+          Transparency & Verification
         </span>
         <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa] mt-1">
-          Yang bisa diperiksa
+          Verifiable Invariants
         </h1>
         <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl">
-          Halaman ini tidak menampilkan angka uang. Angka uang hanya muncul di halaman vault, dengan
-          blok dan sumbernya.
+          This surface documents immutable protocol architectural parameters. Financial values are displayed strictly on vault interfaces alongside their verified block height and timestamp provenance.
         </p>
       </header>
 
@@ -76,17 +75,17 @@ export default function Page() {
       </dl>
 
       <div className="banner" data-tone="warn">
-        <strong>Klaim yang tidak dibuat</strong>
+        <strong>Explicit Negative Claims</strong>
         <p>
-          Tidak ada label &ldquo;audited&rdquo;, tidak ada APY, tidak ada janji penarikan instan.
-          Likuiditas segera bergantung pada kas idle dan antrean strategi; UI membedakan nilai posisi
-          dari yang dapat ditarik sekarang.
+          No unverified &ldquo;audited&rdquo; marketing badges, no forward-looking APY speculation, and no instant liquidity guarantees.
+          Immediate redemption capacity is constrained by unallocated idle cash; the interface strictly separates accounting position value
+          from immediately withdrawable liquidity.
         </p>
       </div>
 
       <p className="provenance">
         <Link href="/#vaults" className="text-[#6db89b] hover:underline">
-          ← Kembali ke katalog
+          ← Back to Vault Catalog
         </Link>
       </p>
     </div>

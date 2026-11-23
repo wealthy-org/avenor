@@ -66,7 +66,7 @@ export function SecuritySection() {
           <div
             role="tablist"
             aria-label="Security architecture layers"
-            className="divide-y divide-white/[0.08]"
+            className="divide-y divide-white/[0.08] overflow-hidden"
           >
             {LAYERS.map((layer, idx) => {
               const isSelected = idx === selectedLayer;
@@ -77,7 +77,7 @@ export function SecuritySection() {
                   role="tab"
                   aria-selected={isSelected}
                   onClick={() => setSelectedLayer(idx)}
-                  className={`w-full text-left py-5.5 transition-all cursor-pointer ${
+                  className={`w-full min-w-0 text-left py-5 transition-all cursor-pointer ${
                     isSelected ? "border-t-2 border-t-[#6db89b]" : ""
                   }`}
                 >
@@ -115,6 +115,7 @@ export function SecuritySection() {
 
           {/* Right: 3D Isometric Levitating Plate Stack */}
           <div className="flex items-center justify-center py-8">
+            <div className="scale-75 sm:scale-100 origin-center">
             <div className="animate-plate-levitate relative w-72 h-80 flex flex-col items-center justify-center">
               {LAYERS.map((layer, idx) => {
                 const isSelected = idx === selectedLayer;
@@ -152,6 +153,7 @@ export function SecuritySection() {
                   </button>
                 );
               })}
+            </div>
             </div>
           </div>
         </div>

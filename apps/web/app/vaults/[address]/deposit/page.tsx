@@ -43,7 +43,7 @@ export default async function DepositPage({ params }: Params) {
         address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
         label: "Avenor USDG Managed Vault (Staging)",
         phase: "research",
-        mandate: "Staging fork — semua angka langsung dari Robinhood Chain mainnet pin blok 118337511. Bukan untuk deposit publik.",
+        mandate: "Staging fork — all numbers read directly from Robinhood Chain mainnet pinned block 118337511. Not intended for public deposit.",
       },
     ];
   }
@@ -83,19 +83,18 @@ export default async function DepositPage({ params }: Params) {
     <div className="shell stack">
       <div className="flex items-center gap-2 text-xs font-mono text-[#8b929e] mb-2">
         <Link href={`/vaults/${config.address}`} className="hover:text-[#6db89b] transition-colors">
-          ← Kembali ke detail vault
+          ← Back to Vault Detail
         </Link>
         <span>/</span>
         <span className="text-[#f8f9fa]">Deposit</span>
       </div>
 
       <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 backdrop-blur-sm shadow-xl">
-        <h1 className="font-display text-2xl font-medium text-[#f8f9fa]">
-          Deposit ke {detail.vault === null ? config.label : detail.vault.name} ({detail.vault === null ? "?" : detail.vault.symbol})
+        <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">
+          Deposit into {detail.vault === null ? config.label : detail.vault.name} ({detail.vault === null ? "?" : detail.vault.symbol})
         </h1>
-        <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed">
-          Kapasitas di bawah dibaca dari vault, bukan dari konfigurasi app. Nilai posisi bukan janji likuiditas: share
-          yang Anda terima mewakili klaim, bukan kas yang bisa ditarik seketika.
+        <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl">
+          On-chain deposit capacity is enforced by the allocator vault smart contract. Position values represent an on-chain asset claim, not instant unallocated cash reserves.
         </p>
       </header>
 
@@ -120,16 +119,16 @@ export default async function DepositPage({ params }: Params) {
       </section>
 
       <section className="card stack">
-        <h2>Yang tidak dilakukan form ini</h2>
-        <ul>
-          <li>Tidak ada approve tanpa batas: allowance diisi tepat sebesar deposit.</li>
-          <li>Tidak ada default `max_loss`: form ini hanya deposit; penarikan punya parameter sendiri di tiket 5.4.</li>
-          <li>Tidak ada retry otomatis setelah signature ditolak atau receipt gagal.</li>
-          <li>Tidak ada angka share final dari kutipan: hanya event `Deposit` di receipt.</li>
+        <h2 className="text-lg font-medium text-[#f8f9fa]">Protocol Invariants & Operational Bounds</h2>
+        <ul className="space-y-2 text-sm text-[#b0b7c3] list-disc pl-5">
+          <li><strong>Zero Unlimited Approvals:</strong> Token allowances are strictly parameterized for the exact deposit amount.</li>
+          <li><strong>Zero Hidden Slippage:</strong> Deposits do not apply default loss buffers; redemptions require explicit parameterization.</li>
+          <li><strong>No Automated Retries:</strong> Reverted transactions or user rejections will never automatically re-broadcast to the chain.</li>
+          <li><strong>Authoritative Receipt Accounting:</strong> Previews are non-binding estimates; final share allocations derive strictly from the on-chain Deposit event receipt.</li>
         </ul>
-        <p className="provenance">
-          Vault <AddressText address={config.address} /> · aset{" "}
-          <AddressText address={detail.vault === null ? config.address : detail.vault.assetAddress} />
+        <p className="provenance pt-2">
+          Vault Contract: <AddressText address={config.address} /> · Underlying Asset:{" "}
+          <AddressText address={(detail.vault === null ? config.address : detail.vault.assetAddress) as `0x${string}`} />
         </p>
       </section>
     </div>

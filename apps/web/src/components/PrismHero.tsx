@@ -75,7 +75,7 @@ export function PrismHero({
       onPointerLeave={() => {
         pointerRef.current = { x: 0, y: 0 };
       }}
-      className="relative bg-[#13201b]/50 min-h-[860px] flex flex-col justify-between pt-32 pb-12 px-4 sm:px-6 overflow-hidden"
+      className="relative bg-[#13201b]/50 min-h-[720px] sm:min-h-[860px] flex flex-col justify-between pt-28 sm:pt-32 pb-8 sm:pb-12 px-4 sm:px-6 overflow-hidden"
     >
       {/* 3D Monolith Centerpiece Background */}
       <div
@@ -242,10 +242,10 @@ export function PrismHero({
             ))}
           </div>
           <div className="mt-4 sm:mt-6">
-            <div className="font-display text-xl sm:text-3xl font-medium text-[#f8f9fa]">
+            <div className="font-display text-lg sm:text-2xl lg:text-3xl font-medium text-[#f8f9fa] leading-tight">
               Robinhood Chain
             </div>
-            <div className="mt-1 text-xs text-[#9ca3af]">
+            <div className="mt-1 text-xs text-[#9ca3af] leading-tight">
               Chain ID 4663 · ERC-4626
             </div>
             <div className="mt-0.5 font-mono text-[11px] text-[#6b7280] truncate">
