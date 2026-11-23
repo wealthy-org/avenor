@@ -11,6 +11,8 @@ export function Navbar() {
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
+    } else {
+      window.location.href = `/#${id}`;
     }
   };
 
@@ -20,13 +22,15 @@ export function Navbar() {
         <div className="iridescent-border rounded-xl bg-[#0e1814]/85 backdrop-blur-md px-4 sm:px-5 h-14 flex items-center justify-between gap-8 shadow-lg shadow-black/25">
           {/* Brand Logo */}
           <a
-            href="#top"
+            href="/"
             onClick={(e) => {
-              e.preventDefault();
-              window.scrollTo({ top: 0, behavior: "smooth" });
+              if (typeof window !== "undefined" && window.location.pathname === "/") {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
             }}
             aria-label="AVENOR home"
-            className="text-[#f8f9fa] hover:opacity-90 transition-opacity shrink-0"
+            className="text-[#f8f9fa] hover:opacity-90 transition-opacity shrink-0 cursor-pointer"
           >
             <AvenorLogo />
           </a>
@@ -82,15 +86,17 @@ export function Navbar() {
             </a>
 
             <a
-              href="#vaults"
+              href="/#vaults"
               onClick={(e) => {
-                e.preventDefault();
-                scrollTo("vaults");
+                if (typeof window !== "undefined" && window.location.pathname === "/") {
+                  e.preventDefault();
+                  scrollTo("vaults");
+                }
               }}
               style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
               className="hidden md:inline-flex items-center justify-center rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-4 py-2 text-[13px] font-semibold hover:bg-white transition-colors whitespace-nowrap shrink-0 cursor-pointer"
             >
-              Open app
+              <span className="text-[#0b1310] font-semibold">Open app</span>
             </a>
 
             {/* Mobile Menu Toggle Button */}
@@ -159,15 +165,17 @@ export function Navbar() {
               Contracts
             </button>
             <a
-              href="#vaults"
+              href="/#vaults"
               onClick={(e) => {
-                e.preventDefault();
-                scrollTo("vaults");
+                if (typeof window !== "undefined" && window.location.pathname === "/") {
+                  e.preventDefault();
+                  scrollTo("vaults");
+                }
               }}
               style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
               className="block w-full text-center mt-2 rounded-lg bg-[#f8f9fa] !text-[#0b1310] py-2.5 text-xs font-semibold"
             >
-              Open app
+              <span className="text-[#0b1310] font-semibold">Open app</span>
             </a>
           </div>
         )}

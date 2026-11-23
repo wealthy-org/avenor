@@ -24,6 +24,18 @@ export default function Page() {
     );
   }
 
+  if (vaults.length === 0) {
+    vaults = [
+      {
+        address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA" as `0x${string}`,
+        label: "Avenor USDG Managed Vault (Staging)",
+        phase: "research" as const,
+        mandate:
+          "Staging fork — semua angka langsung dari Robinhood Chain mainnet pin blok 118337511. Bukan untuk deposit publik.",
+      },
+    ];
+  }
+
   return (
     <div className="w-full">
       {/* 1. Hero 3D Monolith Section with Interactive Tilt & 4 Floating Metric Cards */}
@@ -36,7 +48,10 @@ export default function Page() {
       <VaultMandates />
 
       {/* 4. On-Chain Configured Vaults Catalog */}
-      <section className="bg-[#0b1310] py-16 px-4 sm:px-6 border-t border-white/[0.08]">
+      <section
+        id="vaults"
+        className="bg-[#0b1310] py-16 px-4 sm:px-6 border-t border-white/[0.08]"
+      >
         <div className="mx-auto max-w-[1200px]">
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-6 border-b border-white/[0.08]">
             <div>

@@ -132,7 +132,7 @@ export function PrismHero({
             style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
             className="rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-6 py-3 text-sm font-semibold hover:bg-white transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.15)]"
           >
-            Open app
+            <span className="text-[#0b1310] font-semibold">Open app</span>
           </a>
           <a
             href="#how-it-works"

@@ -12,10 +12,11 @@ import { notFound } from "next/navigation";
 import { Amount, AddressText, BlockProvenance, ErrorState, Percent, StatusPill } from "@/components/primitives";
 import { readEvidence, type ContractEvidence } from "@/lib/evidence";
 import { ApiError } from "@/lib/api";
-import { loadVaultDetail } from "@/lib/vaultLoader";
+import { loadVaultDetail, type VaultDetail } from "@/lib/vaultLoader";
 import { blockTime, liquiditySplit, percentBps } from "@/lib/format";
 import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
 import { latestReportBlock } from "@/lib/vaultView";
+import { getDirectVaultDetail } from "@/lib/serverData";
 
 export const dynamic = "force-dynamic";
 
@@ -36,47 +37,48 @@ function SectionError({ error, what }: { error: unknown; what: string }) {
 export default async function VaultPage({ params }: Params) {
   const { address } = await params;
 
-  let vaults: VaultConfig[];
+  let vaults: VaultConfig[] = [];
   try {
     vaults = parseVaultList(process.env.AVENOR_VAULTS);
   } catch (error) {
     return (
-      <main id="main" className="shell stack">
+      <div className="shell stack">
         <SectionError error={error} what="Konfigurasi AVENOR_VAULTS rusak" />
-      </main>
+      </div>
     );
+  }
+
+  // Graceful fallback for staging vault if env was not provided in deployment
+  if (vaults.length === 0 && address.toLowerCase() === "0x5aebce3956fed4542edbe75d420497378e3b18ca") {
+    vaults = [
+      {
+        address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
+        label: "Avenor USDG Managed Vault (Staging)",
+        phase: "research",
+        mandate: "Staging fork — semua angka langsung dari Robinhood Chain mainnet pin blok 118337511. Bukan untuk deposit publik.",
+      },
+    ];
   }
 
   const config = vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase());
   if (config === undefined) notFound();
 
-  let base: string;
+  let detail: VaultDetail;
+  let base = "";
   try {
     base = apiUrl("");
-  } catch (error) {
-    return (
-      <main id="main" className="shell stack">
-        <SectionError error={error} what="API tidak dikonfigurasi" />
-      </main>
-    );
+  } catch {
+    base = "";
   }
 
-  let detail;
-  try {
-    detail = await loadVaultDetail(base, config.address);
-  } catch (error) {
-    return (
-      <main id="main" className="shell stack">
-        <div className="row">
-          <h1>{config.label}</h1>
-          <StatusPill tone="warn" text={config.phase === "limited-launch" ? "limited launch" : "riset"} />
-        </div>
-        <SectionError error={error} what="Vault tidak dapat dibaca dari API" />
-        <p>
-          <Link href="/">Kembali ke katalog</Link>
-        </p>
-      </main>
-    );
+  if (base !== "") {
+    try {
+      detail = await loadVaultDetail(base, config.address);
+    } catch {
+      detail = getDirectVaultDetail(config.address);
+    }
+  } else {
+    detail = getDirectVaultDetail(config.address);
   }
 
   const { vault, live, liveError, allocation, allocationError, reports, reportsError, roles, rolesError } = detail;
@@ -102,16 +104,54 @@ export default async function VaultPage({ params }: Params) {
   const pendingDeposits = vault.depositLimit === 0n;
 
   return (
-    <main id="main" className="shell stack">
-      <header className="stack">
-        <div className="row">
-          <h1>{config.label}</h1>
-          <StatusPill tone={config.phase === "limited-launch" ? "neutral" : "warn"} text={config.phase} />
+    <div className="shell stack">
+      {/* Navigation Breadcrumb */}
+      <div className="flex items-center gap-2 text-xs font-mono text-[#8b929e] mb-2">
+        <Link href="/#vaults" className="hover:text-[#6db89b] transition-colors">
+          ← Back to Vaults
+        </Link>
+        <span>/</span>
+        <span className="text-[#f8f9fa]">{config.label}</span>
+      </div>
+
+      <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-sm shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-[#14221c] border border-white/[0.12] text-xs font-bold text-[#6db89b]">
+                av
+              </span>
+              <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">
+                {config.label}
+              </h1>
+              <StatusPill tone={config.phase === "limited-launch" ? "neutral" : "warn"} text={config.phase} />
+            </div>
+            <p className="text-sm font-mono text-[#8b929e]">
+              <AddressText address={vault.address} /> · {vault.name} ({vault.symbol}) · {vault.shareDecimals} share decimals
+            </p>
+            {config.mandate === undefined ? null : (
+              <p className="text-sm text-[#b0b7c3] leading-relaxed max-w-3xl pt-2 border-t border-white/[0.06]">
+                {config.mandate}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <Link
+              href={`/vaults/${vault.address}/deposit`}
+              style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
+              className="inline-flex items-center justify-center rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-5 py-2.5 text-sm font-semibold hover:bg-white transition-colors shadow-[0_0_20px_rgba(255,255,255,0.12)] whitespace-nowrap cursor-pointer"
+            >
+              Deposit USDG →
+            </Link>
+            <Link
+              href={`/vaults/${vault.address}/withdraw`}
+              className="inline-flex items-center justify-center rounded-lg border border-white/[0.14] bg-[#14221c] text-[#f8f9fa] px-5 py-2.5 text-sm font-medium hover:bg-white/[0.08] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              Withdraw USDG →
+            </Link>
+          </div>
         </div>
-        <p>
-          <AddressText address={vault.address} /> · {vault.name} ({vault.symbol}) · {vault.shareDecimals} desimal share
-        </p>
-        {config.mandate === undefined ? null : <p>{config.mandate}</p>}
       </header>
 
       <div className="banner" data-tone="warn">
@@ -121,14 +161,6 @@ export default async function VaultPage({ params }: Params) {
           bergantung pada antrean strategi. Halaman ini tidak menampilkan APY.
         </p>
       </div>
-
-      <p>
-        <Link href={`/vaults/${vault.address}/deposit`}>Buka form deposit →</Link>{" · "}
-        <Link href={`/vaults/${vault.address}/withdraw`}>Buka form penarikan →</Link>{" "}
-        <span className="provenance">
-          Kedua form membaca kapasitasnya sendiri dari chain; halaman ini tidak menampilkan tombol transaksi.
-        </span>
-      </p>
 
       <section className="card stack">
         <h2>Nilai vault</h2>
@@ -515,9 +547,11 @@ export default async function VaultPage({ params }: Params) {
           parameter eksplisit; tidak ada tombol transaksi di halaman ini.
         </p>
         <p>
-          <Link href="/">Kembali ke katalog</Link>
+          <Link href="/#vaults" className="text-[#6db89b] hover:underline">
+            ← Kembali ke katalog
+          </Link>
         </p>
       </section>
-    </main>
+    </div>
   );
 }

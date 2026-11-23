@@ -15,44 +15,67 @@ function describe(error: unknown): { code: string; message: string } {
 }
 
 export default function PortfolioPage() {
-  let vaults: VaultConfig[];
+  let vaults: VaultConfig[] = [];
   try {
     vaults = parseVaultList(process.env.AVENOR_VAULTS);
   } catch (error) {
     const { code, message } = describe(error);
     return (
-      <main id="main" className="shell stack">
+      <div className="shell stack">
         <ErrorState code={code} message={`Konfigurasi AVENOR_VAULTS rusak: ${message}`} />
-      </main>
+      </div>
     );
   }
 
-  let base: string;
+  // Fallback for staging vault if env not provided
+  if (vaults.length === 0) {
+    vaults = [
+      {
+        address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
+        label: "Avenor USDG Managed Vault (Staging)",
+        phase: "research",
+        mandate: "Staging fork — semua angka langsung dari Robinhood Chain mainnet pin blok 118337511. Bukan untuk deposit publik.",
+      },
+    ];
+  }
+
+  let base = "";
   try {
     base = apiUrl("");
-  } catch (error) {
-    const { code, message } = describe(error);
-    return (
-      <main id="main" className="shell stack">
-        <ErrorState code={code} message={`API tidak dikonfigurasi: ${message}`} />
-      </main>
-    );
+  } catch {
+    base = process.env.AVENOR_API_URL || "";
   }
 
   return (
-    <main id="main" className="shell stack">
-      <h1>Portofolio</h1>
-      <p>
-        Halaman ini memisahkan dua hal yang sering dicampur: nilai posisi menurut vault, dan jumlah yang benar-benar bisa
-        ditarik sekarang. Keduanya dibaca pada blok yang sama, dan blok itu ditampilkan.
-      </p>
-      <PortfolioPanel
-        vaults={vaults.map((entry) => ({ address: entry.address, label: entry.label }))}
-        base={base}
-      />
+    <div className="shell stack">
+      <div className="flex items-center gap-2 text-xs font-mono text-[#8b929e] mb-2">
+        <Link href="/#vaults" className="hover:text-[#6db89b] transition-colors">
+          ← Back to Vaults
+        </Link>
+        <span>/</span>
+        <span className="text-[#f8f9fa]">Portfolio</span>
+      </div>
+
+      <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 backdrop-blur-sm shadow-xl">
+        <h1 className="font-display text-2xl font-medium text-[#f8f9fa]">Portofolio</h1>
+        <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl">
+          Halaman ini memisahkan dua hal yang sering dicampur: nilai posisi menurut vault, dan jumlah yang benar-benar bisa
+          ditarik sekarang. Keduanya dibaca pada blok yang sama, dan blok itu ditampilkan.
+        </p>
+      </header>
+
+      <section className="card stack">
+        <PortfolioPanel
+          vaults={vaults.map((entry) => ({ address: entry.address, label: entry.label }))}
+          base={base}
+        />
+      </section>
+
       <p className="provenance">
-        <Link href="/">Kembali ke katalog</Link>
+        <Link href="/#vaults" className="text-[#6db89b] hover:underline">
+          ← Kembali ke katalog
+        </Link>
       </p>
-    </main>
+    </div>
   );
 }

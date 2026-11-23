@@ -20,9 +20,10 @@ export function CtaBanner() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <a
                 href="#vaults"
-                className="rounded-full bg-[#f8f9fa] text-[#0b1310] px-7 py-3 text-sm font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_24px_rgba(255,255,255,0.2)] cursor-pointer"
+                style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
+                className="rounded-full bg-[#f8f9fa] !text-[#0b1310] px-7 py-3 text-sm font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_24px_rgba(255,255,255,0.2)] cursor-pointer"
               >
-                Open Vault Interface
+                <span className="text-[#0b1310] font-semibold">Open Vault Interface</span>
               </a>
               <a
                 href="#security"
