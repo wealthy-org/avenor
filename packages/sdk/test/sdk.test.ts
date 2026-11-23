@@ -86,10 +86,13 @@ test("parsing rejects values that would silently round", () => {
   assert.throws(() => parseUnits("1", -1), InvalidAmountError);
 });
 
-test("shares use 18 decimals and trim without losing wei", () => {
-  assert.equal(formatShares(1_000_000_000_000_000_000n), "1");
-  assert.equal(formatShares(1n), "0.000000000000000001");
-  assert.equal(formatShares(1_500_000_000_000_000_000n), "1.5");
+test("shares print at the decimals they are given, and never at an assumed 18", () => {
+  // `formatShares` takes decimals explicitly: a 6-decimal vault read as 18 scales by 10^12.
+  assert.equal(formatShares(1_000_000_000_000_000_000n, 18), "1");
+  assert.equal(formatShares(1n, 18), "0.000000000000000001");
+  assert.equal(formatShares(1_500_000_000_000_000_000n, 18), "1.5");
+  assert.equal(formatShares(1_800_000_000n, 6), "1800");
+  assert.throws(() => formatShares(1n, undefined as unknown as number), InvalidAmountError);
   assert.equal(bpsOf(1_000_000n, 1), 100n);
   assert.throws(() => bpsOf(1n, 10_001), InvalidAmountError);
 });

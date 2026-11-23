@@ -7,7 +7,12 @@
 //     instead of silently rounding a user's deposit.
 
 export const USDG_DECIMALS = 6;
-export const SHARE_DECIMALS = 18;
+
+// There is deliberately no `SHARE_DECIMALS` constant. `VaultV3.decimals` is `asset.decimals()`, which is
+// 6 for a USDG vault, while a Morpho venue share token can be 18. A single global constant would print a
+// 6-decimal share balance a factor of 10^12 too small, so every caller passes the decimals it read from
+// the contract it is describing.
+
 
 export class InvalidAmountError extends Error {
   constructor(message: string) {
@@ -71,8 +76,8 @@ export function formatUsdg(value: bigint, options: FormatOptions = {}): string {
   return formatUnits(value, USDG_DECIMALS, options);
 }
 
-export function formatShares(value: bigint, options: FormatOptions = {}): string {
-  return formatUnits(value, SHARE_DECIMALS, options);
+export function formatShares(value: bigint, decimals: number, options: FormatOptions = {}): string {
+  return formatUnits(value, decimals, options);
 }
 
 /** One basis point of `value`, rounded down. Used for tolerances, never for balances. */
