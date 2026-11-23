@@ -4,13 +4,14 @@
 
 import { shortAddress } from "@/lib/format";
 import {
+  CANONICAL_HEADER_AT_CAPTURE_HEIGHT,
+  CAPTURE_FORK_BLOCK,
   STAGING_ACCOUNTANT,
   STAGING_ASSET,
   STAGING_IMPLEMENTATION,
   STAGING_STRATEGY,
   STAGING_TIMELOCK,
   STAGING_VAULT,
-  RECORDED_BLOCK,
 } from "@/config/staging";
 
 interface Row {
@@ -41,7 +42,7 @@ const CONTRACTS: Row[] = [
     name: "steakUSDG Tokenized Strategy",
     address: STAGING_STRATEGY,
     role: "The only strategy in the default queue",
-    observed: "Deployed; holds nothing at the recorded block, so it names no venue",
+    observed: "Deployed; holds nothing at the captured block, so it names no venue",
     checked: false,
   },
   {
@@ -85,9 +86,21 @@ export function ContractsSection() {
           {/* No `whitespace-nowrap`: on a 390px screen this chip is 404px wide and would push the page
               sideways. It wraps to two lines instead of being clipped. */}
           <span className="font-mono text-xs text-[#6db89b] bg-[#6db89b]/10 border border-[#6db89b]/25 rounded-full px-3.5 py-1.5 self-start sm:self-auto max-w-full break-words">
-            Robinhood Chain · chain ID 4663 · recorded at block {RECORDED_BLOCK}
+            chain ID 4663 · rehearsal fork · captured at fork block {CAPTURE_FORK_BLOCK}
           </span>
         </div>
+
+        {/* The capture block is one a local anvil fork mined, so its hash is not the chain's hash at that
+            height. Both are printed: a reader who calls eth_getBlockByNumber gets the second one. */}
+        <p className="mt-5 max-w-3xl text-[13px] leading-relaxed text-[#a3abb8] text-pretty">
+          The captured block was mined by a local anvil fork of chain 4663 state, so its hash is a fork
+          artifact. The canonical block at that height is{" "}
+          <code className="font-mono text-xs text-[#c3c9d2] break-all">
+            {CANONICAL_HEADER_AT_CAPTURE_HEIGHT.hash}
+          </code>{" "}
+          ({CANONICAL_HEADER_AT_CAPTURE_HEIGHT.timestamp}). Every number on the vault page comes from the
+          node during that render; only this table's observations come from the capture.
+        </p>
 
         <div className="mt-8 overflow-x-auto">
           <table className="w-full text-left text-sm border-collapse">

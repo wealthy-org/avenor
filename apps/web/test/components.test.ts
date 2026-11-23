@@ -96,3 +96,26 @@ test("AddressText does not invent an explorer URL", () => {
   );
   assert.match(linked, /href="https:\/\/example\.org\/a"/);
 });
+// .tsx cannot be imported by the node test runner (no JSX transform), so this one reads the source. It
+// checks the copy, which is the thing that was wrong: the table printed a fork block as a chain record.
+test("the capture is described as a rehearsal-fork block, never as a chain record", async () => {
+  const { readFileSync } = await import("node:fs");
+  const source = readFileSync(new URL("../src/components/ContractsSection.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /recorded at block/i);
+  assert.doesNotMatch(source, /Robinhood Chain · chain ID 4663/);
+  assert.match(source, /rehearsal fork/i);
+  assert.match(source, /CAPTURE_FORK_BLOCK/);
+  // The canonical block at the capture's height has a different hash; the table prints it so a reader
+  // who calls eth_getBlockByNumber can reconcile the two instead of finding a contradiction.
+  assert.match(source, /CANONICAL_HEADER_AT_CAPTURE_HEIGHT\.hash/);
+});
+
+test("the capture constants name their own origin, and the canonical header beside them", async () => {
+  const staging = await import("../src/config/staging.ts");
+  assert.equal(staging.CAPTURE_FORK_BLOCK, "118337663");
+  assert.match(staging.CAPTURE_FORK_BLOCK_HASH, /^0x1793d732/);
+  assert.equal(staging.CAPTURE_FORK_TIMESTAMP, "2026-11-24T04:57:57.000Z");
+  assert.match(staging.CANONICAL_HEADER_AT_CAPTURE_HEIGHT.hash, /^0xebf54955940be061/);
+  assert.equal(staging.CANONICAL_HEADER_AT_CAPTURE_HEIGHT.timestamp, "2026-11-19T15:54:29.000Z");
+  assert.match(staging.CANONICAL_HEADER_AT_CAPTURE_HEIGHT.note, /anvil|fork/i);
+});

@@ -3,7 +3,7 @@
 // `docs/BASELINE.md`. No money figure is printed here: those belong next to the block they were read at.
 
 import Link from "next/link";
-import { PIN_BLOCK, PIN_BLOCK_HASH } from "@/lib/serverData";
+import { CANONICAL_HEADER_AT_CAPTURE_HEIGHT, PIN_BLOCK, PIN_BLOCK_HASH } from "@/lib/serverData";
 
 const ITEMS = [
   {
@@ -12,9 +12,9 @@ const ITEMS = [
     note: "The vault and its adapters exist for this chain only.",
   },
   {
-    label: "Recorded block",
-    value: `${PIN_BLOCK}`,
-    note: `Fork block hash ${PIN_BLOCK_HASH.slice(0, 18)}… — this is the block the committed capture was taken at. The vault page does not use this row: it reads the node on every render and prints the block, hash and timestamp it actually got.`,
+    label: "Captured block",
+    value: `fork block ${PIN_BLOCK}`,
+    note: `The committed capture was taken at a block a local anvil fork mined, so its hash ${PIN_BLOCK_HASH.slice(0, 18)}… is a fork artifact. The canonical block at that height is ${CANONICAL_HEADER_AT_CAPTURE_HEIGHT.hash.slice(0, 18)}… (${CANONICAL_HEADER_AT_CAPTURE_HEIGHT.timestamp}). The vault page does not use this row: it reads the node on every render and prints the block, hash and timestamp it actually got.`,
   },
   {
     label: "Deployment",
@@ -28,7 +28,7 @@ const ITEMS = [
   },
   {
     label: "Shares",
-    value: "6 decimals at the recorded block",
+    value: "6 decimals at the captured block",
     note: "Share decimals are read from the vault (shareDecimals = 6 here), not assumed. A share is not money and is never added to a USDG balance.",
   },
   {

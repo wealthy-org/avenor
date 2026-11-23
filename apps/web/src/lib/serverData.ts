@@ -24,9 +24,10 @@ import {
 import { capturedSnapshot, probeNode, readPosition, readVaultSnapshot, type VaultSnapshot } from "./vaultRead";
 
 export {
-  RECORDED_BLOCK,
-  RECORDED_BLOCK_HASH,
-  RECORDED_TIMESTAMP,
+  CANONICAL_HEADER_AT_CAPTURE_HEIGHT,
+  CAPTURE_FORK_BLOCK,
+  CAPTURE_FORK_BLOCK_HASH,
+  CAPTURE_FORK_TIMESTAMP,
   STAGING_ACCOUNTANT,
   STAGING_ASSET,
   STAGING_IMPLEMENTATION,
@@ -266,11 +267,14 @@ export function getVaultEvidence(): ContractEvidence {
     proxyCodeSize: CAPTURE.evidence.codeSize,
   };
 }
-// The capture-derived names the UI already used. `PIN_*` now point at the block the values in
-// `forkSnapshot.json` were read at, not at a block on mainnet: the vault has no code on mainnet.
+// The capture-derived names the UI already uses. `PIN_*` point at the block the values in
+// `forkSnapshot.json` were read at: a block the local anvil fork mined, not a canonical chain block,
+// and not a block on mainnet, where the vault has no code at all.
 export const PIN_BLOCK = SNAPSHOT_BLOCK;
 export const PIN_BLOCK_HASH = SNAPSHOT_BLOCK_HASH;
 export const PIN_TIMESTAMP = SNAPSHOT_TIMESTAMP;
+// `CANONICAL_HEADER_AT_CAPTURE_HEIGHT` is the same height as `PIN_BLOCK` on the canonical chain: a
+// different block, re-exported above so the transparency page and the contracts table can print both.
 
 /**
  * Liveness for the health route. `ok` is true only when the node answered in this request; a fixed block

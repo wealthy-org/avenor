@@ -356,7 +356,7 @@ export default async function VaultPage({ params }: Params) {
                 <AddressText address={vault.accountant} />
               )}
             </dd>
-            <dt>Recorded at block</dt>
+            <dt>{vault.source === "captured" ? "Captured at fork block" : "Read at block"}</dt>
             <dd className="money">{vault.recordedBlock.toString()}</dd>
             <dt>Vault row source</dt>
             <dd className="money">{vault.source}</dd>
@@ -364,9 +364,11 @@ export default async function VaultPage({ params }: Params) {
             <dd className="money">{lastReport === null ? "none yet" : epochTime(lastReport)}</dd>
           </dl>
           <p className="provenance">
-            The vault row comes from the recorded capture, not from this request: name, symbol, asset and
-            deposit limit are fixed at the recorded block. Report age is not converted into a duration,
-            because this page does not hold the chain head at the same instant.
+            {vault.source === "captured"
+              ? "This row comes from the committed capture, not from this request: name, symbol, asset and deposit limit are fixed at that block. The capture was taken on a local anvil fork of chain 4663 state, so the block it names is a fork block, and the canonical chain holds a different block at that height."
+              : "This row was read from the node during this request. Name, symbol, asset and deposit limit are the values returned at the block printed above."}{" "}
+            Report age is not converted into a duration, because this page does not hold the chain head at
+            the same instant.
           </p>
         </section>
 
@@ -635,7 +637,7 @@ export default async function VaultPage({ params }: Params) {
           <p className="text-sm leading-relaxed text-[#e8c468] max-w-3xl">{evidence.codeError}</p>
         )}
         <p className="provenance">
-          That hash was not computed by this page: it comes from eth_getCode at the recorded block, never from a local build artifact. Matching it
+          That hash was not computed by this page: it comes from eth_getCode at the captured block, never from a local build artifact. Matching it
           to an artifact may only be claimed after scripts/verify-bytecode.py has run on the same commit.
         </p>
       </section>
@@ -649,7 +651,7 @@ export default async function VaultPage({ params }: Params) {
           <li>Provenance of every number on this page: docs/REFERENCE_CAPTURE.md.</li>
         </ul>
         <p className="max-w-3xl">
-          No audit claim is made for this recorded block or for this configuration. The deposit and withdraw forms live on separate
+          No audit claim is made for this captured block or for this configuration. The deposit and withdraw forms live on separate
           routes and send explicit parameters; there is no transaction button on this page.
         </p>
         <p className="mb-0">
