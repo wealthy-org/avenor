@@ -117,3 +117,28 @@ Catatan fabrikasi yang diperbaiki:
 - `eth_getCode` vault di mainnet Robinhood Chain mengembalikan `0x`: semua angka adalah angka fork, dan UI menyebutnya begitu.
 
 Regenerasi capture: `node apps/web/scripts/capture-fork-snapshot.mjs` (butuh anvil fork pada `RPC_URL`, default `http://127.0.0.1:8545`). Hasilnya `apps/web/src/lib/forkSnapshot.json`, dan hanya dipakai sebagai fallback berlabel `source: "captured"` ketika node tidak dapat dibaca.
+
+### 6.1 Kenapa blok capture bukan blok chain
+
+Blok `118337663` adalah blok yang **di-mine anvil** di atas pin `118337511`; 152 blok setelah pin itu berisi transaksi rehearsal (approve, deposit, withdraw). Nomornya kebetulan berimpit dengan tinggi blok kanonik, dan di situlah jebakannya: hash dan timestamp yang tersimpan berasal dari fork, bukan dari chain.
+
+| Sumber | Tinggi | Hash | Timestamp |
+|---|---|---|---|
+| Capture fork (`forkSnapshot.json`) | `118337663` | `0x1793d732f77546f084089ab84f4282959b513315a926a854c9ddb21d2b38d0b9` | `1795496277` = `2026-11-24T04:57:57Z` (jam anvil) |
+| Chain `4663` (`eth_getBlockByNumber`) | `118337663` | `0xebf54955940be06117f89f57f750d1d1dd263000ac5e2f797b544486277be7db` | `1795103669` = `2026-11-19T15:54:29Z` |
+| Chain `4663`, pin fork | `118337511` | `0xbaa980abd65e0c748b3b5f69d2352b69dd33b03138179bf61c988137291ba0af` | `1795103654` = `2026-11-19T15:54:14Z` |
+
+Konsekuensinya, di kode:
+
+- `apps/web/src/config/staging.ts` menamai konstantanya `CAPTURE_FORK_BLOCK` / `CAPTURE_FORK_BLOCK_HASH` / `CAPTURE_FORK_TIMESTAMP`, dan menyimpan header kanonik di `CANONICAL_HEADER_AT_CAPTURE_HEIGHT` supaya keduanya tidak bisa tertukar.
+- Halaman vault menulis `Captured at fork block` saat baris berasal dari capture, `Read at block` saat dari node.
+- Tabel kontrak (`src/components/ContractsSection.tsx`) mencetak kedua hash: fork dan kanonik.
+- `test/components.test.ts` menolak string `recorded at block` dan mewajibkan `rehearsal fork` di tabel itu.
+
+Perintah reproduksi (keduanya dijalankan `2026-11-29`):
+
+```bash
+curl -s -X POST https://rpc.solidrpc.io/public/evm/4663 -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x70db07f",false]}'
+# 0x70db07f = 118337663 -> hash 0xebf5495..., timestamp 0x6aff1bb5 = 1795103669
+```
+

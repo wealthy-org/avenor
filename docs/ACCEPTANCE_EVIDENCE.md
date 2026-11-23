@@ -4,15 +4,45 @@ Dokumen bukti penerimaan teknis dan akseptansi operasional untuk vault ERC-4626 
 
 Sesuai aturan keras `AGENTS.md`: semua angka berasal dari pembacaan rantai (*on-chain*) atau simulasi dengan nomor blok dan timestamp nyata; tidak ada angka karangan; tidak ada klaim "audited" untuk kontrak baru kita.
 
+> **Status provenance (koreksi 2026-11-29).** Dokumen ini mencatat *rehearsal* di **fork lokal anvil** dari state chain `4663`, bukan transaksi di chain `4663` itu sendiri. Per `2026-11-29`: `eth_getTransactionByHash` mengembalikan `null` di chain `4663` untuk ketiga hash di §3, dan `eth_getCode` mengembalikan `0x` untuk vault, factory, emergency timelock, maupun akun pengguna uji. Angka dan hasil di bawah tetap sah sebagai hasil eksekusi nyata terhadap bytecode kanonik Yearn V3, tetapi **bukan** bukti deploy mainnet. Cara memeriksa ulang ada di §0.
+
+---
+
+## 0. Cara Memeriksa Dokumen Ini
+
+Semua pemeriksaan di bawah dijalankan ke `https://rpc.solidrpc.io/public/evm/4663` pada `2026-11-29`.
+
+| Klaim di dokumen | Perintah | Hasil nyata |
+|---|---|---|
+| Vault terdeploy di `4663` | `eth_getCode(0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA, "latest")` | `0x` (0 byte) |
+| Factory terdeploy di `4663` | `eth_getCode(0x45d4fe781f3298982616778272e53ECC800Fc48F, "latest")` | `0x` |
+| Emergency timelock terdeploy di `4663` | `eth_getCode(0xf2Bf7C00B4696726B3c1f6E7b87d1a4acB050a8F, "latest")` | `0x` |
+| Tx pembukaan limit deposit (§3C) | `eth_getTransactionByHash(0x3ac2e0711829cea185f3ca96fb0ac00c266d8cf37c3bc74e6047fd30d788e738)` | `null` |
+| Tx deposit pengguna (§3C) | `eth_getTransactionByHash(0xfa576557a5063be639a5b7be6b1bc247f671a79cd4d21eca0f0e8543d4ead1f5)` | `null` |
+| Tx penarikan pengguna (§3C) | `eth_getTransactionByHash(0xe9c8cd8d03aa752644e7b866c44ae57359602af0ef6c8f90c5bb47a5b5dc49db)` | `null` |
+| Venue `steakUSDG` ada di `4663` | `eth_getCode(0xBeEff033F34C046626B8D0A041844C5d1A5409dd, "latest")` | 21.808 byte (satu-satunya alamat non-USDG yang berisi kode) |
+
+Header blok kanonik chain `4663` (dibaca dengan `eth_getBlockByNumber`, bukan dari fork):
+
+| Tinggi | Hash kanonik | Timestamp |
+|---|---|---|
+| `118337511` (pin) | `0xbaa980abd65e0c748b3b5f69d2352b69dd33b03138179bf61c988137291ba0af` | `1795103654` = `2026-11-19T15:54:14Z` |
+| `118337663` (blok capture web) | `0xebf54955940be06117f89f57f750d1d1dd263000ac5e2f797b544486277be7db` | `1795103669` = `2026-11-19T15:54:29Z` |
+| `26450185` (blok drill) | `0xd407d24921d5a58a28d280b42cc27524f8c2e8e09868acd8e1904ad4b3a816c2` | `1785728805` = `2026-08-03T03:46:45Z` |
+
+Baris terakhir menjelaskan kenapa tinggi blok drill (`26450185/195/395`) tidak mungkin berasal dari fork yang dipin di `118337511`: itu adalah run chain lokal yang lain. Bukti tersimpan, provenance-nya yang diperbaiki.
+
+---
+
 ---
 
 ## 1. Metadata Jaringan & Pin Baseline
 
 - **Jaringan:** Robinhood Chain (`4663` / `0x1237`)
-- **Block Pin Baseline:** `118337511` (Timestamp: 2026-11-19T17:27:29 UTC)
+- **Block Pin Baseline:** `118337511`, hash kanonik `0xbaa980abd65e0c748b3b5f69d2352b69dd33b03138179bf61c988137291ba0af`, timestamp `1795103654` = `2026-11-19T15:54:14 UTC` (dibaca dengan `eth_getBlockByNumber` di chain `4663`)
 - **Hardfork EVM:** Cancun (`PUSH0` aktif)
 - **Token Dasar (Asset):** USDG (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 desimal)
-- **Upstream Morpho Venue:** steakUSDG (`0xBeEff033b7F3B9B53c2f8c50Ed7E4E7fEf3c09dd`, TVL `538.856,055994` USDG, Kas Idle `27.024,457979` USDG / 5,02% pada pin)
+- **Upstream Morpho Venue:** steakUSDG (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`, Morpho Vault V2, 21.808 byte kode, `shareDecimals` 18, `totalAssets` `538856055994280` = `538.856,055994` USDG, kas idle `27.024,457979` USDG = 5,02% pada pin). Penulisan lama `0xBeEff033b7F3B9B53c2f8c50Ed7E4E7fEf3c09dd` salah dua digit dan alamat itu tidak punya kode.
 - **Yearn TokenizedStrategy Canonical:** `0x3110D1Eec90f0651C18e75AD37711A8777342504` (API 3.1.1)
 
 ---
@@ -49,7 +79,9 @@ Sesuai aturan keras `AGENTS.md`: semua angka berasal dari pembacaan rantai (*on-
   - **Drill D3 (Liquidity Monitoring Snapshot):** Blok `26450185` & `26450195`. 3 metrik likuiditas terbaca dan terekonsiliasi.
   - **Drill D4 (Shutdown Vault):** Blok `26457395`. Vault shutdown permanen, `totalIdle == totalAssets = 1.099.000.000`.
 
-### C. Transaksi Pengujian Pengguna Nyata (MetaMask E2E)
+### C. Transaksi Pengujian Pengguna Nyata (MetaMask E2E, fork lokal)
+
+Semua hash di bagian ini dieksekusi di fork lokal anvil dan **tidak ada** di chain `4663` (lihat §0). Gas, status, dan perubahan saldo di bawah adalah hasil nyata dari eksekusi itu.
 - **Alamat Pengguna:** `0x235eAb7b5C1E62c23D8ed6D2e8C31c2ec7107A48`
 - **Pembukaan Limit Deposit (Timelock):**
   - Tx: `0x3ac2e0711829cea185f3ca96fb0ac00c266d8cf37c3bc74e6047fd30d788e738`
@@ -91,6 +123,7 @@ Sesuai aturan keras `AGENTS.md`: semua angka berasal dari pembacaan rantai (*on-
 
 ### E. Soak Test Keeper 7 Hari (Epic 6 Tiket 5)
 - **Suite Pengujian:** `services/keeper/test/soak.test.ts`
+- **Sifat bukti:** harness in-process, 168 siklus yang dijalankan dalam hitungan detik. Ini **bukan** soak 7 hari wall-clock; soak nyata di staging masih terbuka (tiket `story-soak-keeper`)
 - **Hasil Pengujian:**
   - Uptime: 100% (168 siklus simulasi)
   - Transaksi gagal berulang: 0

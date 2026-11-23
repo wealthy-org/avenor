@@ -25,7 +25,9 @@
     "treasury": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
     "vault": "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
     "vaultOriginal": "0xd3aF095DE5D1419ADabE47a48d6110e37236A97F",
-    "vaultRuntimeHash": "0x6909c58e42814ae46cadd909f29f19163751b77ff4a2ccf62c5a87e933e02be6"
+    "vaultRuntimeHash": "0x6909c58e42814ae46cadd909f29f19163751b77ff4a2ccf62c5a87e933e02be6",
+    "recordedOn": "anvil-fork",
+    "provenanceNote": "Rekaman rehearsal di anvil fork yang mengemulasi chainId 4663. eth_getCode untuk vault/factory/emergencyTimelock di chain 4663 = 0x, jadi file ini bukan bukti deploy. Lihat docs/ACCEPTANCE_EVIDENCE.md §0."
   },
   "roleMatrix": {
     "deployer": 0,

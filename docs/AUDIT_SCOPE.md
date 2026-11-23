@@ -53,7 +53,7 @@ Komponen berikut **tidak diaudit ulang dari nol**, melainkan ditinjau dari sisi 
 - **`VaultV3.vy@f449264f` (API `3.1.1`):** Core Yearn V3. Sumber kebenaran perbedaan terhadap versi yang diaudit 2023 dicatat di `docs/SECURITY_DIFF.md`.
 - **`TokenizedStrategy` (`0x3110D1Eec90f0651C18e75AD37711A8777342504`):** Bytecode kanonik yang telah terpasang di Robinhood Chain (`4663`).
 - **`Accountant.sol` (Yearn Periphery `@672de1c`):** Kontrak akuntansi biaya performa.
-- **`steakUSDG` (`0xbeef...beef`):** Morpho Vault V2 pihak ketiga.
+- **`steakUSDG` (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`):** Morpho Vault V2 pihak ketiga (21.808 byte kode di chain `4663`, `shareDecimals` 18, `totalAssets` `538856055994280` pada pin `118337511`). Alamat ini diverifikasi dengan `eth_getCode`, bukan diasumsikan.
 
 ---
 
