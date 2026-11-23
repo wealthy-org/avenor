@@ -1,252 +1,254 @@
 "use client";
 
+// Mandate browser. Exactly one entry is a deployment; the rest are roadmap entries that carry no
+// rate and no cap, because nothing is deployed and no venue quotes a number that could be shown.
+// The previous version printed APY benchmarks for all six and called one of them "Live On-Chain"
+// while five had no contract — that is the class of claim this file exists to prevent.
+
 import Link from "next/link";
 import { useState } from "react";
+import { money, percentBps, shortAddress } from "@/lib/format";
+import {
+  STAGING_ASSET,
+  STAGING_STRATEGY,
+  STAGING_TIMELOCK,
+  STAGING_VAULT,
+} from "@/config/staging";
 
 interface Mandate {
   slug: string;
   name: string;
-  asset: string;
-  venue: string;
-  benchmark: string;
-  cap: string;
-  riskTier: string;
+  /** Short status line under the name. Never a rate. */
   status: string;
-  isLive: boolean;
+  offered: boolean;
   accentColor: string;
   accentGlow: string;
-  vaultAddress?: string;
   description: string;
-  highlights: string[];
+  facts: { label: string; value: string }[];
+  bounds: string[];
+  vaultAddress?: string;
 }
 
-const MANDATES: Mandate[] = [
-  {
+/**
+ * The facts the deployed entry prints, all taken from the one snapshot the page read for this request.
+ * A field the read could not produce arrives as `null` and prints as "not readable" instead of a zero.
+ */
+export interface MandateLive {
+  blockNumber: string;
+  totalAssets: string;
+  totalIdle: string;
+  depositLimit: string;
+  performanceFeeBps: number | null;
+  currentDebt: string | null;
+  maxDebt: string | null;
+}
+
+function deployedMandate(live: MandateLive): Mandate {
+  const totalAssets = BigInt(live.totalAssets);
+  const totalIdle = BigInt(live.totalIdle);
+  const depositLimit = BigInt(live.depositLimit);
+  const idleBps = totalAssets === 0n ? 0 : Number((totalIdle * 10000n) / totalAssets);
+
+  return {
     slug: "usdg-managed-yield",
     name: "USDG Managed Yield",
-    asset: "USDG (0x5c7c...)",
-    venue: "Morpho Blue · steakUSDG Vault",
-    benchmark: "3.71% APY",
-    cap: "$50,000 USDG",
-    riskTier: "Conservative Core",
-    status: "Live On-Chain",
-    isLive: true,
+    status: "Deployed on the staging fork",
+    offered: true,
     accentColor: "#6db89b",
     accentGlow: "rgba(109, 184, 155, 0.15)",
-    vaultAddress: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
     description:
-      "A flagship ERC-4626 allocator vault capturing audited lending returns from the Morpho Blue steakUSDG market on Robinhood Chain, maintaining dual-speed 48-hour timelock governance and strict zero-loss exit enforcement.",
-    highlights: [
-      "Standard ERC-4626 share minting & redemptions",
-      "Explicit zero-loss tolerance parameter (max_loss = 0)",
-      "Automated keeper reconciliation & idle liquidity buffering",
-      "Immutable Yearn V3 allocator core architecture",
+      "The only mandate with a contract. It routes USDG through a Yearn V3 allocator vault to one strategy. The strategy holds nothing at this block, so no venue is named: an unfunded target is not a position.",
+    facts: [
+      { label: "Asset", value: `USDG ${shortAddress(STAGING_ASSET)}` },
+      { label: "Deposit limit", value: `${money(depositLimit)} USDG` },
+      { label: "Total assets", value: `${money(totalAssets)} USDG` },
+      { label: "Idle cash", value: `${money(totalIdle)} USDG · ${percentBps(idleBps)}` },
+      {
+        label: "Performance fee",
+        value: live.performanceFeeBps === null ? "not readable" : percentBps(live.performanceFeeBps),
+      },
+      { label: "Strategy", value: shortAddress(STAGING_STRATEGY) },
+      {
+        label: "Strategy debt",
+        value:
+          live.currentDebt === null
+            ? "not readable"
+            : `${money(BigInt(live.currentDebt))} USDG · cap ${
+                live.maxDebt === null ? "not readable" : `${money(BigInt(live.maxDebt))} USDG`
+              }`,
+      },
+      { label: "role_manager", value: `${shortAddress(STAGING_TIMELOCK)} · 48h` },
     ],
-  },
+    bounds: [
+      "ERC-4626 shares; a share is a claim, not a balance",
+      "Explicit max_loss on every withdrawal — no default is assumed",
+      "Deposit cap enforced by deposit_limit() in the contract",
+      "No rate is quoted: the vault reports assets, not a yield target",
+    ],
+    vaultAddress: STAGING_VAULT,
+  };
+}
+
+const ROADMAP: Mandate[] = [
   {
     slug: "treasury-reserve",
     name: "Treasury Reserve",
-    asset: "USDG / Cash Equivalents",
-    venue: "Short-Duration Lending & Idle Reserves",
-    benchmark: "3.20% Benchmark",
-    cap: "$250,000 USDG",
-    riskTier: "Capital Preservation",
-    status: "Planned Mandate",
-    isLive: false,
+    status: "Roadmap · no contract deployed",
+    offered: false,
     accentColor: "#60a5fa",
     accentGlow: "rgba(96, 165, 250, 0.15)",
     description:
-      "Engineered for corporate treasuries and protocols requiring same-block liquidity guarantees and zero price risk with overnight yield collection.",
-    highlights: [
-      "90%+ instant liquidity allocation",
-      "Automated withdrawal queue prioritization",
-      "Zero delta exposure and strict venue limits",
-      "Deterministic accounting without synthetic rehypothecation",
+      "A mandate shape for treasuries that need a liquidity-first split. Nothing is deployed, so this page shows no cap, no rate, and no venue.",
+    facts: [
+      { label: "Asset", value: "USDG" },
+      { label: "Strategy venue", value: "Not selected" },
+      { label: "Deposit limit", value: "Not deployed" },
+      { label: "Rate", value: "Not quoted" },
+    ],
+    bounds: [
+      "Would require a higher idle-cash floor than the deployed vault",
+      "Withdrawal queue behaviour would be specified before deployment",
+      "No synthetic accounting",
+      "No contract exists, so no audit scope exists",
     ],
   },
   {
     slug: "eth-basis-yield",
     name: "ETH Basis Yield",
-    asset: "WETH",
-    venue: "Perpetual Funding Rate Arbitrage",
-    benchmark: "8.40% Benchmark",
-    cap: "500 WETH",
-    riskTier: "Delta Neutral",
-    status: "Planned Mandate",
-    isLive: false,
+    status: "Roadmap · no contract deployed",
+    offered: false,
     accentColor: "#c084fc",
     accentGlow: "rgba(192, 132, 252, 0.15)",
     description:
-      "Captures basis yield from futures funding rates on Robinhood Chain while hedging 100% of directional spot ETH volatility.",
-    highlights: [
-      "Systematic funding rate delta hedging",
-      "Automated roll execution via keeper network",
-      "Isolated margin envelopes with strict liquidation buffers",
-      "Transparent basis yield attribution",
+      "A mandate shape for basis trades. Listed here so the catalogue is not silently narrowed; it carries no figures because a figure would imply a venue that does not exist yet.",
+    facts: [
+      { label: "Asset", value: "Not selected" },
+      { label: "Strategy venue", value: "Not selected" },
+      { label: "Deposit limit", value: "Not deployed" },
+      { label: "Rate", value: "Not quoted" },
+    ],
+    bounds: [
+      "Hedging and margin rules would be written before any deposit",
+      "Liquidation buffers would be an explicit on-chain parameter",
+      "Keeper roll schedule would be published",
+      "No contract exists, so no audit scope exists",
     ],
   },
   {
-    slug: "liquid-staking-rv",
-    name: "Liquid Staking Relative Value",
-    asset: "LST / LRT",
-    venue: "Dynamic Cross-LST Rebalancing",
-    benchmark: "4.85% Benchmark",
-    cap: "1,000 ETH",
-    riskTier: "Moderate",
-    status: "Planned Mandate",
-    isLive: false,
-    accentColor: "#34d399",
-    accentGlow: "rgba(52, 211, 153, 0.15)",
-    description:
-      "Capitalizes on yield spreads, staking incentives, and temporary depeg discounts across liquid staked derivatives.",
-    highlights: [
-      "Dynamic allocation to highest risk-adjusted validator set",
-      "Rebalancing trigger guards and slippage limits",
-      "Decoupled strategy accounting via Yearn V3 adapters",
-      "Real-time staking discount monitoring",
-    ],
-  },
-  {
-    slug: "macro-factor-rebalance",
-    name: "Macro Factor Rebalance",
-    asset: "Multi-Asset Basket",
-    venue: "Decentralized Liquidity Pools",
-    benchmark: "11.20% Benchmark",
-    cap: "$500,000 USDG",
-    riskTier: "Systematic Growth",
-    status: "Planned Mandate",
-    isLive: false,
-    accentColor: "#fbbf24",
-    accentGlow: "rgba(251, 191, 36, 0.15)",
-    description:
-      "Quantitative multi-asset momentum and factor rebalancing designed for resilient long-term upside across market cycles.",
-    highlights: [
-      "Trend following and mean reversion rulesets",
-      "Strict portfolio draw-down circuits",
-      "Decentralized oracle feed cross-validation",
-      "Dual timelock approval on strategy parameters",
-    ],
-  },
-  {
-    slug: "custom-institutional-mandates",
+    slug: "custom-institutional",
     name: "Custom Mandates",
-    asset: "Bespoke Portfolio",
-    venue: "Dedicated Strategy Pipeline",
-    benchmark: "Custom Target",
-    cap: "Institutional Scale",
-    riskTier: "Institutional",
-    status: "Inquiries Open",
-    isLive: false,
+    status: "Roadmap · discussion only",
+    offered: false,
     accentColor: "#f472b6",
     accentGlow: "rgba(244, 114, 182, 0.15)",
     description:
-      "Dedicated ERC-4626 vault deployments tailored for family offices and institutional treasuries with custom compliance, multi-sig signer rings, and specific risk criteria.",
-    highlights: [
-      "Ring-fenced smart contract deployment",
-      "Custom multi-sig & guardian topology",
-      "Custom reporting frequency and indexer endpoints",
-      "Direct settlement support",
+      "Separate deployments for an institution that needs its own role topology. Reached through a conversation, not through this interface.",
+    facts: [
+      { label: "Asset", value: "Bespoke" },
+      { label: "Strategy venue", value: "Per mandate" },
+      { label: "Deposit limit", value: "Per deployment" },
+      { label: "Rate", value: "Not quoted" },
+    ],
+    bounds: [
+      "Own TimelockController and guardian addresses",
+      "Own indexer endpoint and reporting cadence",
+      "Own audit scope, published before deposits open",
+      "No contract exists, so no audit scope exists",
     ],
   },
 ];
 
-export function VaultMandates() {
+export function VaultMandates({ live }: { live: MandateLive }) {
+  const mandates = [deployedMandate(live), ...ROADMAP];
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const activeMandate = MANDATES[selectedIndex];
+  const active = mandates[selectedIndex];
 
   return (
     <section
-      id="vaults"
-      className="bg-[#0b1310]/75 bg-dot-matrix py-20 md:py-28 px-4 sm:px-6 relative overflow-hidden"
+      id="mandates"
+      className="bg-[#0b1310]/75 bg-dot-matrix py-14 md:py-28 px-4 sm:px-6 relative overflow-hidden"
     >
-      {/* Ambient background glow */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -left-32 top-1/3 h-[520px] w-[520px] rounded-full blur-[120px] transition-colors duration-500"
-        style={{ backgroundColor: activeMandate.accentGlow }}
+        style={{ backgroundColor: active.accentGlow }}
       />
 
       <div className="relative z-10 mx-auto max-w-[1200px]">
-        {/* Section Header */}
         <div className="max-w-2xl">
           <h2 className="font-display text-[clamp(2rem,3.6vw,3.1rem)] font-medium tracking-[-0.025em] text-[#f8f9fa]">
             One vault, one strategy.
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-[#9ca3af]">
-            Each vault executes a single, clearly mandated strategy governed by
-            explicit risk limits and standardized ERC-4626 share accounting on
-            Robinhood Chain. Each mandate maps to a venue that already runs on the
-            chain.
+            Each vault runs a single mandated strategy under explicit risk limits and standard
+            ERC-4626 share accounting. One mandate is deployed; the others are shapes on a roadmap and
+            are labelled as such.
           </p>
         </div>
 
-        {/* Mobile Horizontal Tab Strip */}
+        {/* Mobile tab strip */}
         <div className="mt-6 flex lg:hidden overflow-x-auto gap-2 pb-2 no-scrollbar">
-          {MANDATES.map((mandate, idx) => {
-            const isSelected = idx === selectedIndex;
+          {mandates.map((mandate, index) => {
+            const isSelected = index === selectedIndex;
             return (
               <button
                 key={mandate.slug}
                 type="button"
-                onClick={() => setSelectedIndex(idx)}
+                onClick={() => setSelectedIndex(index)}
                 className={`whitespace-nowrap px-3.5 py-2 rounded-full text-xs font-medium shrink-0 transition-all cursor-pointer border ${
                   isSelected
-                    ? "bg-[#14221c] text-[#f8f9fa] border-white/[0.2] shadow-[0_0_12px_rgba(255,255,255,0.08)]"
-                    : "bg-[#101b16]/70 text-[#8b929e] border-white/[0.08] hover:text-[#f8f9fa]"
+                    ? "bg-[#14221c] text-[#f8f9fa] border-white/[0.2]"
+                    : "bg-[#101b16]/70 text-[#a3abb8] border-white/[0.08] hover:text-[#f8f9fa]"
                 }`}
               >
                 <span>{mandate.name}</span>
-                <span className="ml-1.5 font-mono text-[11px]" style={{ color: mandate.accentColor }}>
-                  {mandate.benchmark}
-                </span>
+                {!mandate.offered && (
+                  <span className="ml-1.5 font-mono text-[11px] uppercase tracking-wide text-[#a3abb8]">
+                    roadmap
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
 
-        {/* Split Grid Browser */}
         <div className="mt-4 lg:mt-12 grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8 items-start">
-          {/* Left Column: Selector List (Desktop) */}
+          {/* Selector list (desktop) */}
           <div className="hidden lg:block space-y-2">
-            <div className="px-3 pb-2 font-mono text-xs tabular-nums text-[#8b929e]">
-              {String(selectedIndex + 1).padStart(2, "0")} /{" "}
-              {String(MANDATES.length).padStart(2, "0")}
+            {/* "01 / 04" alone read as unexplained pagination; the label says what is being counted. */}
+            <div className="px-3 pb-2 flex items-baseline justify-between gap-3 font-mono text-xs tabular-nums text-[#a3abb8]">
+              <span className="uppercase tracking-[0.08em]">Mandate</span>
+              <span>
+                {String(selectedIndex + 1).padStart(2, "0")} of {String(mandates.length).padStart(2, "0")}
+              </span>
             </div>
 
-            {MANDATES.map((mandate, idx) => {
-              const isSelected = idx === selectedIndex;
+            {mandates.map((mandate, index) => {
+              const isSelected = index === selectedIndex;
               return (
                 <button
                   key={mandate.slug}
                   type="button"
-                  onClick={() => setSelectedIndex(idx)}
+                  onClick={() => setSelectedIndex(index)}
                   className={`w-full text-left rounded-xl px-4 py-3.5 transition-all cursor-pointer border ${
                     isSelected
                       ? "bg-[#14221c] border-white/[0.14]"
                       : "bg-transparent border-transparent hover:bg-white/[0.03]"
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-3">
-                    <span
-                      className={`text-sm font-medium ${
-                        isSelected ? "text-[#f8f9fa]" : "text-[#8b929e]"
-                      }`}
-                    >
-                      {mandate.name}
-                    </span>
-                    <span
-                      className="font-mono text-xs tabular-nums shrink-0"
-                      style={{
-                        color: isSelected ? mandate.accentColor : "#6b7280",
-                      }}
-                    >
-                      {mandate.benchmark}
-                    </span>
-                  </div>
-
+                  <span
+                    className={`block text-sm font-medium ${
+                      isSelected ? "text-[#f8f9fa]" : "text-[#a3abb8]"
+                    }`}
+                  >
+                    {mandate.name}
+                  </span>
+                  <span className="mt-1 block font-mono text-[11px] uppercase tracking-wide text-[#a3abb8]">
+                    {mandate.offered ? "deployed" : "roadmap"}
+                  </span>
                   {isSelected && (
-                    <div
-                      className="mt-3 h-[2px] w-16 rounded-full"
+                    <span
+                      className="mt-3 block h-[2px] w-16 rounded-full"
                       style={{ backgroundColor: mandate.accentColor }}
                     />
                   )}
@@ -255,153 +257,95 @@ export function VaultMandates() {
             })}
           </div>
 
-          {/* Right Column: Detailed Card */}
-          <div className="space-y-4">
-            <div
-              className="rounded-xl bg-[#14221c] border border-white/[0.08] p-6 sm:p-7 relative overflow-hidden transition-all duration-300"
-              style={{
-                borderTopColor: activeMandate.accentColor,
-                borderTopWidth: "2px",
-              }}
-            >
-              {/* Header inside card */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div className="max-w-xl">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="font-display text-2xl font-medium text-[#f8f9fa]">
-                      {activeMandate.name}
-                    </h3>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
-                        activeMandate.isLive
-                          ? "bg-[#6db89b]/10 text-[#6db89b] border-[#6db89b]/30"
-                          : "bg-white/[0.05] text-[#9ca3af] border-white/[0.1]"
-                      }`}
-                    >
-                      {activeMandate.status}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm text-[#b0b7c3] leading-relaxed">
-                    {activeMandate.description}
-                  </p>
-                </div>
-
-                {/* Benchmark Tag */}
-                <div className="sm:text-right shrink-0">
-                  <div
-                    className="font-mono text-2xl font-medium"
-                    style={{ color: activeMandate.accentColor }}
+          {/* Detail card */}
+          <div
+            className="rounded-xl bg-[#14221c] border border-white/[0.08] p-6 sm:p-7 relative overflow-hidden transition-all duration-300"
+            style={{ borderTopColor: active.accentColor, borderTopWidth: "2px" }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div className="max-w-xl min-w-0">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h3 className="font-display text-2xl font-medium text-[#f8f9fa]">{active.name}</h3>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
+                      active.offered
+                        ? "bg-[#6db89b]/10 text-[#6db89b] border-[#6db89b]/30"
+                        : "bg-[#e8c468]/10 text-[#e8c468] border-[#e8c468]/30"
+                    }`}
                   >
-                    {activeMandate.benchmark}
-                  </div>
-                  <div className="text-[11px] text-[#6b7280] mt-0.5">
-                    Target Benchmark
-                  </div>
+                    {active.status}
+                  </span>
                 </div>
+                <p className="mt-3 text-sm text-[#b0b7c3] leading-relaxed">{active.description}</p>
               </div>
 
-              {/* Metric Row */}
-              <div className="mt-6 pt-6 border-t border-white/[0.08] grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                  <div className="text-[11px] text-[#8b929e] uppercase tracking-wider">
-                    Asset
-                  </div>
-                  <div className="font-mono text-sm text-[#f8f9fa] mt-1 truncate">
-                    {activeMandate.asset}
-                  </div>
+              <div className="sm:text-right shrink-0">
+                <div className="font-mono text-sm font-medium" style={{ color: active.accentColor }}>
+                  {active.offered ? "block " + live.blockNumber : "not quoted"}
                 </div>
-                <div>
-                  <div className="text-[11px] text-[#8b929e] uppercase tracking-wider">
-                    Strategy Venue
-                  </div>
-                  <div className="text-sm text-[#f8f9fa] mt-1 truncate">
-                    {activeMandate.venue}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-[#8b929e] uppercase tracking-wider">
-                    Deposit Cap
-                  </div>
-                  <div className="font-mono text-sm text-[#f8f9fa] mt-1">
-                    {activeMandate.cap}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-[11px] text-[#8b929e] uppercase tracking-wider">
-                    Risk Category
-                  </div>
-                  <div className="text-sm text-[#f8f9fa] mt-1">
-                    {activeMandate.riskTier}
-                  </div>
+                <div className="text-xs text-[#a3abb8] mt-0.5">
+                  {active.offered ? "block of record" : "no rate exists"}
                 </div>
               </div>
+            </div>
 
-              {/* Highlights List */}
-              <div className="mt-6 pt-6 border-t border-white/[0.08]">
-                <div className="text-xs font-medium text-[#8b929e] uppercase tracking-wider mb-3">
-                  Architecture & Risk Bounds
+            <dl className="mt-6 pt-6 border-t border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+              {active.facts.map((fact) => (
+                <div key={fact.label}>
+                  <dt className="text-[11px] text-[#a3abb8] uppercase tracking-wider">{fact.label}</dt>
+                  <dd className="font-mono text-sm text-[#f8f9fa] mt-1 break-words">{fact.value}</dd>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {activeMandate.highlights.map((h, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-2.5 text-xs text-[#b0b7c3]"
+              ))}
+            </dl>
+
+            <div className="mt-6 pt-6 border-t border-white/[0.08]">
+              <div className="text-xs font-medium text-[#a3abb8] uppercase tracking-wider mb-3">
+                Architecture &amp; risk bounds
+              </div>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {active.bounds.map((bound) => (
+                  <li key={bound} className="flex items-start gap-2.5 text-xs text-[#b0b7c3]">
+                    <svg
+                      className="w-4 h-4 shrink-0 mt-0.5"
+                      style={{ color: active.accentColor }}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
                     >
-                      <svg
-                        className="w-4 h-4 text-[#6db89b] shrink-0 mt-0.5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      <span>{h}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>{bound}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-              {/* Action Buttons */}
-              <div className="mt-8 pt-6 border-t border-white/[0.08] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
-                <div className="text-xs text-[#8b929e] font-mono">
-                  Robinhood Chain (4663) · ERC-4626
-                </div>
+            <div className="mt-8 pt-6 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-4">
+              <div className="text-xs text-[#a3abb8] font-mono">Robinhood Chain · chain ID 4663 · ERC-4626</div>
 
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  {activeMandate.vaultAddress ? (
-                    <>
-                      <Link
-                        href={`/vaults/${activeMandate.vaultAddress}`}
-                        style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
-                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#f8f9fa] !text-[#0b1310] px-6 py-2.5 text-xs font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_16px_rgba(255,255,255,0.15)] cursor-pointer text-center"
-                      >
-                        <span className="text-[#0b1310] font-semibold">Open Vault Interface</span>
-                        <svg className="w-3.5 h-3.5 text-[#0b1310]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-                      <Link
-                        href={`/vaults/${activeMandate.vaultAddress}/deposit`}
-                        className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-xs font-medium text-[#d1d5db] hover:text-[#f8f9fa] border border-white/[0.12] hover:border-white/[0.2] bg-white/[0.03] transition-colors text-center"
-                      >
-                        Deposit USDG
-                      </Link>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-full bg-white/[0.05] text-[#6b7280] border border-white/[0.08] px-5 py-2.5 text-xs font-medium cursor-not-allowed text-center"
+              <div className="flex items-center gap-3">
+                {active.vaultAddress ? (
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                    <Link
+                      href={`/vaults/${active.vaultAddress}`}
+                      style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
+                      className="inline-flex items-center justify-center rounded-full px-5 py-2.5 text-xs font-semibold hover:bg-white transition-colors whitespace-nowrap"
                     >
-                      Mandate In Development
-                    </button>
-                  )}
-                </div>
+                      <span style={{ color: "#0b1310" }}>Open vault</span>
+                    </Link>
+                    <Link
+                      href={`/vaults/${active.vaultAddress}/deposit`}
+                      className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-xs font-medium text-[#d1d5db] hover:text-[#f8f9fa] border border-white/[0.12] hover:border-white/[0.2] bg-white/[0.03] transition-colors whitespace-nowrap"
+                    >
+                      Deposit USDG
+                    </Link>
+                  </div>
+                ) : (
+                  <span className="inline-flex items-center justify-center rounded-full bg-white/[0.04] text-[#9ca3af] border border-white/[0.08] px-5 py-2.5 text-xs font-medium whitespace-nowrap">
+                    No contract to open
+                  </span>
+                )}
               </div>
             </div>
           </div>

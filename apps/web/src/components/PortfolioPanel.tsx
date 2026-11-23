@@ -25,6 +25,8 @@ import { blockTime, percentBps } from "@/lib/format";
 export interface PortfolioProps {
   vaults: { address: string; label: string }[];
   base: string;
+  /** `decimals()` of the share token this portfolio is denominated in, read from the vault (6). */
+  shareDecimals: number;
 }
 
 interface Problem {
@@ -65,7 +67,17 @@ interface Row {
   quoteError: Problem | null;
 }
 
-export function PortfolioPanel({ vaults, base }: PortfolioProps) {
+/** One labelled figure. Kept as a row so a long money value can wrap instead of colliding. */
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-0.5 py-2 border-b border-white/[0.05] last:border-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+      <span className="text-xs text-[#a3abb8] shrink-0">{label}</span>
+      <span className="font-mono text-sm tabular-nums text-[#f8f9fa] sm:text-right break-words">{children}</span>
+    </div>
+  );
+}
+
+export function PortfolioPanel({ vaults, base, shareDecimals }: PortfolioProps) {
   const [account, setAccount] = useState<Address | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -77,7 +89,8 @@ export function PortfolioPanel({ vaults, base }: PortfolioProps) {
       if (url === null) {
         setProblem({
           code: "rpc",
-          message: "NEXT_PUBLIC_RPC_URL belum diset: nilai vs dapat-ditarik tidak bisa dihitung dan tidak ditebak.",
+          message:
+            "NEXT_PUBLIC_RPC_URL is not set, so position value and the withdrawable amount cannot be computed and are not guessed.",
           detail: null,
         });
         return;
@@ -147,11 +160,15 @@ export function PortfolioPanel({ vaults, base }: PortfolioProps) {
       if (connected.chainId !== AVENOR_CHAIN_ID) {
         const switched = await switchToAvenorChain(connected.provider);
         if (!switched.switched) {
-          setProblem({ code: "wrong_network", message: switched.reason ?? "Wallet menolak pindah chain.", detail: null });
+          setProblem({
+            code: "wrong_network",
+            message: switched.reason ?? "The wallet refused to switch chains.",
+            detail: null,
+          });
           return;
         }
         if ((await readChainId(connected.provider)) !== AVENOR_CHAIN_ID) {
-          setProblem({ code: "wrong_network", message: `Wallet tidak di chain ${AVENOR_CHAIN_ID}.`, detail: null });
+          setProblem({ code: "wrong_network", message: `The wallet is not on chain ${AVENOR_CHAIN_ID}.`, detail: null });
           return;
         }
       }
@@ -164,60 +181,112 @@ export function PortfolioPanel({ vaults, base }: PortfolioProps) {
     }
   }, [load]);
 
+  const withPosition = rows.filter((row) => row.position !== null && row.position.shares > 0n);
+  const allRead = rows.length > 0 && rows.every((row) => row.position !== null);
+  const exportDisabledReason =
+    account === null
+      ? "Connect a wallet first: the export is built from the account it read."
+      : rows.length === 0
+        ? "Nothing has been read yet, so there is no row to export."
+        : undefined;
+
   return (
-    <div className="stack">
-      {/* Top action bar — stacks vertically on mobile */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-2.5">
           <button
             type="button"
             onClick={connect}
             disabled={busy}
-            style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
-            className="w-full sm:w-auto rounded-full bg-[#f8f9fa] !text-[#0b1310] px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-white disabled:opacity-50 min-h-[44px] cursor-pointer"
+            style={account === null ? { color: "#0b1310", backgroundColor: "#f8f9fa" } : undefined}
+            className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
+              account !== null
+                ? "bg-[#14221c] border border-[#6db89b]/30 text-[#6db89b]"
+                : "hover:bg-white shadow-[0_0_20px_rgba(255,255,255,0.08)]"
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            {account === null ? "Connect Wallet" : `Refresh Positions (${account.slice(0, 6)}…${account.slice(-4)})`}
+            {account !== null && <span className="inline-block w-2 h-2 rounded-full bg-[#6db89b]" />}
+            {account === null ? "Connect wallet" : `Reload — ${account.slice(0, 6)}…${account.slice(-4)}`}
           </button>
           <button
             type="button"
             onClick={download}
             disabled={rows.length === 0}
-            className="w-full sm:w-auto rounded-full border border-[#6db89b] px-5 py-2.5 text-sm font-semibold text-[#6db89b] transition-colors hover:bg-[#6db89b]/10 disabled:opacity-40 min-h-[44px] cursor-pointer"
+            title={exportDisabledReason}
+            className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl border border-[#6db89b]/30 bg-[#6db89b]/05 text-[#6db89b] hover:bg-[#6db89b]/10 hover:border-[#6db89b]/50 disabled:opacity-100 disabled:cursor-not-allowed disabled:text-[#a3abb8] disabled:border-white/[0.12] disabled:bg-transparent px-5 py-3 text-sm font-semibold transition-all min-h-[44px] cursor-pointer"
           >
             Export CSV
           </button>
         </div>
-        <p className="text-xs text-[#8b929e] leading-relaxed sm:max-w-xs sm:text-right">
-          Share balances indexed on-chain; valuations and immediate liquidity limits are evaluated synchronously at a single block. CSV includes unrounded base units, verified block numbers, and explicit error codes.
+        <p className="text-xs text-[#a3abb8] leading-relaxed max-w-3xl text-pretty">
+          Share balance is read from the indexer. Position value and withdrawal limits are read from the chain at a single
+          block. The CSV export carries base units (not rounded), block numbers, and any error rows.
+          {exportDisabledReason === undefined ? null : ` ${exportDisabledReason}`}
         </p>
       </div>
 
       {problem !== null ? (
-        <div
-          role="alert"
-          className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-        >
-          <code className="rounded bg-red-500/20 px-1.5 py-0.5 font-mono text-xs text-red-400">
-            {problem.code}
-          </code>{" "}
-          {problem.message}
-          {problem.detail === null ? null : (
-            <span className="provenance ml-1">({problem.detail})</span>
-          )}
+        <div role="alert" className="rounded-xl bg-[#1a0f0f] border border-red-500/20 p-4">
+          <div className="flex items-start gap-3">
+            <code className="font-mono text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1.5 py-0.5 shrink-0 mt-0.5">
+              {problem.code}
+            </code>
+            <div className="space-y-1 min-w-0">
+              <p className="text-sm text-[#f87171]">{problem.message}</p>
+              {problem.detail !== null && <p className="provenance">{problem.detail}</p>}
+            </div>
+          </div>
         </div>
       ) : null}
 
-      {rows.length === 0 && account !== null ? (
-        <p className="text-sm text-[#8b929e]">No allocator vaults configured in this application.</p>
+      {/* No wallet yet: an explicit placeholder, so the page does not end in an empty gap. */}
+      {account === null && problem === null ? (
+        <div className="rounded-xl border border-dashed border-white/[0.12] bg-[#101b16]/50 p-6 sm:p-8 flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#14221c] border border-white/[0.12] text-[#6db89b] font-mono text-sm shrink-0">
+              0x
+            </span>
+            <h2 className="font-display text-lg font-medium text-[#f8f9fa]">No wallet connected</h2>
+          </div>
+          <p className="text-sm leading-relaxed text-[#b0b7c3] max-w-2xl">
+            Nothing is shown until an account exists, because a position belongs to an address. There is no
+            placeholder balance here: a number that is not read from the chain is not displayed.
+          </p>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 pl-5 list-disc text-sm text-[#a3abb8]">
+            <li>Shares held, from the indexer</li>
+            <li>Position value, from convertToAssets</li>
+            <li>Withdrawable now, from maxWithdraw</li>
+            <li>The block all three were read at</li>
+          </ul>
+        </div>
+      ) : null}
+
+      {account !== null && rows.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-white/[0.12] bg-[#101b16]/50 p-6">
+          <h2 className="font-display text-lg font-medium text-[#f8f9fa]">No vault is configured</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[#b0b7c3] max-w-2xl">
+            This deployment lists no vault in <code className="font-mono text-xs">AVENOR_VAULTS</code>, so there is
+            nothing to read a position from.
+          </p>
+        </div>
+      ) : null}
+
+      {account !== null && rows.length > 0 && allRead && withPosition.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-white/[0.12] bg-[#101b16]/50 p-6">
+          <h2 className="font-display text-lg font-medium text-[#f8f9fa]">No position in any vault</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[#b0b7c3] max-w-2xl">
+            This account holds no shares in the {rows.length === 1 ? "vault" : "vaults"} listed above. Nothing was
+            deposited, so there is nothing to value or withdraw.
+          </p>
+        </div>
       ) : null}
 
       {rows.map((row) => (
         <section
           key={row.vault.address}
-          className="rounded-xl border border-white/[0.08] bg-[#101b16]/85 p-5 sm:p-6 flex flex-col gap-4 shadow-xl"
+          className="rounded-xl border border-white/[0.08] bg-[#101b16]/85 p-4 sm:p-6 flex flex-col gap-4"
         >
-          {/* Card header */}
-          <div className="flex flex-col gap-1 pb-3 border-b border-white/[0.06]">
+          <div className="flex flex-col gap-1 min-w-0">
             <h2 className="text-lg font-medium text-[#f8f9fa]">{row.vault.label}</h2>
             <p className="font-mono text-xs text-[#6db89b] break-all">
               <AddressText address={row.vault.address as `0x${string}`} />
@@ -225,80 +294,82 @@ export function PortfolioPanel({ vaults, base }: PortfolioProps) {
           </div>
 
           {row.positionError !== null ? (
-            <div
-              role="alert"
-              className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-            >
-              <code className="rounded bg-red-500/20 px-1.5 py-0.5 font-mono text-xs text-red-400">
+            <div role="alert" className="rounded-lg bg-[#1a0f0f] border border-red-500/20 px-4 py-3 text-sm text-[#f87171]">
+              <code className="font-mono text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1.5 py-0.5 mr-2">
                 {row.positionError.code}
-              </code>{" "}
+              </code>
               {row.positionError.message}
             </div>
           ) : row.position === null ? null : (
-            <dl className="facts grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              <dt className="text-[#8b929e]">Indexed Shares</dt>
-              <dd className="font-mono text-[#f8f9fa] sm:text-right">
-                <Amount value={row.position.shares} kind="shares" />
-              </dd>
-              <dt className="text-[#8b929e]">Last Activity Block</dt>
-              <dd className="font-mono text-[#f8f9fa] sm:text-right">Block #{row.position.lastActivityBlock.toString()}</dd>
+            <div>
+              <Field label="Shares (indexed)">
+                <Amount value={row.position.shares} kind="shares" decimals={shareDecimals} />
+              </Field>
+              <Field label="Last activity">
+                <span className="text-[#b0b7c3]">
+                  {row.position.lastActivityBlock === null
+                    ? row.position.historyError ?? "no block history"
+                    : `block ${row.position.lastActivityBlock.toString()}`}
+                </span>
+              </Field>
               {row.quoteError !== null ? (
                 <>
-                  <dt className="text-[#8b929e]">Position Valuation</dt>
-                  <dd className="sm:text-right">
-                    <span className="provenance text-xs text-[#8b929e]">
-                      unreadable on-chain ({row.quoteError.code}): {row.quoteError.message}
+                  <Field label="Position value">
+                    <span className="text-xs text-[#a3abb8]">
+                      unreadable ({row.quoteError.code}): {row.quoteError.message}
                     </span>
-                  </dd>
-                  <dt className="text-[#8b929e]">Immediately Withdrawable</dt>
-                  <dd className="sm:text-right">
-                    <span className="provenance text-xs text-[#8b929e]">unestimated (zero-fabrication rule)</span>
-                  </dd>
+                  </Field>
+                  <Field label="Withdrawable now">
+                    <span className="text-xs text-[#a3abb8]">not filled with invented data</span>
+                  </Field>
                 </>
               ) : row.quote === null ? (
-                <>
-                  <dt className="text-[#8b929e]">Position Valuation</dt>
-                  <dd className="text-[#f8f9fa] sm:text-right">Zero balance; no active positions to evaluate</dd>
-                </>
+                <Field label="Position value">
+                  <span className="text-[#a3abb8]">zero shares, so there is no position to value</span>
+                </Field>
               ) : (
                 <>
-                  <dt className="text-[#8b929e]">Position Valuation</dt>
-                  <dd className="font-mono text-[#f8f9fa] sm:text-right">
+                  <Field label="Position value">
                     <Amount value={row.quote.positionAssets} kind="usdg" />
-                  </dd>
-                  <dt className="text-[#8b929e]">Immediately Withdrawable</dt>
-                  <dd className="font-mono text-[#f8f9fa] sm:text-right">
+                  </Field>
+                  <Field label="Withdrawable now">
                     <Amount value={row.quote.maxAssets} kind="usdg" />{" "}
-                    <span className="text-[#8b929e] text-xs">
-                      ({percentBps(row.quote.positionAssets === 0n ? 0 : Number((row.quote.maxAssets * 10_000n) / row.quote.positionAssets))}{" "}
-                      of position value)
+                    <span className="text-[#a3abb8] text-xs">
+                      (
+                      {percentBps(
+                        row.quote.positionAssets === 0n
+                          ? 0
+                          : Number((row.quote.maxAssets * 10_000n) / row.quote.positionAssets),
+                      )}{" "}
+                      of position)
                     </span>
-                  </dd>
-                  <dt className="text-[#8b929e]">Vault Idle Reserves</dt>
-                  <dd className="font-mono text-[#f8f9fa] sm:text-right">
+                  </Field>
+                  <Field label="Vault idle cash">
                     <Amount value={row.quote.totalIdle} kind="usdg" />
-                  </dd>
-                  <dt className="text-[#8b929e]">Evaluated at Block</dt>
-                  <dd className="font-mono text-[#f8f9fa] sm:text-right">#{row.quote.blockNumber.toString()}</dd>
+                  </Field>
+                  <Field label="Data block">
+                    <span className="text-[#b0b7c3]">{row.quote.blockNumber.toString()}</span>
+                  </Field>
                 </>
               )}
-            </dl>
+            </div>
           )}
 
-          {/* Illiquidity warning */}
           {row.quote !== null && row.quote.positionAssets > row.quote.maxAssets ? (
             <div
               role="alert"
-              className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-300 leading-relaxed"
+              className="rounded-lg border border-[#e8c468]/20 bg-[#1a1200] px-4 py-3 text-xs text-[#e8c468] leading-relaxed"
             >
-              Partial immediate redemption constraint: withdrawable amount is bounded by underlying venue liquidity. Full exits require explicit max_loss parameterization and may involve strategy queue resolution.
+              <span aria-hidden="true">! </span>Part of your position value is not immediately withdrawable. The
+              withdrawal limit follows venue liquidity, not the UI. A full exit requires an explicit{" "}
+              <code className="font-mono">max_loss</code> and may be partial.
             </div>
           ) : null}
 
-          {/* Provenance note */}
           {row.position === null || row.positionError !== null ? null : (
-            <p className="provenance">
-              Evaluated {blockTime(new Date().toISOString())} UTC for display. Authoritative on-chain numbers originate from the verified block height stated above.
+            <p className="provenance text-xs text-[#a3abb8] leading-relaxed">
+              Rendered at {blockTime(new Date().toISOString())}. The authoritative block numbers are listed above, not the
+              display timestamp.
             </p>
           )}
         </section>

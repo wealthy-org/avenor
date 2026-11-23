@@ -37,6 +37,8 @@ import { blockTime, percentBps } from "@/lib/format";
 export interface WithdrawFormProps {
   vault: Address;
   assetSymbol: string;
+  /** `decimals()` of the share token, read from the vault: VaultV3 uses the asset's decimals (6). */
+  shareDecimals: number;
   /** Live snapshot from the API, used only for the "paused" gate and provenance. */
   live: { isPaused: boolean; isShutdown: boolean; totalIdle: bigint; blockNumber: bigint; blockTimestamp: string };
 }
@@ -61,7 +63,7 @@ const CHAIN = {
 function rpcUrl(): string {
   const value = process.env.NEXT_PUBLIC_RPC_URL;
   if (typeof value !== "string" || value.trim() === "") {
-    throw new WithdrawError("rpc", "NEXT_PUBLIC_RPC_URL belum diset: form tidak bisa membaca chain dan tidak menebak.");
+    throw new WithdrawError("rpc", "NEXT_PUBLIC_RPC_URL is not configured — the form cannot read on-chain state.");
   }
   return value.trim();
 }
@@ -76,7 +78,7 @@ function describe(error: unknown): Problem {
   return { code: "unknown", message: error instanceof Error ? error.message : String(error), detail: null };
 }
 
-export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
+export function WithdrawForm({ vault, assetSymbol, live, shareDecimals }: WithdrawFormProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [mode, setMode] = useState<WithdrawMode>("assets");
   const [account, setAccount] = useState<Address | null>(null);
@@ -121,7 +123,7 @@ export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
       if (connected.chainId !== AVENOR_CHAIN_ID) {
         const result = await switchToAvenorChain(connected.provider);
         if (result.switched) setChainId(await readChainId(connected.provider));
-        else setProblem({ code: "wrong_network", message: result.reason ?? "Wallet menolak pindah chain.", detail: null });
+        else setProblem({ code: "wrong_network", message: result.reason ?? "Wallet refused chain switch.", detail: null });
       }
     } catch (error) {
       setProblem(describe(error));
@@ -132,7 +134,7 @@ export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
     if (account === null || client === null) {
       setProblem({
         code: "no_account",
-        message: client === null ? "RPC tidak dikonfigurasi." : "Hubungkan wallet dulu.",
+        message: client === null ? "RPC not configured." : "Connect your wallet first.",
         detail: null,
       });
       return;
@@ -142,7 +144,7 @@ export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
     setQuote(null);
     setPhase("quoting");
     try {
-      const parsed = mode === "assets" ? parseAssetInput(amount) : parseShareInput(amount);
+      const parsed = mode === "assets" ? parseAssetInput(amount) : parseShareInput(amount, shareDecimals);
       const bps = customLoss.trim() === "" ? parseLossBps(lossBps) : parseLossBps(customLoss);
       const next = await quoteWithdraw(client, { vault, account, mode, amount: parsed, maxLossBps: bps });
       setQuote(next);
@@ -158,14 +160,14 @@ export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
     const bag = (globalThis as { ethereum?: unknown }).ethereum;
     const provider = findInjectedProvider({ ethereum: bag });
     if (provider === null) {
-      setProblem({ code: "no_provider", message: "Wallet hilang dari halaman. Muat ulang dan hubungkan lagi.", detail: null });
+      setProblem({ code: "no_provider", message: "Wallet disconnected. Please reload and reconnect.", detail: null });
       return;
     }
     setProblem(null);
     setPhase("signing");
     try {
       if ((await readChainId(provider)) !== AVENOR_CHAIN_ID) {
-        setProblem({ code: "wrong_network", message: `Wallet bukan di chain ${AVENOR_CHAIN_ID}.`, detail: null });
+        setProblem({ code: "wrong_network", message: `Wallet is not on chain ${AVENOR_CHAIN_ID}.`, detail: null });
         setPhase("error");
         return;
       }
@@ -208,205 +210,112 @@ export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
   }, [mode, quote]);
 
   const lossTooHigh = customLoss.trim() !== "" ? Number(customLoss) >= MAX_LOSS_BPS : lossBps >= MAX_LOSS_BPS;
+  const busy = phase === "quoting" || phase === "signing";
 
   return (
-    <div className="stack" style={{ background: "#0b1310", color: "#f8f9fa", minHeight: "100%" }}>
+    <div className="space-y-4">
 
-      {/* ── 1. Paused Alert Banner ── */}
+      {/* Paused Alert */}
       {live.isPaused ? (
-        <div
-          role="alert"
-          style={{
-            background: "rgba(220,38,38,0.12)",
-            border: "1px solid rgba(220,38,38,0.4)",
-            borderRadius: "0.75rem",
-            padding: "0.875rem 1.25rem",
-            display: "flex",
-            gap: "0.75rem",
-            alignItems: "flex-start",
-          }}
-        >
-          <span style={{ color: "#f87171", fontSize: "1.1rem", lineHeight: 1.4 }}>⚠</span>
-          <p style={{ margin: 0, fontSize: "0.875rem", color: "#fca5a5", lineHeight: 1.5 }}>
-            <strong style={{ color: "#f87171" }}>Vault Paused.</strong>{" "}
-            <code>withdraw</code> and <code>redeem</code> functions will revert on-chain (<code>assert not self.paused</code> in{" "}
-            <code>VaultV3.vy</code>). This is an on-chain protocol invariant: transactions will be rejected by the node.
+        <div className="rounded-xl bg-[#1a0f0f] border border-red-500/25 p-4" role="alert">
+          <p className="text-sm font-semibold text-[#f87171]">Vault is paused.</p>
+          <p className="text-xs text-[#9ca3af] mt-1">
+            Both <code className="font-mono">withdraw</code> and <code className="font-mono">redeem</code> revert on-chain
+            while paused (<code className="font-mono text-[11px]">assert not self.paused</code> in VaultV3.vy).
+            No submit button is shown — the chain would reject it regardless.
           </p>
         </div>
       ) : null}
 
-      {/* ── 2. Position Summary Card ── */}
-      <div
-        style={{
-          background: "#101b16",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: "1rem",
-          padding: "1.25rem 1.5rem",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        {/* Two large stats */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: "1.25rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <div>
-            <p style={{ margin: "0 0 0.25rem", fontSize: "0.75rem", color: "#8b929e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Position Value
-            </p>
-            <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#f8f9fa" }}>
+      {/* Position Summary */}
+      <div className="rounded-xl bg-[#0d1a14] border border-white/[0.08] p-4 space-y-3">
+        <h3 className="text-xs font-mono uppercase tracking-wider text-[#a3abb8]">Position Snapshot</h3>
+        <div className="grid grid-cols-1 min-[430px]:grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-[#a3abb8]">Position Value</span>
+            <span className="font-mono text-sm tabular-nums text-[#f8f9fa]">
               {quote === null ? "—" : <Amount value={quote.positionAssets} kind="usdg" />}
-            </p>
+            </span>
           </div>
-          <div>
-            <p style={{ margin: "0 0 0.25rem", fontSize: "0.75rem", color: "#8b929e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Immediately Withdrawable
-            </p>
-            <p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "#6db89b" }}>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-[#a3abb8]">Withdrawable Now</span>
+            <span className="font-mono text-sm tabular-nums text-[#f8f9fa]">
               {quote === null ? "—" : <Amount value={quote.maxAssets} kind="usdg" />}
-            </p>
+            </span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-[#a3abb8]">Vault Idle Cash</span>
+            <span className="font-mono text-sm tabular-nums text-[#f8f9fa]">
+              <Amount value={live.totalIdle} kind="usdg" />
+            </span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-[#a3abb8]">Loss Tolerance</span>
+            <span className="font-mono text-sm tabular-nums text-[#f8f9fa]">
+              {quote === null ? `${lossBps} bps` : `${quote.maxLossBps} bps = ${maxLossAssets(quote).toString()} asset units`}
+            </span>
           </div>
         </div>
-
-        {/* Smaller muted stats */}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "1rem",
-            paddingTop: "0.75rem",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            marginBottom: "0.75rem",
-          }}
-        >
-          <span style={{ fontSize: "0.78rem", color: "#8b929e" }}>
-            <span style={{ color: "#adb5bd" }}>Vault Idle Reserves:</span>{" "}
-            <Amount value={live.totalIdle} kind="usdg" />
-            {quote !== null && <> ({percentBps(idleCoverageBps(quote))} of requested assets)</>}
-          </span>
-          <span style={{ fontSize: "0.78rem", color: "#8b929e" }}>
-            <span style={{ color: "#adb5bd" }}>Loss Tolerance:</span>{" "}
-            {quote === null
-              ? `${lossBps} bps`
-              : `${quote.maxLossBps} bps = ${maxLossAssets(quote).toString()} asset units`}
-          </span>
-        </div>
-
-        {/* Important warning badge */}
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            background: "rgba(251,191,36,0.08)",
-            border: "1px solid rgba(251,191,36,0.25)",
-            borderRadius: "9999px",
-            padding: "0.2rem 0.75rem",
-            fontSize: "0.72rem",
-            color: "#fbbf24",
-            marginBottom: "0.75rem",
-          }}
-        >
-          ⚠ Position Value ≠ Immediately Withdrawable Amount
-        </div>
-
-        <p className="provenance" style={{ margin: 0, fontSize: "0.72rem", color: "#6b7280" }}>
-          On-chain vault metrics verified at block #{live.blockNumber.toString()} ({blockTime(live.blockTimestamp)} UTC). Position value
-          is not an instant liquidity guarantee: immediately withdrawable {assetSymbol} is bounded by{" "}
-          <code>maxWithdraw</code>/<code>maxRedeem</code>, which dynamically track venue liquidity queues.
+        <p className="provenance">
+          On-chain data at block {live.blockNumber.toString()} ({blockTime(live.blockTimestamp)}).
+          Position value is not a liquidity promise: withdrawable {assetSymbol} is bounded by{" "}
+          <code className="font-mono text-xs">maxWithdraw</code> / <code className="font-mono text-xs">maxRedeem</code>, which tracks venue cash.
         </p>
       </div>
 
-      {/* ── 3. Mode Selector ── */}
-      <div style={{ display: "flex", gap: "0.5rem" }}>
-        {(["assets", "shares"] as WithdrawMode[]).map((m) => {
-          const selected = mode === m;
-          return (
-            <button
-              key={m}
-              type="button"
-              onClick={() => {
-                setMode(m);
-                setQuote(null);
-              }}
-              style={{
-                flex: 1,
-                minHeight: "44px",
-                borderRadius: "10px",
-                border: selected ? "none" : "1px solid rgba(255,255,255,0.14)",
-                background: selected ? "#f8f9fa" : "#14221c",
-                color: selected ? "#0b1310" : "#adb5bd",
-                fontWeight: selected ? 700 : 500,
-                fontSize: "0.875rem",
-                cursor: "pointer",
-                transition: "all 0.15s",
-              }}
-            >
-              {m === "assets" ? "Withdraw USDG" : "Redeem Shares (avUSDG)"}
-            </button>
-          );
-        })}
+      {/* Mode Selector */}
+      <div className="rounded-xl bg-[#0d1a14] border border-white/[0.08] p-4 space-y-3">
+        <span className="text-xs font-mono uppercase tracking-wider text-[#a3abb8]">Withdrawal Mode</span>
+        <div className="grid grid-cols-2 gap-2">
+          {(["assets", "shares"] as WithdrawMode[]).map((m) => {
+            const isSelected = mode === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => { setMode(m); setQuote(null); }}
+                className={`flex items-center justify-center rounded-xl px-4 py-3 text-sm font-semibold transition-all min-h-[44px] ${
+                  isSelected
+                    ? "bg-[#f8f9fa] text-[#0b1310]"
+                    : "bg-transparent text-[#a3abb8] border border-white/[0.10] hover:border-white/[0.2] hover:text-[#f8f9fa]"
+                }`}
+              >
+                {m === "assets" ? `Withdraw ${assetSymbol}` : "Redeem Shares"}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ── 4. Connect Wallet row ── */}
-      {account === null ? (
-        <button
-          type="button"
-          onClick={connect}
-          className="button"
-          style={{
-            width: "100%",
-            minHeight: "48px",
-            background: "#f8f9fa",
-            color: "#0b1310",
-            fontWeight: 700,
-            fontSize: "0.9375rem",
-            borderRadius: "10px",
-          }}
-        >
-          Connect Wallet
-        </button>
-      ) : null}
-
-      {/* ── 5. Amount Input Card ── */}
-      <div
-        style={{
-          background: "#14221c",
-          border: "1px solid rgba(255,255,255,0.14)",
-          borderRadius: "12px",
-          padding: "1rem",
-        }}
+      {/* Connect Wallet */}
+      <button
+        type="button"
+        onClick={connect}
+        disabled={account !== null}
+        className={`w-full flex items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-semibold transition-all min-h-[48px] ${
+          account !== null
+            ? "bg-[#14221c] border border-[#6db89b]/30 text-[#6db89b] cursor-default"
+            : "bg-[#f8f9fa] text-[#0b1310] hover:bg-white shadow-[0_0_20px_rgba(255,255,255,0.12)]"
+        }`}
       >
-        {/* Label row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-          <label
-            htmlFor="withdraw-amount"
-            style={{ fontSize: "0.78rem", color: "#8b929e", textTransform: "uppercase", letterSpacing: "0.06em" }}
-          >
-            Amount ({mode === "assets" ? assetSymbol : "shares"})
+        {account !== null ? (
+          <>
+            <span className="inline-block w-2 h-2 rounded-full bg-[#6db89b]" />
+            {account.slice(0, 6)}…{account.slice(-4)}
+          </>
+        ) : (
+          "Connect Wallet"
+        )}
+      </button>
+
+      {/* Amount Input */}
+      <div className="rounded-xl bg-[#0d1a14] border border-white/[0.10] p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <label htmlFor="withdraw-amount" className="text-sm font-medium text-[#f8f9fa]">
+            Amount ({mode === "assets" ? assetSymbol : "Shares"})
           </label>
-          {account !== null && (
-            <span
-              style={{
-                fontFamily: "monospace",
-                fontSize: "0.72rem",
-                background: "rgba(109,184,155,0.1)",
-                border: "1px solid rgba(109,184,155,0.25)",
-                color: "#6db89b",
-                borderRadius: "9999px",
-                padding: "0.15rem 0.6rem",
-              }}
-            >
-              {account.slice(0, 6)}…{account.slice(-4)}
-            </span>
-          )}
         </div>
-        {/* Input + MAX */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <div className="relative flex items-center rounded-xl bg-[#14221c] border border-white/[0.12] focus-within:border-[#6db89b] focus-within:shadow-[0_0_0_1px_rgba(109,184,155,0.3)] transition-all">
           <input
             id="withdraw-amount"
             inputMode="decimal"
@@ -417,382 +326,197 @@ export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
               setQuote(null);
             }}
             placeholder="0.00"
-            style={{
-              flex: 1,
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              fontSize: "1.5rem",
-              fontFamily: "monospace",
-              fontVariantNumeric: "tabular-nums",
-              color: "#f8f9fa",
-            }}
+            className="flex-1 bg-transparent text-2xl font-mono tabular-nums text-[#f8f9fa] placeholder-[#4b5563] px-4 py-3.5 outline-none min-w-0"
           />
-          <button
-            type="button"
-            onClick={setMax}
-            disabled={quote === null}
-            style={{
-              background: "rgba(109,184,155,0.12)",
-              border: "1px solid rgba(109,184,155,0.3)",
-              color: "#6db89b",
-              borderRadius: "0.5rem",
-              padding: "0.35rem 0.75rem",
-              fontSize: "0.75rem",
-              fontWeight: 700,
-              cursor: quote === null ? "not-allowed" : "pointer",
-              opacity: quote === null ? 0.4 : 1,
-            }}
-          >
-            MAX
-          </button>
+          <div className="flex items-center gap-2 pr-3 shrink-0">
+            <span className="bg-white/[0.05] border border-white/[0.10] rounded-full px-2.5 py-1 text-xs font-mono text-[#9ca3af]">
+              {mode === "assets" ? assetSymbol : "SHARES"}
+            </span>
+            <button
+              type="button"
+              onClick={setMax}
+              disabled={quote === null}
+              className="text-[11px] font-mono font-semibold text-[#6db89b] hover:text-[#f8f9fa] disabled:text-[#8b929e] disabled:cursor-not-allowed transition-colors px-1.5 py-0.5 rounded border border-[#6db89b]/20 hover:border-[#6db89b]/50 disabled:border-white/[0.05]"
+            >
+              MAX
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* ── 6. Loss Tolerance Fieldset ── */}
-      <fieldset
-        style={{
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: "12px",
-          padding: "1rem",
-          background: "#101b16",
-        }}
-      >
-        <legend style={{ padding: "0 0.5rem", fontSize: "0.78rem", color: "#8b929e", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Loss Tolerance Budget (Enforced as explicit <code>max_loss</code>)
+      {/* Loss Tolerance */}
+      <fieldset className="rounded-xl bg-[#0d1a14] border border-white/[0.08] p-4 space-y-3">
+        <legend className="text-xs font-mono uppercase tracking-wider text-[#a3abb8] pb-1">
+          Loss Tolerance — sent as explicit <code className="normal-case">max_loss</code>
         </legend>
-
-        {/* Preset pill chips */}
-        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+        <div className="flex flex-wrap gap-2">
           {PRESETS.map((preset) => {
             const isSelected = customLoss.trim() === "" && lossBps === preset;
             return (
-              <label
+              <button
                 key={preset}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  cursor: "pointer",
-                  border: isSelected ? "1px solid #6db89b" : "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "9999px",
-                  padding: "0.3rem 0.875rem",
-                  fontSize: "0.8125rem",
-                  color: isSelected ? "#6db89b" : "#8b929e",
-                  background: isSelected ? "rgba(109,184,155,0.08)" : "transparent",
-                  transition: "all 0.15s",
-                }}
+                type="button"
+                onClick={() => { setLossBps(preset); setCustomLoss(""); setQuote(null); }}
+                className={`rounded-full px-4 py-2 text-sm font-mono font-semibold transition-all min-h-[36px] ${
+                  isSelected
+                    ? "bg-[#6db89b]/15 border border-[#6db89b]/50 text-[#6db89b]"
+                    : "bg-transparent border border-white/[0.10] text-[#a3abb8] hover:border-white/[0.25] hover:text-[#f8f9fa]"
+                }`}
               >
-                <input
-                  type="radio"
-                  name="loss"
-                  checked={isSelected}
-                  onChange={() => {
-                    setLossBps(preset);
-                    setCustomLoss("");
-                    setQuote(null);
-                  }}
-                  style={{ display: "none" }}
-                />
-                {preset} bps {preset === 0 ? "(Recommended)" : ""}
-              </label>
+                {preset} bps
+              </button>
             );
           })}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-[#a3abb8]">Custom (0–9999)</span>
+            <input
+              id="loss-custom"
+              inputMode="numeric"
+              value={customLoss}
+              onChange={(event) => { setCustomLoss(event.target.value); setQuote(null); }}
+              placeholder="—"
+              className="w-16 bg-[#14221c] border border-white/[0.12] rounded-lg px-2 py-1.5 text-sm font-mono text-center text-[#f8f9fa] placeholder-[#4b5563] outline-none focus:border-[#6db89b] transition-colors"
+            />
+          </div>
         </div>
-
-        {/* Custom input */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <label
-            htmlFor="loss-custom"
-            style={{ fontSize: "0.78rem", color: "#8b929e", whiteSpace: "nowrap" }}
-          >
-            Custom bps (0–9999)
-          </label>
-          <input
-            id="loss-custom"
-            inputMode="numeric"
-            value={customLoss}
-            onChange={(event) => {
-              setCustomLoss(event.target.value);
-              setQuote(null);
-            }}
-            placeholder="9999"
-            style={{
-              width: "5.5rem",
-              background: "#14221c",
-              border: "1px solid rgba(255,255,255,0.14)",
-              borderRadius: "0.5rem",
-              padding: "0.3rem 0.6rem",
-              color: "#f8f9fa",
-              fontSize: "0.875rem",
-              fontFamily: "monospace",
-              outline: "none",
-            }}
-          />
-        </div>
-
-        {/* lossTooHigh warning */}
         {lossTooHigh ? (
-          <p
-            role="alert"
-            style={{
-              marginTop: "0.75rem",
-              marginBottom: 0,
-              fontSize: "0.8125rem",
-              color: "#fbbf24",
-              background: "rgba(251,191,36,0.08)",
-              border: "1px solid rgba(251,191,36,0.2)",
-              borderRadius: "0.5rem",
-              padding: "0.5rem 0.75rem",
-            }}
-          >
-            10000 bps indicates total 100% loss acceptance. The Avenor SDK rejects this parameter: value is not sent.
+          <p className="text-xs text-[#f87171]" role="alert">
+            10,000 bps means accepting total loss of value. The SDK rejects this — no transaction will be sent.
           </p>
         ) : null}
-
-        <p className="provenance" style={{ marginBottom: 0, marginTop: "0.75rem", fontSize: "0.72rem", color: "#6b7280" }}>
-          Yearn V3 on-chain defaults are 0 for <code>withdraw</code> and 10000 for <code>redeem</code>. This interface always transmits
-          your explicitly selected bound, eliminating hidden default slippage.
+        <p className="provenance">
+          On-chain: <code className="font-mono text-[11px]">withdraw</code> defaults to 0, <code className="font-mono text-[11px]">redeem</code> defaults to 10,000.
+          This form always sends your explicit selection — no hidden default is applied.
         </p>
       </fieldset>
 
-      {/* ── 7. Calculate Button ── */}
+      {/* Chain Warning */}
+      {chainId !== null && chainId !== AVENOR_CHAIN_ID ? (
+        <div className="rounded-xl bg-[#1a1200] border border-[#e8c468]/20 p-3.5" role="alert">
+          <p className="text-sm text-[#e8c468]">
+            ⚠ Wallet is on chain {chainId}. This form only submits transactions to chain {AVENOR_CHAIN_ID} (Robinhood Chain).
+          </p>
+        </div>
+      ) : null}
+
+      {/* Calculate Button */}
       <button
         type="button"
         onClick={reprice}
-        disabled={phase === "quoting" || phase === "signing"}
-        style={{
-          width: "100%",
-          minHeight: "48px",
-          background: "rgba(109,184,155,0.06)",
-          border: "1px solid #6db89b",
-          color: "#6db89b",
-          fontWeight: 600,
-          fontSize: "0.9375rem",
-          borderRadius: "10px",
-          cursor: phase === "quoting" || phase === "signing" ? "not-allowed" : "pointer",
-          opacity: phase === "quoting" || phase === "signing" ? 0.6 : 1,
-          transition: "all 0.15s",
-        }}
+        disabled={busy}
+        className="w-full flex items-center justify-center rounded-xl border border-[#6db89b]/30 bg-[#6db89b]/05 text-[#6db89b] hover:bg-[#6db89b]/10 hover:border-[#6db89b]/50 disabled:opacity-40 disabled:cursor-not-allowed px-5 py-3.5 text-sm font-semibold transition-all min-h-[48px]"
       >
-        {phase === "quoting" ? "Quoting On-Chain Liquidity…" : "Calculate Withdrawal Quote"}
+        {phase === "quoting" ? (
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+            Reading chain…
+          </span>
+        ) : "Calculate withdrawal"}
       </button>
 
-      {/* ── 8. Chain Warning ── */}
-      {chainId !== null && chainId !== AVENOR_CHAIN_ID ? (
-        <div
-          role="alert"
-          style={{
-            background: "rgba(251,191,36,0.08)",
-            border: "1px solid rgba(251,191,36,0.25)",
-            borderRadius: "0.75rem",
-            padding: "0.75rem 1rem",
-            fontSize: "0.875rem",
-            color: "#fbbf24",
-            display: "flex",
-            gap: "0.5rem",
-            alignItems: "center",
-          }}
-        >
-          <span>⚠</span>
-          <span>
-            Wallet connected to Chain ID <strong>{chainId}</strong>. Avenor requires Robinhood Chain (<strong>{AVENOR_CHAIN_ID}</strong>).
-          </span>
-        </div>
-      ) : null}
-
-      {/* ── 9. Quote Result Card ── */}
+      {/* Quote Result */}
       {quote !== null ? (
-        <div
-          style={{
-            background: "#101b16",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: "1rem",
-            padding: "1.25rem",
-            backdropFilter: "blur(8px)",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <span style={{ fontSize: "0.75rem", color: "#6db89b", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
-              On-Chain Withdrawal Preview
-            </span>
-            <span style={{ fontFamily: "monospace", fontSize: "0.75rem", color: "#8b929e" }}>
-              Block #{quote.blockNumber.toString()}
-            </span>
-          </div>
-
-          <dl style={{ margin: 0 }}>
-            {[
-              { label: "Estimated Assets to Receive", value: <Amount value={quote.assets} kind="usdg" /> },
-              { label: "Estimated Shares to Burn", value: <Amount value={quote.shares} kind="shares" /> },
-              { label: "Maximum Asset Ceiling", value: <Amount value={quote.maxAssets} kind="usdg" /> },
-              { label: "Maximum Share Ceiling", value: <Amount value={quote.maxShares} kind="shares" /> },
-              { label: "Current Share Balance", value: <Amount value={quote.shareBalance} kind="shares" /> },
-            ].map(({ label, value }) => (
-              <div
-                key={label}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  padding: "0.4rem 0",
-                  borderBottom: "1px solid rgba(255,255,255,0.04)",
-                  gap: "1rem",
-                }}
-              >
-                <dt style={{ fontSize: "0.8125rem", color: "#8b929e", margin: 0 }}>{label}</dt>
-                <dd style={{ fontFamily: "monospace", fontSize: "0.8125rem", color: "#f8f9fa", margin: 0, fontVariantNumeric: "tabular-nums" }}>
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-
-          {/* Withdrawal warnings as amber pill-badges */}
-          {withdrawWarnings(quote, { isPaused: live.isPaused, isShutdown: live.isShutdown }).length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "0.875rem" }}>
-              {withdrawWarnings(quote, { isPaused: live.isPaused, isShutdown: live.isShutdown }).map((warning) => (
-                <span
-                  key={warning.case}
-                  role={warning.case === "W6" ? "alert" : undefined}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "0.35rem",
-                    background: "rgba(251,191,36,0.08)",
-                    border: "1px solid rgba(251,191,36,0.25)",
-                    borderRadius: "9999px",
-                    padding: "0.2rem 0.75rem",
-                    fontSize: "0.75rem",
-                    color: "#fbbf24",
-                  }}
-                >
-                  <strong>{warning.case}</strong>: {warning.message}
-                  {warning.case === "idle"
-                    ? ` Idle reserves cover ${percentBps(idleCoverageBps(quote))} of requested amount.`
-                    : ""}
-                </span>
-              ))}
+        <div className="rounded-xl bg-[#0d1a14] border border-white/[0.08] p-4 space-y-2.5">
+          <h3 className="text-xs font-mono uppercase tracking-wider text-[#a3abb8] mb-3">Withdrawal Preview</h3>
+          {[
+            { label: "Estimated Assets Received", value: <Amount value={quote.assets} kind="usdg" /> },
+            { label: "Shares to Burn (est.)", value: <Amount value={quote.shares} kind="shares" decimals={shareDecimals} /> },
+            { label: "Max Withdrawable Assets", value: <Amount value={quote.maxAssets} kind="usdg" /> },
+            { label: "Max Redeemable Shares", value: <Amount value={quote.maxShares} kind="shares" decimals={shareDecimals} /> },
+            { label: "Share Balance", value: <Amount value={quote.shareBalance} kind="shares" decimals={shareDecimals} /> },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex items-baseline justify-between gap-4 py-1.5 border-b border-white/[0.05] last:border-0">
+              <span className="text-xs text-[#a3abb8] shrink-0">{label}</span>
+              <span className="font-mono text-sm tabular-nums text-[#f8f9fa] text-right">{value}</span>
             </div>
-          )}
-        </div>
-      ) : null}
+          ))}
 
-      {/* ── 10. Blockers list ── */}
-      {blocked.length > 0 ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-          {blocked.map((entry) => (
+          {/* Warnings */}
+          {withdrawWarnings(quote, { isPaused: live.isPaused, isShutdown: live.isShutdown }).map((warning) => (
             <div
-              key={entry.code}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                background: "rgba(220,38,38,0.08)",
-                border: "1px solid rgba(220,38,38,0.25)",
-                borderRadius: "8px",
-                padding: "0.5rem 0.875rem",
-                fontSize: "0.8125rem",
-                color: "#f87171",
-              }}
+              key={warning.case}
+              className={`rounded-lg px-3.5 py-2.5 mt-2 ${warning.case === "W6" ? "bg-[#1a0f0f] border border-red-500/20" : "bg-[#1a1200] border border-[#e8c468]/20"}`}
+              role={warning.case === "W6" ? "alert" : undefined}
             >
-              <strong>{entry.code.toUpperCase()}</strong>: {entry.message}
+              <span className={`font-mono text-[11px] font-semibold ${warning.case === "W6" ? "text-red-400" : "text-[#e8c468]"}`}>
+                {warning.case}
+              </span>
+              <span className={`text-sm ml-2 ${warning.case === "W6" ? "text-[#f87171]" : "text-[#e8c468]"}`}>
+                {warning.message}
+                {warning.case === "idle" ? ` Idle cash covers ${percentBps(idleCoverageBps(quote))} of the request.` : ""}
+              </span>
             </div>
           ))}
         </div>
       ) : null}
 
-      {/* ── 11. Submit Button ── */}
+      {/* Blockers */}
+      {blocked.length > 0 ? (
+        <div className="space-y-2">
+          {blocked.map((entry) => (
+            <div key={entry.code} className="rounded-lg bg-[#1a0f0f] border border-red-500/20 px-3.5 py-2.5" role="alert">
+              <span className="font-mono text-[11px] text-red-400 font-semibold">{entry.code}</span>
+              <span className="text-sm text-[#f87171] ml-2">{entry.message}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Submit Button */}
       <button
         type="button"
         onClick={submit}
         disabled={quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing"}
-        style={{
-          width: "100%",
-          minHeight: "48px",
-          background:
-            quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing"
-              ? "rgba(248,249,250,0.1)"
-              : "#f8f9fa",
-          color: quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing" ? "#6b7280" : "#0b1310",
-          fontWeight: 700,
-          fontSize: "0.9375rem",
-          border: "none",
-          borderRadius: "10px",
-          cursor:
-            quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing"
-              ? "not-allowed"
-              : "pointer",
-          transition: "all 0.15s",
-        }}
+        className="w-full flex items-center justify-center rounded-xl bg-[#f8f9fa] text-[#0b1310] hover:bg-white disabled:bg-white/[0.1] disabled:text-[#9ca3af] disabled:cursor-not-allowed px-5 py-3.5 text-sm font-bold transition-all min-h-[48px] shadow-[0_0_20px_rgba(255,255,255,0.08)]"
       >
-        {phase === "signing"
-          ? "Awaiting Wallet Signature…"
-          : mode === "assets"
-          ? "Withdraw USDG"
-          : "Redeem Shares"}
+        {phase === "signing" ? (
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-[#0b1310] border-t-transparent animate-spin" />
+            Awaiting signature…
+          </span>
+        ) : mode === "assets" ? `Withdraw ${assetSymbol} →` : "Redeem Shares →"}
       </button>
-      <p className="provenance" style={{ margin: 0, fontSize: "0.72rem", color: "#6b7280" }}>
-        Share numbers above are previews evaluated at block #{quote === null ? "—" : quote.blockNumber.toString()}. Final realized numbers derive strictly from the on-chain Withdraw event receipt.
+
+      <p className="provenance">
+        Estimates are from block {quote === null ? "—" : quote.blockNumber.toString()}. Final amounts are sourced exclusively from the on-chain{" "}
+        <code className="font-mono text-[11px]">Withdraw</code> event.
       </p>
 
-      {/* ── 12. Problem / Error ── */}
+      {/* Error */}
       {problem !== null ? (
-        <div
-          role="alert"
-          style={{
-            background: "rgba(220,38,38,0.08)",
-            border: "1px solid rgba(220,38,38,0.3)",
-            borderRadius: "0.75rem",
-            padding: "0.875rem 1.25rem",
-            fontSize: "0.875rem",
-            color: "#fca5a5",
-          }}
-        >
-          <span
-            style={{
-              fontFamily: "monospace",
-              fontSize: "0.75rem",
-              background: "rgba(220,38,38,0.2)",
-              borderRadius: "0.25rem",
-              padding: "0.1rem 0.4rem",
-              marginRight: "0.5rem",
-              color: "#f87171",
-            }}
-          >
-            {problem.code}
-          </span>
-          {problem.message}
-          {problem.detail === null ? null : (
-            <span className="provenance" style={{ display: "block", marginTop: "0.3rem", fontSize: "0.72rem", color: "#9ca3af" }}>
-              {problem.detail}
+        <div className="rounded-xl bg-[#1a0f0f] border border-red-500/20 p-4" role="alert">
+          <div className="flex items-start gap-3">
+            <span className="font-mono text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1.5 py-0.5 shrink-0 mt-0.5">
+              {problem.code}
             </span>
-          )}
+            <div className="space-y-1 min-w-0">
+              <p className="text-sm text-[#f87171]">{problem.message}</p>
+              {problem.detail !== null && <p className="provenance">{problem.detail}</p>}
+            </div>
+          </div>
         </div>
       ) : null}
 
-      {/* ── 13. Receipt success card ── */}
+      {/* Receipt */}
       {receipt !== null ? (
-        <div
-          role="status"
-          style={{
-            background: "rgba(109,184,155,0.08)",
-            border: "1px solid rgba(109,184,155,0.3)",
-            borderRadius: "0.75rem",
-            padding: "1rem 1.25rem",
-          }}
-        >
-          <p style={{ margin: "0 0 0.5rem", fontWeight: 700, color: "#6db89b", fontSize: "0.9375rem" }}>
-            ✓ Withdrawal Confirmed on-Chain
+        <div className="rounded-xl bg-[#0a1f14] border border-[#6db89b]/30 p-4" role="status">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#6db89b]/20">
+              <svg className="w-3 h-3 text-[#6db89b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            </span>
+            <span className="text-sm font-semibold text-[#6db89b]">Withdrawal Confirmed</span>
+          </div>
+          <p className="text-sm text-[#b0b7c3]">
+            Settled at block <span className="font-mono text-[#f8f9fa]">{receipt.blockNumber.toString()}</span> with{" "}
+            <code className="font-mono text-[11px]">max_loss</code> {receipt.maxLossBps} bps. From event:{" "}
+            <span className="font-mono text-[#f8f9fa]"><Amount value={receipt.assets} kind="usdg" /></span> for{" "}
+            <span className="font-mono text-[#f8f9fa]"><Amount value={receipt.shares} kind="shares" decimals={shareDecimals} /></span>.
           </p>
-          <p style={{ margin: "0 0 0.5rem", fontSize: "0.875rem", color: "#d1fae5" }}>
-            Mined at block <strong>#{receipt.blockNumber.toString()}</strong> with{" "}
-            <code>max_loss</code> parameter {receipt.maxLossBps} bps. Realized event payload:{" "}
-            <Amount value={receipt.assets} kind="usdg" /> for{" "}
-            <Amount value={receipt.shares} kind="shares" />.
-          </p>
-          <p className="provenance" style={{ margin: 0, fontSize: "0.72rem", color: "#6b7280", fontFamily: "monospace" }}>
-            Tx: {receipt.withdrawTx as Hex} · Receiver: <AddressText address={receipt.receiver} />
-            {live.isShutdown ? " · vault shutdown: redemptions remain functional; deposits disabled" : ""}
+          <p className="provenance mt-2">
+            tx {receipt.withdrawTx as Hex} · receiver <AddressText address={receipt.receiver} />
+            {live.isShutdown ? " · vault shutdown: withdrawals proceed, deposits do not" : ""}
           </p>
         </div>
       ) : null}

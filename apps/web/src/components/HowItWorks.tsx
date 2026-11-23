@@ -4,26 +4,26 @@ export function HowItWorks() {
       step: "01",
       title: "Connect",
       description:
-        "Review mandate parameters, fee schedules, and smart contract audit status, then connect MetaMask, Robinhood Wallet, or WalletConnect on Robinhood Chain (Chain ID 4663).",
+        "Read the mandate, the fees and the pin block, then connect an EIP-1193 browser wallet. The app detects the injected provider, asks it to switch to Robinhood Chain (4663), and refuses to sign on any other chain.",
     },
     {
       step: "02",
       title: "Allocate",
       description:
-        "Select a designated vault and examine how capital is deployed through deterministic ERC-4626 share accounting and capped strategy adapters with zero-loss bounds.",
+        "Deposit USDG against a cap the contract enforces, not a number copied into the page. Shares are minted at the price per share read in the same block; the allowance is set to exactly the amount being deposited.",
     },
     {
       step: "03",
-      title: "Monitor & redeem",
+      title: "Monitor and redeem",
       description:
-        "Verify reported net asset values and immutable deposit or redemption events via Blockscout, subject to each strategy's stated liquidity and settlement schedule.",
+        "Position value and the amount withdrawable now appear as two separate figures. A withdrawal carries an explicit max_loss budget, so a partial fill or a revert is visible to the signer before the transaction is sent.",
     },
   ];
 
   return (
     <section
       id="how-it-works"
-      className="bg-[#f8f9fa] text-[#0b1310] py-20 md:py-28 px-4 sm:px-6 transition-colors"
+      className="bg-[#f8f9fa] text-[#0b1310] py-14 md:py-28 px-4 sm:px-6 transition-colors"
     >
       <div className="mx-auto max-w-[1200px]">
         <div className="max-w-xl">

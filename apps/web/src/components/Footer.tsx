@@ -9,19 +9,21 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-8 border-b border-white/[0.06]">
           <div className="flex flex-wrap items-center gap-4">
             <AvenorLogo />
-            <span className="text-xs text-[#9ca3af]">
-              Institutional On-Chain Investment Strategies · Capital, Working Smarter.
+            <span className="text-[13px] text-[#b0b7c3]">
+              Institutional on-chain investment strategies · Capital, Working Smarter.
             </span>
           </div>
-          <span className="font-mono text-xs text-[#8b929e]">
-            Robinhood Chain Mainnet · Chain ID 4663
+          <span className="font-mono text-[13px] text-[#a3abb8] flex flex-wrap items-center gap-x-1.5">
+            <span className="whitespace-nowrap">Robinhood Chain ·</span>
+            <span className="whitespace-nowrap">chain ID 4663 ·</span>
+            <span className="whitespace-nowrap">staging fork</span>
           </span>
         </div>
 
         {/* Bottom row */}
-        <div className="pt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-[#8b929e]">
+        <div className="pt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-[13px] text-[#a3abb8]">
           <span>© 2026 AVENOR. All rights reserved.</span>
-          <div className="flex flex-wrap items-center gap-6">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 sm:flex sm:flex-wrap sm:items-center sm:gap-6">
             <a
               href="/#vaults"
               className="hover:text-[#f8f9fa] transition-colors cursor-pointer"

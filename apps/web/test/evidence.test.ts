@@ -26,5 +26,5 @@ test("an address without code yields no hash", async () => {
   const evidence = await readEvidence(noCode, VAULT, 0x70dafe7n);
   assert.equal(evidence.codeHash, null);
   assert.equal(evidence.codeSize, 0);
-  assert.match(evidence.codeError ?? "", /tidak punya kode/);
+  assert.match(evidence.codeError ?? "", /has no code/);
 });

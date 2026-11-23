@@ -5,10 +5,10 @@
   color-scheme: dark;
 
   --ink: #f8f9fa;
-  --ink-soft: #8b929e;
+  --ink-soft: #a3abb8;
   --paper: #0b1310;
   --paper-raised: #101b16;
-  --rule: rgba(255, 255, 255, 0.08);
+  --rule: rgba(255, 255, 255, 0.14);
   --accent: #6db89b;
   --accent-ink: #0b1310;
   --warn: #e8c468;
@@ -111,7 +111,7 @@ a {
 
 .card {
   background: #101b16;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--rule);
   border-radius: 12px;
   padding: 1.25rem;
   width: 100%;
@@ -130,6 +130,15 @@ a {
   width: 100%;
 }
 
+/* A grid or flex item defaults to `min-width: auto`, so a single unbreakable child — an amount
+   field, a mono address, a long token — pins the whole track to that child's min-content width and
+   pushes the card wider than the column. Seen at 390px on the deposit page: the card was 358px and
+   its child 461px until `min-width: 0` let it shrink. */
+.stack > *,
+.card > * {
+  min-width: 0;
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -141,7 +150,9 @@ a {
 
 dl.facts {
   display: grid;
-  grid-template-columns: minmax(12rem, 18rem) 1fr;
+  /* A 288px label column left the value column ~250px wide inside a half-width card, so a sentence
+     like the timelock answer wrapped into six short lines. Labels only need to name the row. */
+  grid-template-columns: minmax(8rem, 11rem) 1fr;
   gap: 0.625rem 1rem;
   margin: 0;
   width: 100%;
@@ -150,11 +161,13 @@ dl.facts {
 dl.facts dt {
   color: var(--ink-soft);
   font-size: 0.875rem;
+  line-height: 1.45;
 }
 
 dl.facts dd {
   margin: 0;
   font-size: 0.9375rem;
+  line-height: 1.55;
   word-break: break-word;
 }
 
@@ -229,25 +242,95 @@ table.data {
   min-width: 480px;
 }
 
+/* Below 640px a six-column table has no room: at 390px every header wrapped to three lines and the
+   row outgrew the card. Cells carry the column name in data-label, so they stack as labelled rows
+   instead of becoming a horizontal scroll region the reader has to discover. */
+@media (max-width: 640px) {
+  .table-responsive table.data {
+    min-width: 0;
+    border-collapse: separate;
+  }
+
+  .table-responsive table.data thead {
+    display: none;
+  }
+
+  .table-responsive table.data,
+  .table-responsive table.data tbody,
+  .table-responsive table.data tr,
+  .table-responsive table.data td {
+    display: block;
+    width: 100%;
+  }
+
+  .table-responsive table.data tr {
+    margin-bottom: 0.75rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--rule);
+    border-radius: 0.75rem;
+    background-color: var(--paper-raised);
+  }
+
+  .table-responsive table.data tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .table-responsive table.data td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.4375rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: right;
+  }
+
+  .table-responsive table.data td:last-child {
+    border-bottom: 0;
+  }
+
+  .table-responsive table.data td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    text-align: left;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .table-responsive table.data td > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .table-responsive table.data td .text-right {
+    text-align: right;
+  }
+}
+
 table.data th,
 table.data td {
   text-align: left;
   padding: 0.75rem 0.875rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--rule);
   vertical-align: middle;
 }
 
 table.data th {
   font-weight: 600;
   color: var(--ink-soft);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   background-color: rgba(255, 255, 255, 0.02);
 }
 
 .provenance {
-  font-size: 0.75rem;
+  /* 12px at #8b929e on #0b1310 was the least readable text on the page, and it carries the sentence
+     that says where every number came from. It is load-bearing, not fine print. */
+  font-size: 0.8125rem;
   color: var(--ink-soft);
   border-top: 1px dashed rgba(255, 255, 255, 0.12);
   padding-top: 0.625rem;

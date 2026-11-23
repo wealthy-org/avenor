@@ -1,5 +1,5 @@
 // Withdraw page. Rendered only with a live snapshot, because a withdrawal form without a pause flag
-// or an idle figure would invite the user to treat "nilai posisi" as "dapat ditarik sekarang".
+// or an idle figure would invite the user to treat position value as immediately withdrawable.
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -31,19 +31,22 @@ export default async function WithdrawPage({ params }: Params) {
     const { code, message } = describe(error);
     return (
       <div className="shell stack">
-        <ErrorState code={code} message={`Konfigurasi AVENOR_VAULTS rusak: ${message}`} />
+        <ErrorState code={code} message={`Vault configuration error: ${message}`} />
       </div>
     );
   }
 
-  // Graceful fallback for staging vault
+  // Graceful fallback for the staging vault when the environment did not provide the list.
   if (vaults.length === 0 && address.toLowerCase() === "0x5aebce3956fed4542edbe75d420497378e3b18ca") {
     vaults = [
       {
         address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
         label: "Avenor USDG Managed Vault (Staging)",
         phase: "research",
-        mandate: "Staging fork — all numbers read directly from Robinhood Chain mainnet pinned block 118337511. Not intended for public deposit.",
+        mandate:
+          "Staging fork of Robinhood Chain state. Every number is read at one named block and printed " +
+            "with that block and its hash; this deployment has no code on mainnet. " +
+            "Not open for public deposits.",
       },
     ];
   }
@@ -63,10 +66,10 @@ export default async function WithdrawPage({ params }: Params) {
     try {
       detail = await loadVaultDetail(base, config.address);
     } catch {
-      detail = getDirectVaultDetail(config.address);
+      detail = await getDirectVaultDetail(config.address);
     }
   } else {
-    detail = getDirectVaultDetail(config.address);
+    detail = await getDirectVaultDetail(config.address);
   }
 
   const live = detail.live;
@@ -74,34 +77,57 @@ export default async function WithdrawPage({ params }: Params) {
     const { code, message } = describe(detail.liveError);
     return (
       <div className="shell stack">
-        <ErrorState code={code} message={`Angka vault tidak terbaca, jadi form penarikan tidak ditampilkan: ${message}`} />
+        <ErrorState code={code} message={`On-chain vault data unavailable — withdrawal form cannot be shown: ${message}`} />
       </div>
     );
   }
 
+  const vaultName = detail.vault === null ? config.label : detail.vault.name;
+  const vaultSymbol = detail.vault === null ? "?" : detail.vault.symbol;
+  const assetAddress = (detail.vault === null ? config.address : detail.vault.assetAddress) as `0x${string}`;
+
   return (
     <div className="shell stack">
-      <div className="flex items-center gap-2 text-xs font-mono text-[#8b929e] mb-2">
-        <Link href={`/vaults/${config.address}`} className="hover:text-[#6db89b] transition-colors">
-          ← Back to Vault Detail
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-xs font-mono text-[#a3abb8]" aria-label="Breadcrumb">
+        <Link href={`/vaults/${config.address}`} className="hover:text-[#6db89b] transition-colors inline-flex items-center gap-1">
+          ← Back to vault
         </Link>
-        <span>/</span>
-        <span className="text-[#f8f9fa]">Withdraw</span>
-      </div>
+        <span aria-hidden="true" className="text-[#a3abb8]">/</span>
+        <span className="text-[#f8f9fa] font-medium">Withdraw</span>
+      </nav>
 
-      <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 backdrop-blur-sm shadow-xl">
-        <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">
-          Withdraw from {detail.vault === null ? config.label : detail.vault.name} ({detail.vault === null ? "?" : detail.vault.symbol})
-        </h1>
-        <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl">
-          Withdrawals draw capital from underlying strategies when unallocated idle reserves are depleted. Loss tolerance is parameterized as an explicit <code>max_loss</code> budget; no hidden default haircuts are applied.
-        </p>
+      {/* Page Header */}
+      <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-sm shadow-xl">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono text-[11px] uppercase tracking-widest text-[#e8c468] bg-[#e8c468]/10 border border-[#e8c468]/20 rounded-full px-2.5 py-0.5">
+              Withdraw
+            </span>
+            <span className="font-mono text-[11px] uppercase tracking-widest text-[#8b929e] bg-white/[0.04] border border-white/[0.08] rounded-full px-2.5 py-0.5">
+              Robinhood Chain · chain ID 4663
+            </span>
+          </div>
+          <h1 className="font-display text-xl sm:text-3xl font-medium text-[#f8f9fa]">
+            Withdraw from {vaultName}
+            <span className="mt-1 block font-mono text-sm text-[#a3abb8] sm:mt-0 sm:ml-2 sm:inline sm:text-base">
+              ({vaultSymbol})
+            </span>
+          </h1>
+          <p className="text-sm text-[#b0b7c3] leading-relaxed max-w-2xl text-pretty">
+            Withdrawals may require capital to be recalled from strategies when idle cash is insufficient.
+            Loss tolerance is sent as an explicit <code className="font-mono text-[11px] text-[#6db89b]">max_loss</code> parameter — there are no hidden defaults.
+            If the tolerance is too tight, the withdrawal may be partial; if the chain rejects entirely, the transaction reverts.
+          </p>
+        </div>
       </header>
 
+      {/* Withdraw Form */}
       <section className="card stack">
         <WithdrawForm
           vault={config.address}
           assetSymbol="USDG"
+          shareDecimals={detail.vault === null ? 0 : detail.vault.shareDecimals}
           live={{
             isPaused: live.isPaused,
             isShutdown: live.isShutdown,
@@ -110,19 +136,45 @@ export default async function WithdrawPage({ params }: Params) {
             blockTimestamp: live.blockTimestamp,
           }}
         />
-        <BlockProvenance blockNumber={live.blockNumber.toString()} blockTimestamp={live.blockTimestamp} source="onchain" />
+        <BlockProvenance blockNumber={live.blockNumber.toString()} blockTimestamp={live.blockTimestamp} source={live.source} />
       </section>
 
+      {/* Acknowledged Limitations */}
       <section className="card stack">
-        <h2 className="text-lg font-medium text-[#f8f9fa]">Protocol Withdrawal Semantics & Bounds</h2>
-        <ul className="space-y-2 text-sm text-[#b0b7c3] list-disc pl-5">
-          <li><strong>Dynamic Venue Capacity:</strong> <code>maxWithdraw</code> and <code>maxRedeem</code> limits are queried directly on-chain at the verified block height and fluctuate with venue liquidity.</li>
-          <li><strong>Zero Speculative Estimates:</strong> Unallocated venue liquidity timelines are not estimated or fabricated.</li>
-          <li><strong>Explicit Loss Bounding:</strong> The <code>max_loss</code> parameter measures realized debt liquidation loss during strategy unwinds, not price-per-share variance.</li>
+        <h2 className="font-display text-base font-medium text-[#f8f9fa]">Acknowledged Limitations</h2>
+        <ul className="space-y-2 text-sm text-[#b0b7c3] leading-relaxed">
+          <li className="flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-[#e8c468] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="min-w-0">
+              <code className="font-mono text-xs text-[#6db89b]">maxWithdraw</code> /{" "}
+              <code className="font-mono text-xs text-[#6db89b]">maxRedeem</code> are read from the vault at a
+              single block; these values move with venue liquidity.
+            </span>
+          </li>
+          <li className="flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-[#e8c468] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="min-w-0">
+              Time estimates for funds outside idle cash are not shown — there is insufficient on-chain data
+              to derive them honestly.
+            </span>
+          </li>
+          <li className="flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-[#e8c468] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="min-w-0">
+              Preview is not a promise — {" "}
+              <code className="font-mono text-xs text-[#6db89b]">max_loss</code> measures realised loss at
+              withdrawal time, not slippage or price-per-share drift.
+            </span>
+          </li>
         </ul>
-        <p className="provenance pt-2">
-          Vault Contract: <AddressText address={config.address} /> · Underlying Asset:{" "}
-          <AddressText address={(detail.vault === null ? config.address : detail.vault.assetAddress) as `0x${string}`} />
+        <p className="provenance">
+          Vault <AddressText address={config.address} /> · asset <AddressText address={assetAddress} />
         </p>
       </section>
     </div>

@@ -38,7 +38,7 @@ export interface ConnectedWallet {
 function toChainId(value: unknown): number {
   if (typeof value === "string" && /^0x[0-9a-fA-F]+$/.test(value)) return Number(BigInt(value));
   if (typeof value === "number" && Number.isSafeInteger(value)) return value;
-  throw new WalletError("wrong_network", "Wallet mengembalikan chain id yang tidak dapat dibaca", String(value));
+  throw new WalletError("wrong_network", "The wallet returned an unreadable chain id", String(value));
 }
 
 function isRejection(error: unknown): boolean {
@@ -52,11 +52,11 @@ function isRejection(error: unknown): boolean {
 /** Turn a wallet transport error into one of our codes so the form can show a specific message. */
 export function mapWalletError(error: unknown): WalletError | null {
   if (error instanceof WalletError) return error;
-  if (isRejection(error)) return new WalletError("rejected", "Permintaan ditolak di wallet. Tidak ada transaksi yang dikirim.");
+  if (isRejection(error)) return new WalletError("rejected", "The request was rejected in the wallet. No transaction was sent.");
   if (typeof error === "object" && error !== null) {
     const code = (error as { code?: unknown }).code;
     if (code === -32002) {
-      return new WalletError("pending_request", "Wallet masih punya permintaan terbuka. Selesaikan dulu di wallet.");
+      return new WalletError("pending_request", "The wallet still has an open request. Resolve it in the wallet first.");
     }
   }
   return null;
@@ -76,18 +76,18 @@ export function findInjectedProvider(bag: unknown): Eip1193Provider | null {
  */
 export async function connectWallet(provider: Eip1193Provider | null): Promise<ConnectedWallet> {
   if (provider === null) {
-    throw new WalletError("no_provider", "Tidak ada wallet di browser ini. Pasang wallet yang mendukung Robinhood Chain (4663).");
+    throw new WalletError("no_provider", "No wallet in this browser. Install a wallet that supports Robinhood Chain (4663).");
   }
   try {
     const accounts = await provider.request({ method: "eth_requestAccounts" });
     if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== "string") {
-      throw new WalletError("no_account", "Wallet tidak memberikan akun. Buka wallet dan izinkan koneksi.");
+      throw new WalletError("no_account", "The wallet returned no account. Open it and allow the connection.");
     }
     const chainId = toChainId(await provider.request({ method: "eth_chainId" }));
     return { provider, account: accounts[0] as Address, chainId };
   } catch (error) {
     const mapped = mapWalletError(error);
-    throw mapped ?? new WalletError("no_account", "Wallet gagal dihubungi", error instanceof Error ? error.message : String(error));
+    throw mapped ?? new WalletError("no_account", "The wallet could not be reached", error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -97,7 +97,7 @@ export async function readChainId(provider: Eip1193Provider): Promise<number> {
     return toChainId(await provider.request({ method: "eth_chainId" }));
   } catch (error) {
     const mapped = mapWalletError(error);
-    throw mapped ?? new WalletError("no_provider", "Chain id wallet tidak terbaca", error instanceof Error ? error.message : String(error));
+    throw mapped ?? new WalletError("no_provider", "The wallet chain id could not be read", error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -119,13 +119,13 @@ export async function switchToAvenorChain(provider: Eip1193Provider): Promise<Sw
     });
     const chainId = await readChainId(provider);
     if (chainId !== AVENOR_CHAIN_ID) {
-      return { switched: false, reason: `Wallet tetap di chain ${chainId}, bukan ${AVENOR_CHAIN_ID}.` };
+      return { switched: false, reason: `The wallet stayed on chain ${chainId}, not ${AVENOR_CHAIN_ID}.` };
     }
     return { switched: true, reason: null };
   } catch (error) {
     const mapped = mapWalletError(error);
     if (mapped !== null) throw mapped;
     const message = error instanceof Error ? error.message : String(error);
-    return { switched: false, reason: `Wallet menolak atau tidak bisa pindah chain: ${message}` };
+    return { switched: false, reason: `The wallet refused or could not switch chains: ${message}` };
   }
 }

@@ -6,7 +6,9 @@
 
 import { InvalidAmountError } from "@avenor/sdk";
 
-export type Source = "indexed" | "onchain";
+// `captured` exists because the staging RPC is a local fork that is not always running: a value read
+// from the recorded capture must not be labelled as a live node read on the same screen.
+export type Source = "indexed" | "onchain" | "captured";
 
 const DECIMAL = /^\d+$/;
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
@@ -67,7 +69,9 @@ function boolean(value: unknown, field: string): boolean {
 }
 
 function source(value: unknown, field = "source"): Source {
-  if (value !== "indexed" && value !== "onchain") fail(field, "must be indexed or onchain");
+  if (value !== "indexed" && value !== "onchain" && value !== "captured") {
+    fail(field, "must be indexed, onchain or captured");
+  }
   return value;
 }
 
@@ -88,7 +92,11 @@ export interface VaultRow {
   roleManager: string | null;
   accountant: string | null;
   depositLimit: bigint;
-  deployedBlock: bigint;
+  /**
+   * The block the vault row was read at. It is not the block the vault was deployed at: that block is
+   * only knowable from an indexer or a deployment receipt, and a capture cannot recover it.
+   */
+  recordedBlock: bigint;
   source: Source;
 }
 
@@ -105,7 +113,10 @@ export function parseVaultRow(json: unknown): VaultRow {
     roleManager: optionalAddress(row.role_manager ?? row.roleManager, "role_manager"),
     accountant: optionalAddress(row.accountant, "accountant"),
     depositLimit: decimal(row.depositLimit ?? row.deposit_limit, "depositLimit"),
-    deployedBlock: decimal(row.deployedBlock ?? row.deployed_block, "deployedBlock"),
+    recordedBlock: decimal(
+      row.recordedBlock ?? row.recorded_block ?? row.deployedBlock ?? row.deployed_block,
+      "recordedBlock",
+    ),
     source: source(row.source),
   };
 }
@@ -149,7 +160,7 @@ export function parseLive(json: unknown): Live {
     isShutdown: boolean(row.isShutdown, "isShutdown"),
     source: source(row.source),
   };
-  if (live.source !== "onchain") fail("live.source", "must be onchain: this number came from a block");
+  if (live.source === "indexed") fail("live.source", "must be onchain or captured: this number came from a block");
   if (live.totalIdle + live.totalDebt !== live.totalAssets) {
     fail("live", "idle + debt does not equal totalAssets; the reads are from different blocks");
   }
@@ -160,7 +171,9 @@ export interface StrategyRow {
   address: string;
   venue: string | null;
   venueError: string | null;
+  /** Unix seconds from `strategies(address).activation`. */
   activation: bigint;
+  /** Unix seconds from `strategies(address).lastReport`; a timestamp, not a block height. */
   lastReport: bigint;
   currentDebt: bigint;
   maxDebt: bigint;
@@ -173,6 +186,8 @@ export interface Allocation {
   blockHash: string;
   blockTimestamp: string;
   strategies: StrategyRow[];
+  /** Where the block came from; an API that omits it is treated as a node read. */
+  source: Source;
 }
 
 /** Parts-per-10.000 of `whole`, rounded to nearest; 0 when `whole` is 0. */
@@ -214,6 +229,7 @@ export function parseAllocation(json: unknown, totalAssets: bigint): Allocation 
     blockHash: text(row.blockHash, "blockHash"),
     blockTimestamp: iso(row.blockTimestamp, "blockTimestamp"),
     strategies,
+    source: row.source === undefined ? "onchain" : source(row.source),
   };
 }
 
@@ -221,6 +237,8 @@ export interface Roles {
   blockNumber: bigint;
   blockHash: string;
   blockTimestamp: string;
+  /** Where the block came from; an API that omits it is treated as a node read. */
+  source: Source;
   roleManager: string;
   /** Non-zero while a role-manager transfer is pending. */
   futureRoleManager: string;
@@ -254,6 +272,7 @@ export function parseRoles(json: unknown): Roles {
     blockNumber: decimal(row.blockNumber, "blockNumber"),
     blockHash: text(row.blockHash, "blockHash"),
     blockTimestamp: iso(row.blockTimestamp, "blockTimestamp"),
+    source: row.source === undefined ? "onchain" : source(row.source),
     roleManager: address(row.roleManager, "roleManager"),
     futureRoleManager: address(row.futureRoleManager, "futureRoleManager"),
     timelockMinDelaySeconds,
@@ -349,29 +368,44 @@ export function parseRoleEvents(json: unknown): RoleEventRow[] {
 export interface Position {
   account: string;
   shares: bigint;
-  firstSeenBlock: bigint;
-  lastActivityBlock: bigint;
+  /** `null` without an indexer: a share balance does not carry the block a wallet first appeared at. */
+  firstSeenBlock: bigint | null;
+  lastActivityBlock: bigint | null;
+  /** Why the history fields are empty, when they are. */
+  historyError: string | null;
   source: Source;
 }
 
 export function parsePosition(json: unknown): Position {
   if (typeof json !== "object" || json === null) fail("position", "must be an object");
   const row = json as Record<string, unknown>;
+  const history = (value: unknown, field: string): bigint | null =>
+    value === null || value === undefined ? null : decimal(value, field);
+  const firstSeenBlock = history(row.firstSeenBlock, "position.firstSeenBlock");
+  const lastActivityBlock = history(row.lastActivityBlock, "position.lastActivityBlock");
+  const historyError =
+    row.historyError === null || row.historyError === undefined ? null : text(row.historyError, "position.historyError");
+  if ((firstSeenBlock === null || lastActivityBlock === null) && historyError === null) {
+    fail("position", "is missing a block history without saying why");
+  }
   return {
     account: address(row.account, "position.account"),
     shares: decimal(row.shares, "position.shares"),
-    firstSeenBlock: decimal(row.firstSeenBlock, "position.firstSeenBlock"),
-    lastActivityBlock: decimal(row.lastActivityBlock, "position.lastActivityBlock"),
+    firstSeenBlock,
+    lastActivityBlock,
+    historyError,
     source: source(row.source, "position.source"),
   };
 }
 
 /**
- * Highest `lastReport` block across the queue; `null` when no strategy ever reported. This is a
- * block number, not a duration: "how stale" needs the current head, and the page must not compute
- * an age from a number it did not pin.
+ * Highest `lastReport` across the queue, as unix seconds; `null` when no strategy ever reported.
+ *
+ * `strategies(address)` returns `(activation, lastReport, currentDebt, maxDebt)` where the first two are
+ * timestamps written from `block.timestamp`, not block heights. This is a time, not a duration: "how
+ * stale" needs the current head, and the page must not compute an age from a number it did not pin.
  */
-export function latestReportBlock(allocation: Allocation): bigint | null {
+export function latestReportTimestamp(allocation: Allocation): bigint | null {
   return allocation.strategies.reduce<bigint | null>(
     (best, entry) => (entry.lastReport > 0n && (best === null || entry.lastReport > best) ? entry.lastReport : best),
     null,

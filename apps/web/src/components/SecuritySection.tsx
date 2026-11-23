@@ -13,30 +13,30 @@ const LAYERS: SecurityLayer[] = [
   {
     index: "01",
     title: "Dual-Speed Timelock",
-    subtitle: "≥ 48-Hour Execution Delay",
+    subtitle: "48-hour minimum delay",
     description:
-      "All administrative changes, role handoffs, fee updates, and strategy additions are queued behind an OpenZeppelin TimelockController with a mandatory 48-hour minimum delay before execution. The Guardian holds emergency pause capability only and cannot alter allocations.",
+      "Administrative calls — role handoffs, fee updates, strategy additions — are queued behind a TimelockController with a 172800-second minimum delay before they can execute. The guardian holds an emergency brake only; it is a separate address and cannot propose through the timelock, so it cannot move funds.",
   },
   {
     index: "02",
-    title: "Explicit Zero-Loss Exit",
-    subtitle: "max_loss = 0 Enforcement",
+    title: "Explicit Loss Budget",
+    subtitle: "max_loss is never defaulted",
     description:
-      "Unlike standard implementations that risk hidden slippage or defaulted debt haircuts, Avenor's SDK and smart contract interfaces strictly require explicit max_loss = 0 on redemptions and withdrawals. Unsolicited losses revert immediately on-chain.",
+      "The SDK refuses to build a withdraw or redeem call without a max_loss argument. That matters because the contract defaults differ: redeem assumes 10000 bps and withdraw assumes 0, and either default decides on the depositor's behalf. A withdrawal that exceeds the stated budget reverts on chain instead of silently haircutting.",
   },
   {
     index: "03",
-    title: "Immutable Yearn V3 Core",
-    subtitle: "Pinned ERC-4626 Upstream",
+    title: "Untouched Yearn V3 Core",
+    subtitle: "Upstream pin, adapters only",
     description:
-      "The vault allocator core uses upstream Yearn V3 (API 3.1.1) byte-for-byte with zero custom core modifications. All strategy adapters operate as isolated peripheral contracts, ensuring the fundamental accounting remains mathematically proven and audited.",
+      "The allocator core is upstream Yearn V3 with no local modification; a repository rule rejects any patch to that package. Everything this project adds lives in adapters, hooks and tests. The 2023 upstream audit covers the vendored core only — this deployment, its adapters and its configuration are not audited, and nothing here claims otherwise.",
   },
   {
     index: "04",
-    title: "On-Chain Integer Provenance",
-    subtitle: "Pure BigInt Math · No Floats",
+    title: "Integer Provenance",
+    subtitle: "bigint, 6 decimals, named block",
     description:
-      "Every financial metric, debt allocation, and share price calculation is represented in pure fixed-point BigInt integers (6 decimals for USDG, 18 decimals for shares). All UI data includes verifiable block numbers and UTC timestamps directly from the chain.",
+      "Balances, debt and share price stay bigint end to end: 6 decimals for USDG, 18 for shares, never a float. Each figure on the vault page is printed with the block it was read at, and a section that failed to read says so instead of rendering zero.",
   },
 ];
 
@@ -46,7 +46,7 @@ export function SecuritySection() {
   return (
     <section
       id="security"
-      className="bg-[#0b1310]/85 py-20 md:py-28 px-4 sm:px-6 relative overflow-hidden"
+      className="bg-[#0b1310]/85 py-14 md:py-28 px-4 sm:px-6 relative overflow-hidden"
     >
       <div className="mx-auto max-w-[1200px]">
         {/* Section Header */}
@@ -55,8 +55,9 @@ export function SecuritySection() {
             Security, before yield.
           </h2>
           <p className="mt-3 text-[15px] leading-relaxed text-[#9ca3af]">
-            Examine our custody architecture, programmatic risk controls, and
-            governance timelock prerequisites prior to capital deployment.
+            What the contracts enforce, and what this project does not claim. There is no audit badge
+            on this page: the vendored Yearn V3 core carries a 2023 audit, the adapters and the
+            configuration do not.
           </p>
         </div>
 
@@ -85,20 +86,20 @@ export function SecuritySection() {
                     <div className="flex items-baseline gap-4">
                       <span
                         className={`font-mono text-xs ${
-                          isSelected ? "text-[#6db89b]" : "text-[#6b7280]"
+                          isSelected ? "text-[#6db89b]" : "text-[#a3abb8]"
                         }`}
                       >
                         {layer.index}
                       </span>
                       <span
                         className={`font-display text-lg font-medium ${
-                          isSelected ? "text-[#f8f9fa]" : "text-[#8b929e]"
+                          isSelected ? "text-[#f8f9fa]" : "text-[#a3abb8]"
                         }`}
                       >
                         {layer.title}
                       </span>
                     </div>
-                    <span className="font-mono text-[11px] tracking-[0.08em] text-[#6b7280] uppercase">
+                    <span className="font-mono text-xs tracking-[0.08em] text-[#a3abb8] uppercase">
                       {layer.subtitle}
                     </span>
                   </div>
@@ -113,8 +114,12 @@ export function SecuritySection() {
             })}
           </div>
 
-          {/* Right: 3D Isometric Levitating Plate Stack */}
-          <div className="flex items-center justify-center py-8">
+          {/* Right: 3D Isometric Levitating Plate Stack.
+              The plates carry only their index. A title inside the rotated plate cannot be laid out
+              without colliding with the plate behind it: the projection shrinks the vertical step
+              between plates (42px x cos56) while it grows the axis-aligned box of the text
+              (len x sin42). The selected layer's title is printed below the stack, unrotated. */}
+          <div className="flex flex-col items-center justify-center gap-6 py-8">
             <div className="scale-75 sm:scale-100 origin-center">
             <div className="animate-plate-levitate relative w-72 h-80 flex flex-col items-center justify-center">
               {LAYERS.map((layer, idx) => {
@@ -137,24 +142,27 @@ export function SecuritySection() {
                     }`}
                   >
                     <span
-                      className={`font-mono text-[10px] tracking-[0.12em] uppercase ${
-                        isSelected ? "text-[#6db89b]" : "text-[#8b929e]"
+                      className={`font-display text-3xl font-medium leading-none transition-opacity ${
+                        isSelected ? "text-[#6db89b] opacity-100" : "text-[#4b5563] opacity-30"
                       }`}
                     >
-                      {layer.title}
+                      {isSelected ? layer.index : ""}
                     </span>
                     <span
-                      className={`self-end font-display text-2xl font-medium ${
-                        isSelected ? "text-[#6db89b]" : "text-[#4b5563]"
+                      aria-hidden="true"
+                      className={`self-end h-2 w-2 rounded-full transition-colors ${
+                        isSelected ? "bg-[#6db89b]" : "bg-white/20"
                       }`}
-                    >
-                      {layer.index}
-                    </span>
+                    />
                   </button>
                 );
               })}
             </div>
             </div>
+            <p className="max-w-xs text-center font-mono text-xs uppercase tracking-[0.14em] text-[#a3abb8]">
+              <span className="text-[#6db89b]">{LAYERS[selectedLayer]!.index}</span>{" "}
+              {LAYERS[selectedLayer]!.title}
+            </p>
           </div>
         </div>
       </div>

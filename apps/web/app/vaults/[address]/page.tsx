@@ -13,16 +13,21 @@ import { Amount, AddressText, BlockProvenance, ErrorState, Percent, StatusPill }
 import { readEvidence, type ContractEvidence } from "@/lib/evidence";
 import { ApiError } from "@/lib/api";
 import { loadVaultDetail, type VaultDetail } from "@/lib/vaultLoader";
-import { blockTime, liquiditySplit, percentBps } from "@/lib/format";
+import { blockTime, epochTime, liquiditySplit, percentBps } from "@/lib/format";
 import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
-import { latestReportBlock } from "@/lib/vaultView";
-import { getDirectVaultDetail } from "@/lib/serverData";
+import { latestReportTimestamp } from "@/lib/vaultView";
+import { getDirectVaultDetail, getVaultEvidence } from "@/lib/serverData";
 
 export const dynamic = "force-dynamic";
 
 interface Params {
   params: Promise<{ address: string }>;
 }
+
+const MANDATE_FALLBACK =
+  "Staging fork of Robinhood Chain state. Every number is read at one named block and printed " +
+            "with that block and its hash; this deployment has no code on mainnet. " +
+            "Not open for public deposits.";
 
 function describe(error: unknown): { code: string; message: string } {
   if (error instanceof ApiError) return { code: error.code, message: error.message };
@@ -34,6 +39,25 @@ function SectionError({ error, what }: { error: unknown; what: string }) {
   return <ErrorState code={code} message={`${what}: ${message}`} />;
 }
 
+/** One headline figure. A tile, not a sentence: the label says what the number is, the number is money. */
+function Stat({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <div className="rounded-xl border border-white/[0.08] bg-[#14221c]/60 p-4 flex flex-col gap-1.5 min-w-0">
+      <span className="text-[0.6875rem] uppercase tracking-[0.08em] text-[#a3abb8]">{label}</span>
+      <span className="font-mono text-lg sm:text-xl text-[#f8f9fa] tabular-nums break-words">{children}</span>
+      {hint === undefined ? null : <span className="text-xs leading-relaxed text-[#a3abb8]">{hint}</span>}
+    </div>
+  );
+}
+
+function Cell({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <td data-label={label} className="align-middle">
+      {children}
+    </td>
+  );
+}
+
 export default async function VaultPage({ params }: Params) {
   const { address } = await params;
 
@@ -43,19 +67,19 @@ export default async function VaultPage({ params }: Params) {
   } catch (error) {
     return (
       <div className="shell stack">
-        <SectionError error={error} what="Konfigurasi AVENOR_VAULTS rusak" />
+        <SectionError error={error} what="The AVENOR_VAULTS configuration is malformed" />
       </div>
     );
   }
 
-  // Graceful fallback for staging vault if env was not provided in deployment
+  // Graceful fallback for the staging vault when the environment did not provide the list.
   if (vaults.length === 0 && address.toLowerCase() === "0x5aebce3956fed4542edbe75d420497378e3b18ca") {
     vaults = [
       {
         address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
         label: "Avenor USDG Managed Vault (Staging)",
         phase: "research",
-        mandate: "Staging fork — all numbers read directly from Robinhood Chain mainnet pinned block 118337511. Not intended for public deposit.",
+        mandate: MANDATE_FALLBACK,
       },
     ];
   }
@@ -75,124 +99,154 @@ export default async function VaultPage({ params }: Params) {
     try {
       detail = await loadVaultDetail(base, config.address);
     } catch {
-      detail = getDirectVaultDetail(config.address);
+      detail = await getDirectVaultDetail(config.address);
     }
   } else {
-    detail = getDirectVaultDetail(config.address);
+    detail = await getDirectVaultDetail(config.address);
   }
 
   const { vault, live, liveError, allocation, allocationError, reports, reportsError, roles, rolesError } = detail;
   const { fees, feesError, roleEvents, roleEventsError } = detail;
 
   // Read straight from the chain: the artifact in this repo describes what we built, not what the
-  // address runs. When the read fails the section says so instead of quoting a local hash.
-  let evidence: ContractEvidence | null = null;
-  let evidenceError: unknown = null;
+  // address runs. Without a reachable node the captured answer is shown instead, together with the
+  // query that produced it, so the section never prints a stack trace or a made-up fingerprint.
+  let evidence: ContractEvidence;
+  let evidenceSource: "live" | "captured";
   const rpc = process.env.NEXT_PUBLIC_RPC_URL;
   if (typeof rpc !== "string" || rpc.trim() === "") {
-    evidenceError = new Error("NEXT_PUBLIC_RPC_URL belum diset, jadi bukti on-chain tidak dibaca");
+    evidence = getVaultEvidence();
+    evidenceSource = "captured";
   } else {
     try {
-      const client = createPublicClient({ transport: http(rpc.trim()) });
+      const client = createPublicClient({ transport: http(rpc.trim(), { timeout: 8_000 }) });
       evidence = await readEvidence(client, vault.address as `0x${string}`, live === null ? undefined : live.blockNumber);
-    } catch (error) {
-      evidenceError = error;
+      evidenceSource = "live";
+    } catch {
+      evidence = getVaultEvidence();
+      evidenceSource = "captured";
     }
   }
+
   const split = live === null ? null : liquiditySplit({ idle: live.totalIdle, totalAssets: live.totalAssets });
-  const lastReport = allocation === null ? null : latestReportBlock(allocation);
+  const lastReport = allocation === null ? null : latestReportTimestamp(allocation);
   const pendingDeposits = vault.depositLimit === 0n;
 
   return (
     <div className="shell stack">
-      {/* Navigation Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs font-mono text-[#8b929e] mb-2">
+      <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[#a3abb8]">
         <Link href="/#vaults" className="hover:text-[#6db89b] transition-colors">
-          ← Back to Vaults
+          ← All vaults
         </Link>
-        <span>/</span>
+        <span aria-hidden="true">/</span>
         <span className="text-[#f8f9fa]">{config.label}</span>
       </div>
 
       <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-sm shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-[#14221c] border border-white/[0.12] text-xs font-bold text-[#6db89b]">
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+          <div className="space-y-3 min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-[#14221c] border border-white/[0.12] text-xs font-bold text-[#6db89b] shrink-0">
                 av
               </span>
-              <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">
-                {config.label}
-              </h1>
+              <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">{config.label}</h1>
               <StatusPill tone={config.phase === "limited-launch" ? "neutral" : "warn"} text={config.phase} />
             </div>
-            <p className="text-sm font-mono text-[#8b929e]">
-              <AddressText address={vault.address} /> · {vault.name} ({vault.symbol}) · {vault.shareDecimals} share decimals
+            <p className="text-sm font-mono text-[#a3abb8] leading-relaxed">
+              <AddressText address={vault.address} /> · {vault.name} ({vault.symbol}) · {vault.shareDecimals} share
+              decimals
             </p>
-            {config.mandate === undefined ? null : (
-              <p className="text-sm text-[#b0b7c3] leading-relaxed max-w-3xl pt-2 border-t border-white/[0.06]">
-                {config.mandate}
-              </p>
-            )}
+            <p className="text-sm text-[#b0b7c3] leading-relaxed max-w-2xl text-pretty border-t border-white/[0.06] pt-3">
+              {config.mandate ?? MANDATE_FALLBACK}
+            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Link
               href={`/vaults/${vault.address}/deposit`}
               style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
-              className="inline-flex items-center justify-center rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-5 py-2.5 text-sm font-semibold hover:bg-white transition-colors shadow-[0_0_20px_rgba(255,255,255,0.12)] whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center justify-center rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-5 py-3 text-sm font-semibold hover:bg-white transition-colors shadow-[0_0_20px_rgba(255,255,255,0.12)] whitespace-nowrap cursor-pointer"
             >
-              Deposit USDG →
+              Deposit USDG
             </Link>
             <Link
               href={`/vaults/${vault.address}/withdraw`}
-              className="inline-flex items-center justify-center rounded-lg border border-white/[0.14] bg-[#14221c] text-[#f8f9fa] px-5 py-2.5 text-sm font-medium hover:bg-white/[0.08] transition-colors whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center justify-center rounded-lg border border-white/[0.14] bg-[#14221c] text-[#f8f9fa] px-5 py-3 text-sm font-medium hover:bg-white/[0.08] transition-colors whitespace-nowrap cursor-pointer"
             >
-              Withdraw USDG →
+              Withdraw USDG
             </Link>
           </div>
         </div>
       </header>
 
       <div className="banner" data-tone="warn">
-        <strong>Position valuation is not an immediate liquidity guarantee.</strong>
+        <strong>Position value is not a liquidity promise.</strong>
         <p>
-          Unallocated idle cash is immediately available for redemptions; capital allocated across external venue strategies
-          is subject to asynchronous queue resolution. This interface strictly refrains from forward-looking APY projections.
+          Idle cash can pay a withdrawal now; capital deployed to a venue is not necessarily liquid and depends on the
+          strategy queue. This page never shows APY.
         </p>
       </div>
 
       <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">Vault Financial State</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2>Vault value</h2>
+          <span className="text-xs text-[#a3abb8]">All figures read at the same block</span>
+        </div>
         {live === null ? (
-          <SectionError error={liveError} what="On-chain live metrics unreadable" />
+          <SectionError error={liveError} what="The on-chain numbers could not be read" />
         ) : (
           <>
-            <dl className="facts">
-              <dt>Total Assets (AUM)</dt>
-              <dd>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              <Stat label="Total assets" hint="Position value, including capital deployed">
                 <Amount value={live.totalAssets} kind="usdg" />
-              </dd>
-              <dt>Idle Reserves (Immediately Liquid)</dt>
-              <dd>
+              </Stat>
+              <Stat label="Idle cash" hint="Available for a withdrawal right now">
                 <Amount value={live.totalIdle} kind="usdg" />
-              </dd>
-              <dt>Capital Allocated to Strategies</dt>
-              <dd>
+              </Stat>
+              <Stat label="Deployed to strategies" hint="Not withdrawable on demand">
                 <Amount value={live.totalDebt} kind="usdg" />
-              </dd>
-              <dt>Price Per Share (PPS)</dt>
-              <dd>
+              </Stat>
+              <Stat label="Price per share" hint="what convertToAssets() returns for one share">
                 <Amount value={live.pricePerShare} kind="usdg" />
-              </dd>
-              <dt>Total Shares Supply</dt>
-              <dd>
-                <Amount value={live.totalSupply} kind="shares" />
-              </dd>
-              <dt>Deposit Gate Capacity</dt>
-              <dd>{pendingDeposits ? "Closed (deposit_limit = 0)" : <Amount value={vault.depositLimit} kind="usdg" />}</dd>
-            </dl>
-            {split === null ? null : <p className="text-xs text-[#8b929e] mt-2">{split.note}</p>}
+              </Stat>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-0 mt-1">
+              <dl className="facts">
+                <dt>Total shares</dt>
+                <dd>
+                  <Amount value={live.totalSupply} kind="shares" decimals={vault.shareDecimals} />
+                </dd>
+                <dt>Deposit capacity</dt>
+                <dd>
+                  {pendingDeposits ? "Closed (deposit_limit = 0)" : <Amount value={vault.depositLimit} kind="usdg" />}
+                </dd>
+              </dl>
+              <dl className="facts">
+                <dt>Asset</dt>
+                <dd>
+                  <AddressText address={vault.assetAddress} /> ({vault.assetDecimals} decimals)
+                </dd>
+                <dt>Share decimals</dt>
+                <dd>{vault.shareDecimals}</dd>
+              </dl>
+            </div>
+
+            {split === null ? null : (
+              <div className="rounded-lg border border-white/[0.08] bg-[#14221c]/50 p-4">
+                <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+                  <span className="text-xs uppercase tracking-[0.08em] text-[#a3abb8]">Liquidity split</span>
+                  <span className="font-mono text-sm text-[#f8f9fa]">
+                    Idle <span className="text-[#6db89b]">{split.idle}</span> USDG
+                  </span>
+                  <span className="font-mono text-sm text-[#f8f9fa]">
+                    Position <span className="text-[#e8c468]">{split.positionValue}</span> USDG
+                  </span>
+                </div>
+                <p className="mt-2 mb-0 text-sm leading-relaxed text-[#b0b7c3] max-w-3xl">{split.note}</p>
+              </div>
+            )}
+
             <BlockProvenance
               blockNumber={live.blockNumber.toString()}
               blockTimestamp={live.blockTimestamp}
@@ -203,17 +257,17 @@ export default async function VaultPage({ params }: Params) {
       </section>
 
       <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">Strategy Debt Allocations</h2>
+        <h2>Allocation by strategy</h2>
         {allocation === null ? (
-          <SectionError error={allocationError} what="Strategy allocations unreadable" />
+          <SectionError error={allocationError} what="The allocation could not be read" />
         ) : allocation.strategies.length === 0 ? (
-          <p className="text-sm text-[#8b929e]">
-            Default allocation queue is empty.
+          <p>
+            The default queue is empty.
             {live === null
-              ? " Total debt is unreadable on-chain."
+              ? " Total debt is unknown because the live numbers failed to load."
               : live.totalDebt > 0n
-                ? ` On-chain totalDebt (${live.totalDebt.toString()}) is non-zero: debt exists outside the default queue.`
-                : " On-chain total debt is zero: no strategy positions deployed."}
+                ? ` Yet on-chain totalDebt is ${live.totalDebt.toString()}, which is not zero: some debt is not explained by the queue.`
+                : " On-chain total debt is zero, so there is no strategy position."}
           </p>
         ) : (
           <div className="table-responsive">
@@ -222,41 +276,51 @@ export default async function VaultPage({ params }: Params) {
                 <tr>
                   <th>Strategy</th>
                   <th>Venue</th>
-                  <th>Current Debt</th>
-                  <th>Portion</th>
-                  <th>Debt Ceiling</th>
-                  <th>Latest Report</th>
+                  <th className="text-right">Debt</th>
+                  <th className="text-right">Share of assets</th>
+                  <th className="text-right">Debt limit</th>
+                  <th>Last report</th>
                 </tr>
               </thead>
               <tbody>
                 {allocation.strategies.map((strategy) => (
                   <tr key={strategy.address}>
-                    <td>
+                    <Cell label="Strategy">
                       <AddressText address={strategy.address} />
-                    </td>
-                    <td>
+                    </Cell>
+                    <Cell label="Venue">
                       {strategy.venue === null ? (
-                        <span title={strategy.venueError ?? undefined}>unreadable (not absent)</span>
+                        // The reason the venue is blank, not a placeholder: a strategy holding nothing has no
+                        // venue to name, and a failed read is a different case that also says so.
+                        <span className="text-[#a3abb8]">{strategy.venueError ?? "no venue reported"}</span>
                       ) : (
                         <AddressText address={strategy.venue} />
                       )}
-                    </td>
-                    <td>
-                      <Amount value={strategy.currentDebt} kind="usdg" />
-                    </td>
-                    <td>
-                      <Percent bps={strategy.debtBps} />
-                    </td>
-                    <td>
-                      <Amount value={strategy.maxDebt} kind="usdg" />
-                    </td>
-                    <td>
+                    </Cell>
+                    <Cell label="Debt">
+                      <span className="block text-right">
+                        <Amount value={strategy.currentDebt} kind="usdg" />
+                      </span>
+                    </Cell>
+                    <Cell label="Share of assets">
+                      <span className="block text-right">
+                        <Percent bps={strategy.debtBps} />
+                      </span>
+                    </Cell>
+                    <Cell label="Debt limit">
+                      <span className="block text-right">
+                        <Amount value={strategy.maxDebt} kind="usdg" />
+                      </span>
+                    </Cell>
+                    <Cell label="Last report">
                       {strategy.lastReport === 0n ? (
-                        "Never reported"
+                        <span className="text-[#a3abb8]">never</span>
                       ) : (
-                        <span className="provenance">Block #{strategy.lastReport.toString()}</span>
+                        <span className="provenance inline-block mt-0 border-0 pt-0">
+                          {epochTime(strategy.lastReport)}
+                        </span>
                       )}
-                    </td>
+                    </Cell>
                   </tr>
                 ))}
               </tbody>
@@ -267,153 +331,164 @@ export default async function VaultPage({ params }: Params) {
           <BlockProvenance
             blockNumber={allocation.blockNumber.toString()}
             blockTimestamp={allocation.blockTimestamp}
-            source="onchain"
+            source={allocation.source}
           />
         )}
       </section>
 
-      <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">Vault Parameters & Architecture</h2>
-        <dl className="facts">
-          <dt>Vault Address</dt>
-          <dd>
-            <AddressText address={vault.address} />
-          </dd>
-          <dt>Underlying Asset</dt>
-          <dd>
-            <AddressText address={vault.assetAddress} /> ({vault.assetDecimals} decimals)
-          </dd>
-          <dt>Role Manager (Indexed)</dt>
-          <dd>
-            {vault.roleManager === null ? (
-              "Pending indexer"
-            ) : (
-              <AddressText address={vault.roleManager} />
-            )}{" "}
-            <span className="provenance">Indexed record; verified Timelock proof documented below.</span>
-          </dd>
-          <dt>Accountant Contract</dt>
-          <dd>
-            {vault.accountant === null ? (
-              <span className="provenance">Pending indexer; displayed metrics reflect realized fees</span>
-            ) : (
-              <AddressText address={vault.accountant} />
-            )}
-          </dd>
-          <dt>Deployment Block</dt>
-          <dd>Block #{vault.deployedBlock.toString()}</dd>
-          <dt>Data Provenance</dt>
-          <dd>{vault.source}</dd>
-          <dt>Latest Strategy Report</dt>
-          <dd>{lastReport === null ? "None recorded" : `Block #${lastReport.toString()}`}</dd>
-        </dl>
-        <p className="provenance">
-          Parameters verified via indexer and RPC synchronization. Report timing is evaluated synchronously with pinned block height.
-        </p>
-      </section>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <section className="card stack">
+          <h2>Parameters and roles</h2>
+          <dl className="facts">
+            <dt>Vault address</dt>
+            <dd>
+              <AddressText address={vault.address} />
+            </dd>
+            <dt>role_manager (indexed row)</dt>
+            <dd>
+              {vault.roleManager === null ? "not indexed" : <AddressText address={vault.roleManager} />}
+            </dd>
+            <dt>accountant</dt>
+            <dd>
+              {vault.accountant === null ? (
+                <span className="text-[#a3abb8]">not indexed, so only realised fees are shown below</span>
+              ) : (
+                <AddressText address={vault.accountant} />
+              )}
+            </dd>
+            <dt>Recorded at block</dt>
+            <dd className="money">{vault.recordedBlock.toString()}</dd>
+            <dt>Vault row source</dt>
+            <dd className="money">{vault.source}</dd>
+            <dt>Latest strategy report</dt>
+            <dd className="money">{lastReport === null ? "none yet" : epochTime(lastReport)}</dd>
+          </dl>
+          <p className="provenance">
+            The vault row comes from the recorded capture, not from this request: name, symbol, asset and
+            deposit limit are fixed at the recorded block. Report age is not converted into a duration,
+            because this page does not hold the chain head at the same instant.
+          </p>
+        </section>
 
-      <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">On-Chain Governance & Access Control</h2>
-        {roles === null ? (
-          <SectionError error={rolesError} what="Roles unreadable" />
-        ) : (
-          <>
-            <dl className="facts">
-              <dt>Role Manager</dt>
-              <dd>
-                <AddressText address={roles.roleManager} />
-              </dd>
-              <dt>Timelock Enforcement</dt>
-              <dd>
-                {roles.timelockMinDelaySeconds === null ? (
-                  <>
-                    Unverified: address does not implement getMinDelay(). Do not assume timelock protection.
-                    <br />
-                    <span className="provenance">{roles.timelockError}</span>
-                  </>
-                ) : (
-                  <>
-                    Verified getMinDelay() = {roles.timelockMinDelaySeconds} seconds (
-                    {Math.floor(roles.timelockMinDelaySeconds / 3600)} hours). Validated OpenZeppelin TimelockController on-chain.
-                  </>
-                )}
-              </dd>
-              <dt>Pending Role Transfers</dt>
-              <dd>
-                {roles.futureRoleManager === "0x0000000000000000000000000000000000000000" ? (
-                  "None (future_role_manager = address(0))"
-                ) : (
-                  <>
-                    <AddressText address={roles.futureRoleManager} />
-                    <br />
-                    <span className="provenance">
-                      Nominated role_manager pending acceptance. Verify state before assuming role stability.
-                    </span>
-                  </>
-                )}
-              </dd>
-            </dl>
-            <BlockProvenance
-              blockNumber={roles.blockNumber.toString()}
-              blockTimestamp={roles.blockTimestamp}
-              source="onchain"
-            />
-          </>
-        )}
-        <p className="provenance">
-          Yearn V3 core maintains no on-chain guardian getter; guardian emergency pause keys exist as dedicated peripheral addresses in deployment configuration. Detailed role permission matrix documented in docs/ROLE_PERMISSION_MATRIX.md.
-        </p>
-      </section>
-
-      <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">Realized Fee Accounting</h2>
-        <p className="text-sm text-[#b0b7c3]">
-          Active fee configuration (queried directly from accountant.getVaultConfig at pinned block):{" "}
-          {live === null ? (
-            "unreadable on-chain"
-          ) : live.performanceFeeBps === null ? (
-            "no accountant assigned; zero protocol fees active"
+        <section className="card stack">
+          <h2>On-chain roles</h2>
+          {roles === null ? (
+            <SectionError error={rolesError} what="The roles could not be read" />
           ) : (
-            <strong className="text-[#f8f9fa]">
-              performanceFee {percentBps(live.performanceFeeBps)} · managementFee{" "}
-              {percentBps(live.managementFeeBps ?? 0)}
+            <>
+              <dl className="facts">
+                <dt>role_manager</dt>
+                <dd>
+                  <AddressText address={roles.roleManager} />
+                </dd>
+                <dt>Timelock?</dt>
+                <dd>
+                  {roles.timelockMinDelaySeconds === null ? (
+                    <>
+                      Not provable: this address does not answer getMinDelay(). Do not treat it as a timelock.
+                      <br />
+                      <span className="text-[#a3abb8]">{roles.timelockError}</span>
+                    </>
+                  ) : (
+                    <>
+                      Answers getMinDelay() = <span className="money">{roles.timelockMinDelaySeconds}</span> seconds (
+                      <span className="money">{Math.floor(roles.timelockMinDelaySeconds / 3600)}</span> hours). It is a
+                      TimelockController at this block.
+                    </>
+                  )}
+                </dd>
+                <dt>Pending role transfer</dt>
+                <dd>
+                  {roles.futureRoleManager === "0x0000000000000000000000000000000000000000" ? (
+                    "None (future_role_manager = 0)"
+                  ) : (
+                    <>
+                      <AddressText address={roles.futureRoleManager} />
+                      <br />
+                      <span className="text-[#a3abb8]">
+                        A candidate role_manager has not accepted yet. Check before assuming the role is stable.
+                      </span>
+                    </>
+                  )}
+                </dd>
+              </dl>
+              <BlockProvenance
+                blockNumber={roles.blockNumber.toString()}
+                blockTimestamp={roles.blockTimestamp}
+                source={roles.source}
+              />
+            </>
+          )}
+          <p className="provenance">
+            VaultV3 has no guardian getter; the guardian is a separate address in the deploy configuration, not an
+            on-chain role, so this page does not invent a value for it. Ownership of DEBT_MANAGER and EMERGENCY_MANAGER
+            is not read here either; the matrix lives in docs/ROLE_PERMISSION_MATRIX.md.
+          </p>
+        </section>
+      </div>
+
+      <section className="card stack">
+        <h2>Realised fees</h2>
+        <p className="max-w-3xl">
+          Effective fees, read from accountant.getVaultConfig at the live block:{" "}
+          {live === null ? (
+            "unknown, the live numbers failed to load"
+          ) : live.performanceFeeBps === null ? (
+            "the vault has no accountant, so there is no on-chain fee"
+          ) : (
+            <strong>
+              {/* Two inline-blocks: a bare "·" separator was wrapping onto its own line end. */}
+              <span className="inline-block">performanceFee {percentBps(live.performanceFeeBps)}</span>
+              <span className="inline-block">· managementFee {percentBps(live.managementFeeBps ?? 0)}</span>
             </strong>
           )}
         </p>
         {reportsError !== null ? (
-          <SectionError error={reportsError} what="Reports unreadable" />
+          <SectionError error={reportsError} what="The reports could not be read" />
         ) : reports.length === 0 ? (
-          <p className="text-sm text-[#8b929e]">No strategy reports (process_report) recorded on-chain yet.</p>
+          <p className="max-w-3xl">
+            No <code>process_report</code> event has been indexed. The last-report time in the table
+            above is read from the strategy&apos;s stored <code>lastReport</code>, so the two columns
+            answer different questions: one is a stored timestamp, the other is an indexed event.
+          </p>
         ) : (
           <div className="table-responsive">
             <table className="data">
               <thead>
                 <tr>
                   <th>Block</th>
-                  <th>Timestamp</th>
-                  <th>Gain</th>
-                  <th>Loss</th>
-                  <th>Fees</th>
-                  <th>Refund</th>
+                  <th>Time</th>
+                  <th className="text-right">Gain</th>
+                  <th className="text-right">Loss</th>
+                  <th className="text-right">Fees</th>
+                  <th className="text-right">Refunds</th>
                 </tr>
               </thead>
               <tbody>
                 {reports.map((report) => (
                   <tr key={`${report.txHash}:${report.blockNumber.toString()}`}>
-                    <td>#{report.blockNumber.toString()}</td>
+                    <td className="money">{report.blockNumber.toString()}</td>
                     <td>{blockTime(report.blockTimestamp)}</td>
-                    <td>
-                      <Amount value={report.gain} kind="usdg" />
-                    </td>
-                    <td>
-                      <Amount value={report.loss} kind="usdg" />
-                    </td>
-                    <td>
-                      <Amount value={report.totalFees} kind="usdg" />
-                    </td>
-                    <td>
-                      <Amount value={report.totalRefunds} kind="usdg" />
-                    </td>
+                    <Cell label="Gain">
+                      <span className="block text-right">
+                        <Amount value={report.gain} kind="usdg" />
+                      </span>
+                    </Cell>
+                    <Cell label="Loss">
+                      <span className="block text-right">
+                        <Amount value={report.loss} kind="usdg" />
+                      </span>
+                    </Cell>
+                    <Cell label="Fees">
+                      <span className="block text-right">
+                        <Amount value={report.totalFees} kind="usdg" />
+                      </span>
+                    </Cell>
+                    <Cell label="Refunds">
+                      <span className="block text-right">
+                        <Amount value={report.totalRefunds} kind="usdg" />
+                      </span>
+                    </Cell>
                   </tr>
                 ))}
               </tbody>
@@ -421,136 +496,165 @@ export default async function VaultPage({ params }: Params) {
           </div>
         )}
         <p className="provenance">
-          Fee records reflect strictly realized gains and reports mined on-chain. Active rates derive directly from the deployed accountant contract.
+          The table lists only fees already recorded in reports. The effective rate above comes from the accountant
+          contract, not from app configuration.
         </p>
       </section>
 
-      <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">Historical Fee Events</h2>
-        {feesError !== null ? (
-          <SectionError error={feesError} what="Fee history unreadable" />
-        ) : fees.length === 0 ? (
-          <p className="text-sm text-[#8b929e]">No indexed fee events recorded. An empty set signifies no events mined, not zero rates.</p>
-        ) : (
-          <div className="table-responsive">
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>Block</th>
-                  <th>Timestamp</th>
-                  <th>Kind</th>
-                  <th>Recipient</th>
-                  <th>Shares</th>
-                  <th>Assets</th>
-                  <th>Transaction</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fees.map((fee) => (
-                  <tr key={`${fee.txHash}:${fee.kind}:${fee.blockNumber.toString()}`}>
-                    <td>#{fee.blockNumber.toString()}</td>
-                    <td>{blockTime(fee.blockTimestamp)}</td>
-                    <td>{fee.kind}</td>
-                    <td>{fee.recipient === null ? "—" : <AddressText address={fee.recipient as `0x${string}`} />}</td>
-                    <td>{fee.shares === null ? "—" : <Amount value={fee.shares} kind="shares" />}</td>
-                    <td>{fee.assets === null ? "—" : <Amount value={fee.assets} kind="usdg" />}</td>
-                    <td className="provenance font-mono text-xs">{fee.txHash}</td>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <section className="card stack">
+          <h2>Fee history</h2>
+          {feesError !== null ? (
+            <SectionError error={feesError} what="The fee history could not be read" />
+          ) : fees.length === 0 ? (
+            <p className="max-w-2xl">
+              No fee event is indexed, so this card has no rows. No rows is not the same as a zero fee:
+              the fee actually charged at the live block is printed at the top of this section.
+            </p>
+          ) : (
+            <div className="table-responsive">
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>Block</th>
+                    <th>Time</th>
+                    <th>Kind</th>
+                    <th>Recipient</th>
+                    <th className="text-right">Shares</th>
+                    <th className="text-right">Assets</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+                </thead>
+                <tbody>
+                  {fees.map((fee) => (
+                    <tr key={`${fee.txHash}:${fee.kind}:${fee.blockNumber.toString()}`}>
+                      <td className="money">{fee.blockNumber.toString()}</td>
+                      <td>{blockTime(fee.blockTimestamp)}</td>
+                      <td>{fee.kind}</td>
+                      <td>
+                        {fee.recipient === null ? "—" : <AddressText address={fee.recipient as `0x${string}`} />}
+                      </td>
+                      <Cell label="Shares">
+                        <span className="block text-right">
+                          {fee.shares === null ? "—" : <Amount value={fee.shares} kind="shares" decimals={vault.shareDecimals} />}
+                        </span>
+                      </Cell>
+                      <Cell label="Assets">
+                        <span className="block text-right">
+                          {fee.assets === null ? "—" : <Amount value={fee.assets} kind="usdg" />}
+                        </span>
+                      </Cell>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        <section className="card stack">
+          <h2>Role history</h2>
+          {roleEventsError !== null ? (
+            <SectionError error={roleEventsError} what="The role history could not be read" />
+          ) : roleEvents.length === 0 ? (
+            <p className="max-w-2xl">No role event is indexed.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="data">
+                <thead>
+                  <tr>
+                    <th>Block</th>
+                    <th>Time</th>
+                    <th>Account</th>
+                    <th>Bit</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roleEvents.map((event) => (
+                    <tr key={`${event.txHash}:${event.blockNumber.toString()}`}>
+                      <td className="money">{event.blockNumber.toString()}</td>
+                      <td>{blockTime(event.blockTimestamp)}</td>
+                      <td>
+                        <AddressText address={event.account as `0x${string}`} />
+                      </td>
+                      <td className="money">{event.roleBit === null ? "bitmap" : event.roleBit}</td>
+                      <td>{event.granted === null ? "change" : event.granted ? "granted" : "revoked"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </div>
 
       <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">Role Event Audit Trail</h2>
-        {roleEventsError !== null ? (
-          <SectionError error={roleEventsError} what="Role history unreadable" />
-        ) : roleEvents.length === 0 ? (
-          <p className="text-sm text-[#8b929e]">No role events indexed yet.</p>
-        ) : (
-          <div className="table-responsive">
-            <table className="data">
-              <thead>
-                <tr>
-                  <th>Block</th>
-                  <th>Timestamp</th>
-                  <th>Account</th>
-                  <th>Bit</th>
-                  <th>Action</th>
-                  <th>Transaction</th>
-                </tr>
-              </thead>
-              <tbody>
-                {roleEvents.map((event) => (
-                  <tr key={`${event.txHash}:${event.blockNumber.toString()}`}>
-                    <td>#{event.blockNumber.toString()}</td>
-                    <td>{blockTime(event.blockTimestamp)}</td>
-                    <td>
-                      <AddressText address={event.account as `0x${string}`} />
-                    </td>
-                    <td>{event.roleBit === null ? "bitmap" : event.roleBit}</td>
-                    <td>{event.granted === null ? "updated" : event.granted ? "granted" : "revoked"}</td>
-                    <td className="provenance font-mono text-xs">{event.txHash}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">On-Chain Bytecode Verification</h2>
-        {evidenceError !== null ? (
-          <SectionError error={evidenceError} what="On-chain evidence unreadable" />
-        ) : evidence === null ? (
-          <p className="text-sm text-[#8b929e]">No cryptographic evidence available.</p>
-        ) : (
-          <dl className="facts">
-            <dt>Vault Contract</dt>
-            <dd>
-              <AddressText address={evidence.address as `0x${string}`} />
-            </dd>
-            <dt>apiVersion()</dt>
-            <dd>
-              {evidence.apiVersion ?? (
-                <span className="provenance">unreadable: {evidence.apiVersionError}</span>
-              )}
-            </dd>
-            <dt>Runtime Code Keccak256</dt>
-            <dd>
-              {evidence.codeHash === null ? (
-                <span className="provenance">no deployed bytecode at this block</span>
-              ) : (
-                <code className="text-xs break-all text-[#6db89b]">{evidence.codeHash}</code>
-              )}
-            </dd>
-            <dt>Bytecode Size</dt>
-            <dd>{evidence.codeSize} bytes</dd>
-            <dt>Verified Block</dt>
-            <dd>Block #{evidence.blockNumber.toString()}</dd>
-          </dl>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2>Contract evidence</h2>
+          <span className="text-xs text-[#a3abb8]">
+            {evidenceSource === "live"
+              ? "read live from the configured RPC"
+              : `captured at block ${evidence.blockNumber.toString()}; the node did not answer this render`}
+          </span>
+        </div>
+        <dl className="facts">
+          <dt>Vault address</dt>
+          <dd>
+            <AddressText address={evidence.address as `0x${string}`} />
+          </dd>
+          <dt>apiVersion()</dt>
+          <dd>
+            {evidence.apiVersion ?? <span className="text-[#a3abb8]">{evidence.apiVersionError}</span>}
+          </dd>
+          <dt>Runtime code hash</dt>
+          <dd>
+            {evidence.codeHash === null ? (
+              <span className="text-[#a3abb8]">no code at this block, so no fingerprint is claimed</span>
+            ) : (
+              <code className="break-all">{evidence.codeHash}</code>
+            )}
+          </dd>
+          <dt>Code size</dt>
+          <dd className="money">{evidence.codeSize} bytes</dd>
+          {evidence.implementation == null ? null : (
+            <>
+              <dt>Delegate target</dt>
+              <dd>
+                <AddressText address={evidence.implementation as `0x${string}`} />
+                <span className="block text-xs text-[#a3abb8]">
+                  This vault address is a {evidence.proxyCodeSize ?? 45}-byte minimal proxy. The hash and the size
+                  above describe the implementation runtime that answers every call.
+                </span>
+              </dd>
+            </>
+          )}
+          <dt>Read at block</dt>
+          <dd className="money">{evidence.blockNumber.toString()}</dd>
+        </dl>
+        {evidence.codeError === null ? null : (
+          <p className="text-sm leading-relaxed text-[#e8c468] max-w-3xl">{evidence.codeError}</p>
         )}
         <p className="provenance">
-          Cryptographic bytecode hash calculated directly from <code>eth_getCode</code> on Robinhood Chain, not from local build artifacts. Match claims require running <code>scripts/verify-bytecode.py</code>.
+          That hash was not computed by this page: it comes from eth_getCode at the recorded block, never from a local build artifact. Matching it
+          to an artifact may only be claimed after scripts/verify-bytecode.py has run on the same commit.
         </p>
       </section>
 
       <section className="card stack">
-        <h2 className="text-xl font-medium text-[#f8f9fa]">Specifications & Operational Constraints</h2>
-        <ul className="space-y-1.5 text-sm text-[#b0b7c3] list-disc pl-5">
-          <li>Withdrawal Semantics: docs/WITHDRAWAL_SEMANTICS.md (12 formal test cases including explicit max_loss).</li>
-          <li>Access Control: docs/ROLE_PERMISSION_MATRIX.md.</li>
-          <li>Fee Accounting: docs/FEE_CONFIG.md.</li>
+        <h2>Documentation and limits</h2>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 pl-5 list-disc text-sm text-[#b0b7c3]">
+          <li>Withdrawals: docs/WITHDRAWAL_SEMANTICS.md (12 test cases, including max_loss).</li>
+          <li>Permissions: docs/ROLE_PERMISSION_MATRIX.md.</li>
+          <li>Fees and caps: docs/FEE_CONFIG.md.</li>
+          <li>Provenance of every number on this page: docs/REFERENCE_CAPTURE.md.</li>
         </ul>
-        <p className="text-sm text-[#8b929e] mt-2">
-          Zero marketing audit claims: only upstream Yearn V3 core audit is recognized. Deposit and withdrawal operations enforce explicit parameter bounds.
+        <p className="max-w-3xl">
+          No audit claim is made for this recorded block or for this configuration. The deposit and withdraw forms live on separate
+          routes and send explicit parameters; there is no transaction button on this page.
         </p>
-        <p className="pt-2">
-          <Link href="/#vaults" className="text-[#6db89b] hover:underline text-sm font-medium">
-            ← Back to Vault Catalog
+        <p className="mb-0">
+          <Link href="/#vaults" className="text-[#6db89b] hover:underline">
+            ← Back to the vault catalogue
           </Link>
         </p>
       </section>

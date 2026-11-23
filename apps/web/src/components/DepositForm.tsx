@@ -32,6 +32,8 @@ export interface DepositFormProps {
   vault: Address;
   asset: Address;
   assetSymbol: string;
+  /** `decimals()` of the share token, read from the vault: VaultV3 uses the asset's decimals (6). */
+  shareDecimals: number;
   /** Snapshot of the gate from the API, so the form can refuse before touching the wallet. */
   gate: { depositLimit: bigint; isPaused: boolean; isShutdown: boolean; blockNumber: bigint; blockTimestamp: string };
 }
@@ -54,7 +56,7 @@ const CHAIN = {
 function rpcUrl(): string {
   const value = process.env.NEXT_PUBLIC_RPC_URL;
   if (typeof value !== "string" || value.trim() === "") {
-    throw new DepositError("rpc", "NEXT_PUBLIC_RPC_URL belum diset: form tidak bisa membaca chain dan tidak akan menebak.");
+    throw new DepositError("rpc", "NEXT_PUBLIC_RPC_URL is not configured — the form cannot read on-chain state.");
   }
   return value.trim();
 }
@@ -71,7 +73,7 @@ function describe(error: unknown): Problem {
   };
 }
 
-export function DepositForm({ vault, asset, assetSymbol, gate }: DepositFormProps) {
+export function DepositForm({ vault, asset, assetSymbol, gate, shareDecimals }: DepositFormProps) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [account, setAccount] = useState<Address | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
@@ -116,7 +118,7 @@ export function DepositForm({ vault, asset, assetSymbol, gate }: DepositFormProp
     if (account === null || client === null) {
       setProblem({
         code: "no_account",
-        message: client === null ? "RPC tidak dikonfigurasi." : "Hubungkan wallet dulu.",
+        message: client === null ? "RPC not configured." : "Connect your wallet first.",
         detail: null,
       });
       return;
@@ -142,7 +144,7 @@ export function DepositForm({ vault, asset, assetSymbol, gate }: DepositFormProp
     const bag = (globalThis as { ethereum?: unknown }).ethereum;
     const provider = findInjectedProvider({ ethereum: bag });
     if (provider === null) {
-      setProblem({ code: "no_provider", message: "Wallet hilang dari halaman. Muat ulang dan hubungkan lagi.", detail: null });
+      setProblem({ code: "no_provider", message: "Wallet disconnected. Please reload and reconnect.", detail: null });
       return;
     }
     setProblem(null);
@@ -150,7 +152,7 @@ export function DepositForm({ vault, asset, assetSymbol, gate }: DepositFormProp
     setPhase("signing");
     try {
       if ((await readChainId(provider)) !== AVENOR_CHAIN_ID) {
-        setProblem({ code: "wrong_network", message: `Wallet bukan di chain ${AVENOR_CHAIN_ID}. Pindah chain dulu.`, detail: null });
+        setProblem({ code: "wrong_network", message: `Wallet is not on chain ${AVENOR_CHAIN_ID}. Switch networks and retry.`, detail: null });
         setPhase("error");
         return;
       }
@@ -182,108 +184,70 @@ export function DepositForm({ vault, asset, assetSymbol, gate }: DepositFormProp
   }, [account, asset, client, quote, vault]);
 
   const gateClosed = gate.isShutdown || gate.isPaused || gate.depositLimit === 0n;
+  const busy = phase === "quoting" || phase === "signing" || phase === "pending";
+  const approvalNeeded = quote !== null && needsApproval(quote.allowance, quote.assets);
 
   return (
-    <div className="stack">
-      {/* ── Gate status info card ── */}
-      <div className="card" style={{ padding: "1.25rem" }}>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">Vault Contract</span>
-            <span className="font-mono text-xs text-[#f8f9fa]">
-              <AddressText address={vault} />
-            </span>
+    <div className="space-y-4">
+
+      {/* Gate Status Info */}
+      <div className="rounded-xl bg-[#0d1a14] border border-white/[0.08] p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-mono uppercase tracking-wider text-[#a3abb8]">Vault</span>
+            <span className="font-mono text-xs text-[#6db89b]"><AddressText address={vault} /></span>
           </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">Underlying Asset</span>
-            <span className="font-mono text-xs text-[#f8f9fa]">
-              {assetSymbol} <AddressText address={asset} />
-            </span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-mono uppercase tracking-wider text-[#a3abb8]">Asset</span>
+            <span className="font-mono text-xs text-[#f8f9fa]">{assetSymbol} <AddressText address={asset} /></span>
           </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">On-Chain Deposit Cap</span>
-            <span className="font-mono text-xs text-[#f8f9fa]">
-              <Amount value={gate.depositLimit} kind="usdg" />
-            </span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-mono uppercase tracking-wider text-[#a3abb8]">Deposit cap</span>
+            <span className="font-mono text-sm tabular-nums text-[#f8f9fa]"><Amount value={gate.depositLimit} kind="usdg" /></span>
           </div>
-          <div className="flex flex-col gap-1">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">Gate Status</span>
-            <span
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono uppercase tracking-wider w-fit"
-              style={{
-                color: gate.isShutdown || gate.isPaused || gate.depositLimit === 0n ? "#ef4444" : "#6db89b",
-                border: `1px solid ${
-                  gate.isShutdown || gate.isPaused || gate.depositLimit === 0n
-                    ? "rgba(239,68,68,0.3)"
-                    : "rgba(109,184,155,0.3)"
-                }`,
-                background:
-                  gate.isShutdown || gate.isPaused || gate.depositLimit === 0n
-                    ? "rgba(239,68,68,0.08)"
-                    : "rgba(109,184,155,0.08)",
-              }}
-            >
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs font-mono uppercase tracking-wider text-[#a3abb8]">Deposit gate</span>
+            <span className={`text-xs font-medium ${gateClosed ? "text-[#f87171]" : "text-[#6db89b]"}`}>
               {gate.isShutdown
-                ? "× Shutdown"
+                ? "Shutdown — deposits permanently closed"
                 : gate.isPaused
-                  ? "! Paused"
+                  ? "Paused — deposits and withdrawals blocked"
                   : gate.depositLimit === 0n
-                    ? "× Cap Reached (0)"
-                    : "✓ Open (Capped)"}
+                    ? "Closed — the cap is 0"
+                    : "Open — below the cap"}
             </span>
           </div>
         </div>
-        <p className="provenance" style={{ marginTop: "1rem" }}>
-          On-chain gate parameters verified from node at block {gate.blockNumber.toString()} ({blockTime(gate.blockTimestamp)} UTC).
+        <p className="provenance mt-3">
+          Gate data sourced on-chain at block {gate.blockNumber.toString()} ({blockTime(gate.blockTimestamp)}).
         </p>
       </div>
 
+      {/* Gate Closed Message */}
       {gateClosed ? (
-        <div role="status" className="banner" data-tone="warn">
-          <strong>Deposit gate closed</strong>
-          <p>
-            {gate.isPaused
-              ? "Vault is currently paused by governance. Deposits and redemptions are paused on-chain."
-              : gate.isShutdown
-                ? "Vault is in shutdown state: deposits are permanently disabled."
-                : "Deposit limit is set to 0 USDG. Further deposits are restricted by the deposit_hook guardrail."}
+        <div className="rounded-xl bg-[#1a0f0f] border border-red-500/20 p-4" role="status">
+          <p className="text-sm text-[#f87171] font-medium">
+            Deposit form disabled: {gate.isPaused ? "the vault is paused" : gate.isShutdown ? "the vault is shutdown" : "the deposit cap is 0"}.
           </p>
+          <p className="text-xs text-[#9ca3af] mt-1">No deposit transactions can be submitted while the vault gate is closed.</p>
         </div>
       ) : (
         <>
-          {/* ── Interactive DeFi Input Widget ── */}
-          <div
-            style={{
-              background: "#14221c",
-              border: "1px solid rgba(255,255,255,0.14)",
-              borderRadius: "16px",
-              padding: "1.25rem",
-            }}
-            className="space-y-4"
-          >
-            {/* Widget Header Row */}
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-mono uppercase tracking-wider text-[#8b929e]">
+          {/* Amount Input Card */}
+          <div className="rounded-xl bg-[#0d1a14] border border-white/[0.10] p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label htmlFor="deposit-amount" className="text-sm font-medium text-[#f8f9fa]">
                 Deposit Amount
-              </span>
-              {account !== null && quote !== null && (
-                <div className="flex items-center gap-2 text-xs font-mono">
-                  <span className="text-[#8b929e]">Balance:</span>
-                  <span className="text-[#f8f9fa]"><Amount value={quote.balance} kind="usdg" /></span>
-                </div>
+              </label>
+              {quote !== null && (
+                <span className="text-xs text-[#a3abb8] font-mono tabular-nums">
+                  Balance: <span className="text-[#f8f9fa]"><Amount value={quote.balance} kind="usdg" /></span>
+                </span>
               )}
             </div>
 
-            {/* Large Amount Input Container */}
-            <div
-              className="flex items-center justify-between gap-3"
-              style={{
-                background: "#0b1310",
-                border: "1px solid rgba(255,255,255,0.12)",
-                borderRadius: "12px",
-                padding: "0.875rem 1rem",
-              }}
-            >
+            {/* Input + Asset Pill */}
+            <div className="relative flex items-center rounded-xl bg-[#14221c] border border-white/[0.12] focus-within:border-[#6db89b] focus-within:shadow-[0_0_0_1px_rgba(109,184,155,0.3)] transition-all">
               <input
                 id="deposit-amount"
                 inputMode="decimal"
@@ -294,216 +258,179 @@ export function DepositForm({ vault, asset, assetSymbol, gate }: DepositFormProp
                   setQuote(null);
                 }}
                 placeholder="0.00"
-                style={{
-                  flex: 1,
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "1.75rem",
-                  fontVariantNumeric: "tabular-nums",
-                  color: "#f8f9fa",
-                  minWidth: 0,
-                }}
+                className="flex-1 bg-transparent text-2xl font-mono tabular-nums text-[#f8f9fa] placeholder-[#4b5563] px-4 py-3.5 outline-none min-w-0"
               />
-
-              {/* Asset Badge */}
-              <div className="flex items-center gap-2 shrink-0">
-                <span
-                  className="inline-flex items-center px-3 py-1 rounded-lg text-xs font-mono font-semibold"
-                  style={{
-                    color: "#6db89b",
-                    border: "1px solid rgba(109,184,155,0.3)",
-                    background: "rgba(109,184,155,0.1)",
-                  }}
-                >
+              <div className="flex items-center gap-2 pr-3 shrink-0">
+                <span className="bg-[#6db89b]/10 border border-[#6db89b]/20 rounded-full px-2.5 py-1 text-xs font-mono font-semibold text-[#6db89b]">
                   {assetSymbol}
                 </span>
+                {quote !== null && quote.balance > 0n && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const decimals = 6;
+                      const whole = quote.balance / 10n ** 6n;
+                      const fraction = (quote.balance % 10n ** 6n).toString().padStart(decimals, "0").replace(/0+$/, "");
+                      setAmount(fraction === "" ? whole.toString() : `${whole}.${fraction}`);
+                      setQuote(null);
+                    }}
+                    className="text-[11px] font-mono font-semibold text-[#6db89b] hover:text-[#f8f9fa] transition-colors px-1.5 py-0.5 rounded border border-[#6db89b]/20 hover:border-[#6db89b]/50"
+                  >
+                    MAX
+                  </button>
+                )}
               </div>
-            </div>
-
-            {/* Action Buttons Cluster */}
-            <div className="space-y-2.5 pt-1">
-              {account === null ? (
-                <button
-                  type="button"
-                  onClick={connect}
-                  className="button w-full"
-                  style={{
-                    minHeight: "48px",
-                    background: "#f8f9fa",
-                    color: "#0b1310",
-                    fontWeight: 600,
-                    fontSize: "0.9375rem",
-                  }}
-                >
-                  Connect Wallet
-                </button>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={reprice}
-                    disabled={phase === "quoting" || phase === "signing" || phase === "pending" || amount.trim() === ""}
-                    style={{
-                      minHeight: "48px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "rgba(109,184,155,0.06)",
-                      border: "1px solid rgba(109,184,155,0.4)",
-                      borderRadius: "10px",
-                      color: "#6db89b",
-                      fontWeight: 600,
-                      fontSize: "0.875rem",
-                      cursor: phase === "quoting" ? "wait" : "pointer",
-                      opacity: phase === "quoting" || amount.trim() === "" ? 0.5 : 1,
-                    }}
-                  >
-                    {phase === "quoting" ? "Quoting On-Chain…" : "Calculate Shares"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={submit}
-                    disabled={quote === null || blocked.length > 0 || phase === "signing" || phase === "pending"}
-                    className="button"
-                    style={{
-                      minHeight: "48px",
-                      background: quote === null || blocked.length > 0 ? "rgba(255,255,255,0.08)" : "#f8f9fa",
-                      color: quote === null || blocked.length > 0 ? "#6b7280" : "#0b1310",
-                      fontWeight: 600,
-                      fontSize: "0.875rem",
-                      cursor: quote === null || blocked.length > 0 ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    {phase === "signing"
-                      ? "Awaiting Wallet Signature…"
-                      : phase === "pending"
-                        ? "Awaiting Block Confirmation…"
-                        : `Deposit ${assetSymbol}`}
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Chain mismatch alert */}
+          {/* Chain Warning */}
           {chainId !== null && chainId !== AVENOR_CHAIN_ID ? (
-            <div role="alert" className="banner" data-tone="warn">
-              <strong>Network Mismatch</strong>
-              <p>Wallet connected to Chain ID {chainId}. Avenor operates strictly on Robinhood Chain ({AVENOR_CHAIN_ID}).</p>
-            </div>
-          ) : null}
-
-          {notice !== null ? <p className="provenance">{notice}</p> : null}
-
-          {/* ── Quote Breakdown Receipt Card ── */}
-          {quote !== null ? (
-            <div
-              style={{
-                background: "#101b16",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: "14px",
-                padding: "1.25rem",
-              }}
-              className="space-y-3"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
-                <span className="text-xs font-mono uppercase tracking-wider text-[#6db89b]">
-                  Quote Breakdown (Preview)
-                </span>
-                <span className="text-[11px] font-mono text-[#8b929e]">
-                  Block #{quote.blockNumber.toString()}
-                </span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex items-center justify-between py-1 border-b border-white/[0.04]">
-                  <span className="text-[#8b929e]">Estimated Share Allocation</span>
-                  <span className="font-mono text-[#f8f9fa] font-medium">
-                    <Amount value={quote.shares} kind="shares" />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-1 border-b border-white/[0.04]">
-                  <span className="text-[#8b929e]">Available Protocol Capacity</span>
-                  <span className="font-mono text-[#f8f9fa]">
-                    <Amount value={quote.maxAssets} kind="usdg" />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-1 border-b border-white/[0.04]">
-                  <span className="text-[#8b929e]">Wallet USDG Balance</span>
-                  <span className="font-mono text-[#f8f9fa]">
-                    <Amount value={quote.balance} kind="usdg" />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-1 border-b border-white/[0.04]">
-                  <span className="text-[#8b929e]">Current Token Allowance</span>
-                  <span className="font-mono text-[#f8f9fa]">
-                    <Amount value={quote.allowance} kind="usdg" />
-                  </span>
-                </div>
-                <div className="flex items-center justify-between py-1">
-                  <span className="text-[#8b929e]">Approval Requirement</span>
-                  <span
-                    className="font-mono font-medium"
-                    style={{ color: needsApproval(quote.allowance, quote.assets) ? "#e8c468" : "#6db89b" }}
-                  >
-                    {needsApproval(quote.allowance, quote.assets)
-                      ? "Approval required (exact deposit amount)"
-                      : "Sufficient allowance active"}
-                  </span>
-                </div>
-              </div>
-
-              <p className="provenance pt-2">
-                Share numbers above are previews calculated on-chain at block #{quote.blockNumber.toString()}. Final issued shares are determined strictly by the on-chain Deposit event receipt.
+            <div className="rounded-xl bg-[#1a1200] border border-[#e8c468]/20 p-3.5" role="alert">
+              <p className="text-sm text-[#e8c468]">
+                ⚠ Wallet is connected to chain {chainId}. This form only submits transactions to chain {AVENOR_CHAIN_ID} (Robinhood Chain).
               </p>
             </div>
           ) : null}
 
-          {/* ── Blockers ── */}
-          {blocked.length > 0 ? (
-            <div className="space-y-2">
-              {blocked.map((entry) => (
-                <div key={entry.code} className="banner" data-tone="warn">
-                  <strong>{entry.code.toUpperCase()}</strong>: {entry.message}
+          {/* Notice */}
+          {notice !== null ? (
+            <p className="provenance">{notice}</p>
+          ) : null}
+
+          {/* Quote Breakdown */}
+          {quote !== null ? (
+            <div className="rounded-xl bg-[#0d1a14] border border-white/[0.08] p-4 space-y-2.5">
+              <h3 className="text-xs font-mono uppercase tracking-wider text-[#a3abb8] mb-3">Quote Preview</h3>
+              {[
+                { label: "Estimated Shares", value: <Amount value={quote.shares} kind="shares" decimals={shareDecimals} /> },
+                { label: "Current Deposit Capacity", value: <Amount value={quote.maxAssets} kind="usdg" /> },
+                { label: "USDG Balance", value: <Amount value={quote.balance} kind="usdg" /> },
+                { label: "Current Allowance", value: <Amount value={quote.allowance} kind="usdg" /> },
+                { label: "Approval Required", value: approvalNeeded ? "Yes — for the deposit amount" : "No" },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-baseline justify-between gap-4 py-1.5 border-b border-white/[0.05] last:border-0">
+                  <span className="text-xs text-[#a3abb8] shrink-0">{label}</span>
+                  <span className="font-mono text-sm tabular-nums text-[#f8f9fa] text-right">{value}</span>
                 </div>
               ))}
             </div>
           ) : null}
+
+          {/* Blockers */}
+          {blocked.length > 0 ? (
+            <div className="space-y-2">
+              {blocked.map((entry) => (
+                <div key={entry.code} className="rounded-lg bg-[#1a0f0f] border border-red-500/20 px-3.5 py-2.5" role="alert">
+                  <span className="font-mono text-[11px] text-red-400 font-semibold">{entry.code}</span>
+                  <span className="text-sm text-[#f87171] ml-2">{entry.message}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+
+          {/* Action Buttons */}
+          <div className="space-y-2.5">
+            {/* Connect Wallet */}
+            <button
+              type="button"
+              onClick={connect}
+              disabled={account !== null}
+              className={`w-full flex items-center justify-center gap-2 rounded-xl px-5 py-3.5 text-sm font-semibold transition-all min-h-[48px] ${
+                account !== null
+                  ? "bg-[#14221c] border border-[#6db89b]/30 text-[#6db89b] cursor-default"
+                  : "bg-[#f8f9fa] text-[#0b1310] hover:bg-white shadow-[0_0_20px_rgba(255,255,255,0.12)]"
+              }`}
+            >
+              {account !== null ? (
+                <>
+                  <span className="inline-block w-2 h-2 rounded-full bg-[#6db89b]" />
+                  Connected: {account.slice(0, 6)}…{account.slice(-4)}
+                </>
+              ) : (
+                "Connect Wallet"
+              )}
+            </button>
+
+            {/* Calculate Shares */}
+            <button
+              type="button"
+              onClick={reprice}
+              disabled={busy || account === null}
+              className="w-full flex items-center justify-center rounded-xl border border-[#6db89b]/30 bg-[#6db89b]/05 text-[#6db89b] hover:bg-[#6db89b]/10 hover:border-[#6db89b]/50 disabled:opacity-40 disabled:cursor-not-allowed px-5 py-3.5 text-sm font-semibold transition-all min-h-[48px]"
+            >
+              {phase === "quoting" ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Reading chain…
+                </span>
+              ) : "Calculate Shares"}
+            </button>
+
+            {/* Deposit Button */}
+            <button
+              type="button"
+              onClick={submit}
+              disabled={quote === null || blocked.length > 0 || phase === "signing" || phase === "pending"}
+              className="w-full flex items-center justify-center rounded-xl bg-[#f8f9fa] text-[#0b1310] hover:bg-white disabled:bg-white/[0.1] disabled:text-[#9ca3af] disabled:cursor-not-allowed px-5 py-3.5 text-sm font-bold transition-all min-h-[48px] shadow-[0_0_20px_rgba(255,255,255,0.08)]"
+            >
+              {phase === "signing" ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-[#0b1310] border-t-transparent animate-spin" />
+                  Awaiting signature…
+                </span>
+              ) : phase === "pending" ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-block w-3.5 h-3.5 rounded-full border-2 border-[#0b1310] border-t-transparent animate-spin" />
+                  Transaction pending…
+                </span>
+              ) : (
+                <>Deposit {assetSymbol} →</>
+              )}
+            </button>
+          </div>
+
+          <p className="provenance">
+            Share estimate is from block {quote === null ? "—" : quote.blockNumber.toString()}. Final share count is sourced exclusively from the on-chain <code className="font-mono text-[11px]">Deposit</code> event.
+          </p>
         </>
       )}
 
-      {/* ── Problem / Error Alert ── */}
+      {/* Error */}
       {problem !== null ? (
-        <div role="alert" className="banner" data-tone="danger">
-          <strong>
-            <span className="pill font-mono mr-2 text-[11px]">
+        <div className="rounded-xl bg-[#1a0f0f] border border-red-500/20 p-4" role="alert">
+          <div className="flex items-start gap-3">
+            <span className="font-mono text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1.5 py-0.5 shrink-0 mt-0.5">
               {problem.code}
             </span>
-            Transaction Error
-          </strong>
-          <p className="mt-1">{problem.message}</p>
-          {problem.detail === null ? null : <p className="provenance mt-1">({problem.detail})</p>}
+            <div className="space-y-1 min-w-0">
+              <p className="text-sm text-[#f87171]">{problem.message}</p>
+              {problem.detail !== null && (
+                <p className="provenance">{problem.detail}</p>
+              )}
+            </div>
+          </div>
         </div>
       ) : null}
 
-      {/* ── Receipt Success Card ── */}
+      {/* Receipt */}
       {receipt !== null ? (
-        <div
-          role="status"
-          className="banner"
-          style={{ borderLeftColor: "#6db89b", background: "rgba(109,184,155,0.08)" }}
-        >
-          <strong className="text-[#6db89b]">Deposit Confirmed on-Chain</strong>
-          <p className="mt-1">
-            Mined at block #{receipt.blockNumber.toString()}. Final allocated shares:{" "}
-            <Amount value={receipt.shares} kind="shares" /> for <Amount value={receipt.assets} kind="usdg" />.
+        <div className="rounded-xl bg-[#0a1f14] border border-[#6db89b]/30 p-4" role="status">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#6db89b]/20">
+              <svg className="w-3 h-3 text-[#6db89b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+            </span>
+            <span className="text-sm font-semibold text-[#6db89b]">Deposit Confirmed</span>
+          </div>
+          <p className="text-sm text-[#b0b7c3]">
+            Settled at block <span className="font-mono text-[#f8f9fa]">{receipt.blockNumber.toString()}</span>.
+            Final from event: <span className="font-mono text-[#f8f9fa]"><Amount value={receipt.shares} kind="shares" decimals={shareDecimals} /></span> for{" "}
+            <span className="font-mono text-[#f8f9fa]"><Amount value={receipt.assets} kind="usdg" /></span>.
           </p>
           <p className="provenance mt-2">
-            Tx: {receipt.depositTx as Hex}
-            {receipt.approveTx === null ? "" : ` · Approval Tx: ${receipt.approveTx}`}
+            tx {receipt.depositTx as Hex}
+            {receipt.approveTx === null ? "" : ` · approve ${receipt.approveTx}`}
           </p>
         </div>
       ) : null}

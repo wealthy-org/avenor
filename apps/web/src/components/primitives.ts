@@ -9,6 +9,11 @@ import { blockTime, money, percentBps, shares as formatShares, shortAddress } fr
 export interface AmountProps {
   value: bigint;
   kind: "usdg" | "shares";
+  /**
+   * Decimals of the token being printed. Required for shares: share decimals come from the vault's
+   * `decimals()` (6 for a USDG `VaultV3`), and a hard-coded 18 would be wrong by 10^12.
+   */
+  decimals?: number;
   /** Print every decimal instead of the display precision. */
   full?: boolean;
   /** Optional unit suffix; "USDG" for money, omitted for shares. */
@@ -16,9 +21,13 @@ export interface AmountProps {
 }
 
 /** Renders a `bigint`. Does no arithmetic: formatting lives in `src/lib/format.ts`. */
-export function Amount({ value, kind, full = false, suffix }: AmountProps) {
-  const text = kind === "usdg" ? money(value, { full }) : formatShares(value, { full });
-  const exact = kind === "usdg" ? money(value, { full: true }) : formatShares(value, { full: true });
+export function Amount({ value, kind, decimals, full = false, suffix }: AmountProps) {
+  if (kind === "shares" && decimals === undefined) {
+    throw new Error("Amount of kind \"shares\" needs the share decimals read from the vault");
+  }
+  const digits = kind === "usdg" ? 6 : (decimals as number);
+  const text = kind === "usdg" ? money(value, { full }) : formatShares(value, digits, { full });
+  const exact = kind === "usdg" ? money(value, { full: true }) : formatShares(value, digits, { full: true });
   const unit = suffix ?? (kind === "usdg" ? "USDG" : undefined);
   return createElement(
     "span",
@@ -28,7 +37,7 @@ export function Amount({ value, kind, full = false, suffix }: AmountProps) {
   );
 }
 
-export type Source = "indexed" | "onchain";
+export type Source = "indexed" | "onchain" | "captured";
 
 export interface BlockProvenanceProps {
   blockNumber: string;
@@ -37,8 +46,9 @@ export interface BlockProvenanceProps {
 }
 
 const SOURCE_LABEL: Record<Source, string> = {
-  indexed: "indexer (bisa berubah bila ada reorg)",
-  onchain: "dibaca langsung dari node pada blok ini",
+  indexed: "indexer row (can move if there is a reorg)",
+  onchain: "read directly from the node at this block",
+  captured: "recorded from this block earlier; the node was not reachable for this render",
 };
 
 export function BlockProvenance({ blockNumber, blockTimestamp, source }: BlockProvenanceProps) {
@@ -48,7 +58,7 @@ export function BlockProvenance({ blockNumber, blockTimestamp, source }: BlockPr
   return createElement(
     "p",
     { className: "provenance" },
-    `Blok ${blockNumber} · ${blockTime(blockTimestamp)} UTC · ${label}`,
+    `Block ${blockNumber} · ${blockTime(blockTimestamp)} UTC · ${label}`,
   );
 }
 
@@ -74,18 +84,18 @@ export function StatusPill({ tone, text }: { tone: StatusTone; text: string }) {
 }
 
 const KNOWN: Record<string, string> = {
-  invalid_address: "Alamat tidak valid.",
-  unknown_vault: "Vault ini belum terindeks, jadi angkanya belum bisa ditampilkan.",
-  no_snapshot: "Belum ada snapshot untuk vault ini pada blok mana pun.",
-  no_position: "Alamat ini belum punya posisi di vault.",
-  missing_account: "Hubungkan wallet untuk melihat posisi.",
-  invalid_limit: "Parameter daftar tidak valid.",
-  invalid_block: "Nomor blok tidak valid.",
-  not_found: "Alamat API tidak dikenal.",
-  method_not_allowed: "Metode permintaan tidak didukung.",
-  no_rpc: "API tidak punya akses node, jadi angka on-chain tidak tersedia.",
-  api_unreachable: "API tidak bisa dihubungi. Angka tidak ditampilkan daripada ditampilkan basi.",
-  webhook_error: "Pengiriman alert gagal.",
+  invalid_address: "That is not a valid address.",
+  unknown_vault: "This vault is not indexed yet, so its numbers cannot be shown.",
+  no_snapshot: "No snapshot exists for this vault at any block yet.",
+  no_position: "This address holds no position in the vault.",
+  missing_account: "Connect a wallet to view a position.",
+  invalid_limit: "The list parameter is not valid.",
+  invalid_block: "The block number is not valid.",
+  not_found: "Unknown API address.",
+  method_not_allowed: "That request method is not supported.",
+  no_rpc: "The API has no node access, so on-chain numbers are unavailable.",
+  api_unreachable: "The API is unreachable. No number is shown rather than a stale one.",
+  webhook_error: "Alert delivery failed.",
 };
 
 export interface ErrorStateProps {
@@ -99,10 +109,10 @@ export function ErrorState({ code, message }: ErrorStateProps) {
   return createElement(
     "div",
     { className: "banner", "data-tone": "danger", role: "alert" },
-    createElement("strong", null, known ?? "Terjadi kesalahan."),
+    createElement("strong", null, known ?? "Something went wrong."),
     message === undefined ? null : createElement("p", null, message),
     known === undefined
-      ? createElement("p", null, `Kode tidak dikenal: ${code}. Pesan server ditampilkan apa adanya.`)
+      ? createElement("p", null, `Unrecognised code: ${code}. The server message is shown verbatim.`)
       : null,
   );
 }

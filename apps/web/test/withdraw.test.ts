@@ -37,24 +37,32 @@ function handlers(overrides: Record<string, Handler> = {}): Record<string, Handl
 }
 
 test("share input is exact at 18 decimals and refuses noise", () => {
-  assert.equal(parseShareInput("1"), 1_000_000_000_000_000_000n);
-  assert.equal(parseShareInput("0.000000000000000001"), 1n);
-  assert.equal(parseShareInput("12.5"), 12_500_000_000_000_000_000n);
+  assert.equal(parseShareInput("1", 18), 1_000_000_000_000_000_000n);
+  assert.equal(parseShareInput("0.000000000000000001", 18), 1n);
+  assert.equal(parseShareInput("12.5", 18), 12_500_000_000_000_000_000n);
   for (const bad of ["", "1,5", "1 000", "-1", "1e18", ".", "1.0000000000000000001", "01", "x"]) {
-    assert.throws(() => parseShareInput(bad), WithdrawError, `should reject ${JSON.stringify(bad)}`);
+    assert.throws(() => parseShareInput(bad, 18), WithdrawError, `should reject ${JSON.stringify(bad)}`);
   }
-  assert.throws(() => parseShareInput("0"), /lebih besar dari nol/);
+  assert.throws(() => parseShareInput("0", 18), /greater than zero/);
+});
+
+test("share decimals come from the vault, not a constant", () => {
+  // The staging vault reports decimals() = 6 (VaultV3 copies the asset's decimals). Parsing its shares as
+  // 18 would scale every amount by 10^12, so the same text must mean different amounts per vault.
+  assert.equal(parseShareInput("1800", 6), 1_800_000_000n);
+  assert.equal(parseShareInput("1800", 18), 1_800_000_000_000_000_000_000n);
+  assert.throws(() => parseShareInput("0.0000001", 6), /shares have 6 decimals/i);
 });
 
 test("loss budget is refused when it is not a real bound", () => {
   assert.equal(parseLossBps("0"), 0);
   assert.equal(parseLossBps("50"), 50);
   assert.equal(parseLossBps(9_999), 9_999);
-  assert.throws(() => parseLossBps("10000"), /seluruh nilai/);
-  assert.throws(() => parseLossBps(10_000), /seluruh nilai/);
+  assert.throws(() => parseLossBps("10000"), /entire position/);
+  assert.throws(() => parseLossBps(10_000), /entire position/);
   assert.throws(() => parseLossBps("-1"), WithdrawError);
   assert.throws(() => parseLossBps("1.5"), WithdrawError);
-  assert.throws(() => parseLossBps(""), /belum diisi/);
+  assert.throws(() => parseLossBps(""), /is empty/);
 });
 
 test("pause blocks withdrawal, and says so in the protocol's own terms", () => {

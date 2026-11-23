@@ -43,35 +43,41 @@ export class WithdrawError extends Error {
 
 export type WithdrawMode = "assets" | "shares";
 
-/** Share input has 18 decimals; the asset input below has 6. Refusing early beats rounding. */
-export function parseShareInput(value: string, decimals = 18): bigint {
+/**
+ * Parse a share amount with the vault's own share decimals.
+ *
+ * `decimals` has no default on purpose: `VaultV3.decimals()` is `asset.decimals()`, so a USDG vault has
+ * 6-decimal shares while a venue share token can have 18. A defaulted 18 would accept an input the vault
+ * cannot represent, and would have silently scaled every amount by 10^12.
+ */
+export function parseShareInput(value: string, decimals: number): bigint {
   const trimmed = value.trim();
-  if (trimmed === "") throw new WithdrawError("invalid_amount", "Jumlah share belum diisi.");
-  if (/[,\s]/.test(trimmed)) throw new WithdrawError("invalid_amount", "Gunakan titik desimal, tanpa spasi.");
+  if (trimmed === "") throw new WithdrawError("invalid_amount", "Enter a share amount first.");
+  if (/[,\s]/.test(trimmed)) throw new WithdrawError("invalid_amount", "Use a decimal period, with no spaces.");
   if (!/^\d*(\.\d*)?$/.test(trimmed) || trimmed === ".") {
-    throw new WithdrawError("invalid_amount", "Jumlah hanya boleh angka dan satu titik desimal.");
+    throw new WithdrawError("invalid_amount", "The amount may only contain digits and one decimal point.");
   }
   const fraction = trimmed.split(".")[1] ?? "";
   if (fraction.length > decimals) {
-    throw new WithdrawError("invalid_amount", `Share hanya punya ${decimals} desimal; jangan masukkan lebih dari itu.`);
+    throw new WithdrawError("invalid_amount", `Shares have ${decimals} decimals; do not enter more than that.`);
   }
   if (trimmed.startsWith("0") && trimmed !== "0" && !trimmed.startsWith("0.")) {
-    throw new WithdrawError("invalid_amount", "Jumlah tidak valid: nol di depan.");
+    throw new WithdrawError("invalid_amount", "Invalid amount: leading zero.");
   }
   const amount = parseUnits(trimmed, decimals);
-  if (amount <= 0n) throw new WithdrawError("invalid_amount", "Jumlah harus lebih besar dari nol.");
+  if (amount <= 0n) throw new WithdrawError("invalid_amount", "The amount must be greater than zero.");
   return amount;
 }
 
 export function parseLossBps(value: string | number): number {
   const bps = typeof value === "number" ? value : Number(value.trim());
   if (typeof value === "string" && value.trim() === "") {
-    throw new WithdrawError("invalid_loss_limit", "Toleransi loss belum diisi.");
+    throw new WithdrawError("invalid_loss_limit", "The loss tolerance is empty.");
   }
   if (!Number.isInteger(bps) || bps < 0 || bps >= MAX_LOSS_BPS) {
     throw new WithdrawError(
       "invalid_loss_limit",
-      `Toleransi loss harus 0..${MAX_LOSS_BPS - 1} bps. ${MAX_LOSS_BPS} bps berarti menerima kehilangan seluruh nilai.`,
+      `The loss tolerance must be 0..${MAX_LOSS_BPS - 1} bps. ${MAX_LOSS_BPS} bps means accepting the loss of the entire position.`,
     );
   }
   return bps;
@@ -117,34 +123,34 @@ export function withdrawBlockers(input: WithdrawInputs): Blocker[] {
   if (input.isPaused) {
     blockers.push({
       code: "paused",
-      message: "Vault dijeda: `withdraw` dan `redeem` revert selama pause (VaultV3 `assert not self.paused`).",
+      message: "The vault is paused: `withdraw` and `redeem` revert while paused (VaultV3 `assert not self.paused`).",
     });
   }
   if (input.maxLossBps < 0 || input.maxLossBps >= MAX_LOSS_BPS) {
     blockers.push({
       code: "invalid_loss_limit",
-      message: `Toleransi loss ${input.maxLossBps} bps di luar 0..${MAX_LOSS_BPS - 1}.`,
+      message: `The loss tolerance ${input.maxLossBps} bps is outside 0..${MAX_LOSS_BPS - 1}.`,
     });
   }
   if (input.mode === "assets" && input.requested > input.maxAssets) {
     blockers.push({
       code: "exceeds_max",
-      message: "Jumlah melebihi `maxWithdraw` vault pada blok ini: likuiditas tidak cukup sekarang.",
+      message: "The amount exceeds the vault `maxWithdraw` at this block: liquidity is not available now.",
     });
   }
   if (input.mode === "shares" && input.requested > input.maxShares) {
     blockers.push({
       code: "exceeds_max",
-      message: "Jumlah share melebihi `maxRedeem` vault pada blok ini: likuiditas tidak cukup sekarang.",
+      message: "The share amount exceeds the vault `maxRedeem` at this block: liquidity is not available now.",
     });
   }
   if (input.shares > input.shareBalance) {
-    blockers.push({ code: "insufficient_shares", message: "Share yang diminta melebihi saldo share Anda." });
+    blockers.push({ code: "insufficient_shares", message: "The requested shares exceed your share balance." });
   }
   if (input.maxAssets === 0n && input.maxShares === 0n) {
     blockers.push({
       code: "nothing_to_withdraw",
-      message: "Tidak ada yang bisa ditarik sekarang: `maxWithdraw` dan `maxRedeem` sama-sama nol.",
+      message: "Nothing can be withdrawn right now: `maxWithdraw` and `maxRedeem` are both zero.",
     });
   }
   return blockers;
@@ -215,7 +221,7 @@ export async function quoteWithdraw(
     };
   } catch (error) {
     if (error instanceof WithdrawError) throw error;
-    throw new WithdrawError("rpc", "Gagal membaca vault dari RPC. Angka tidak ditebak.", error instanceof Error ? error.message : String(error));
+    throw new WithdrawError("rpc", "The vault could not be read over RPC. No number is guessed.", error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -264,13 +270,13 @@ export async function submitWithdraw(params: SubmitWithdrawParams): Promise<With
   const withdrawTx = await params.signer.sendTransaction(prepared.request);
   const receipt = await params.client.waitForTransactionReceipt({ hash: withdrawTx });
   if (receipt.status !== "success") {
-    throw new WithdrawError("reverted", "Transaksi penarikan gagal di chain.", withdrawTx);
+    throw new WithdrawError("reverted", "The withdrawal transaction failed on chain.", withdrawTx);
   }
   const event = readWithdrawEvent(receipt.logs, params.vault);
   if (event === null) {
     throw new WithdrawError(
       "no_event",
-      "Receipt sukses tetapi tidak memuat event Withdraw. Jumlah aset tidak dapat dipastikan.",
+      "The receipt succeeded but carries no Withdraw event, so the asset amount is not proven.",
       withdrawTx,
     );
   }
@@ -332,32 +338,32 @@ export function withdrawWarnings(
     warnings.push({
       case: "W6",
       message:
-        "Vault dijeda: `withdraw` dan `redeem` revert (`assert not self.paused`). `maxWithdraw` juga 0. Menunggu unpause, bukan mengulang transaksi.",
+        "The vault is paused: `withdraw` and `redeem` revert (`assert not self.paused`) and `maxWithdraw` is 0 as well. Wait for an unpause instead of resending the transaction.",
     });
   }
   if (state.isShutdown) {
     warnings.push({
       case: "W7",
-      message: "Vault shutdown: deposit tertutup permanen, tetapi penarikan tetap jalan selama tidak dijeda.",
+      message: "The vault is shut down: deposits are closed permanently, but withdrawals still work while it is not paused.",
     });
   }
   if (quote.positionAssets > quote.maxAssets) {
     warnings.push({
       case: "W3",
       message:
-        "Nilai posisi lebih besar dari yang bisa ditarik sekarang. Penarikan penuh akan gagal; `redeem` bisa parsial sesuai toleransi loss Anda.",
+        "Position value is larger than what can be withdrawn now. A full exit will fail; `redeem` may fill partially within your loss tolerance.",
     });
   }
   if (quote.maxLossBps >= MAX_LOSS_BPS) {
     warnings.push({
       case: "W4",
-      message: "10000 bps berarti menerima kehilangan seluruh nilai. Nilai itu tidak dikirim.",
+      message: "10000 bps means accepting the loss of the entire position. That value is never sent.",
     });
   }
   if (quote.assets > quote.totalIdle) {
     warnings.push({
       case: "idle",
-      message: "Sebagian dana harus diambil dari strategi; kas idle tidak menutupi permintaan ini.",
+      message: "Part of the capital has to be recalled from a strategy; idle cash does not cover this request.",
     });
   }
   return warnings;

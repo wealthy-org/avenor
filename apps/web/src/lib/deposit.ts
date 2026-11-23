@@ -49,20 +49,20 @@ export class DepositError extends Error {
 /** USDG has 6 decimals; the parameter exists so a different asset cannot silently reuse this parser. */
 export function parseAssetInput(value: string, decimals = 6): bigint {
   const trimmed = value.trim();
-  if (trimmed === "") throw new DepositError("invalid_amount", "Jumlah belum diisi.");
-  if (/[,\s]/.test(trimmed)) throw new DepositError("invalid_amount", "Gunakan titik sebagai pemisah desimal, tanpa spasi.");
+  if (trimmed === "") throw new DepositError("invalid_amount", "Enter an amount first.");
+  if (/[,\s]/.test(trimmed)) throw new DepositError("invalid_amount", "Use a period as the decimal separator, with no spaces.");
   if (!/^\d*(\.\d*)?$/.test(trimmed) || trimmed === ".") {
-    throw new DepositError("invalid_amount", "Jumlah hanya boleh angka dan satu titik desimal.");
+    throw new DepositError("invalid_amount", "The amount may only contain digits and one decimal point.");
   }
   const fraction = trimmed.split(".")[1] ?? "";
   if (fraction.length > decimals) {
-    throw new DepositError("invalid_amount", `USDG hanya punya ${decimals} desimal; jangan masukkan lebih dari itu.`);
+    throw new DepositError("invalid_amount", `USDG has ${decimals} decimals; do not enter more than that.`);
   }
   if (trimmed.startsWith("0") && trimmed !== "0" && !trimmed.startsWith("0.")) {
-    throw new DepositError("invalid_amount", "Jumlah tidak valid: nol di depan.");
+    throw new DepositError("invalid_amount", "Invalid amount: leading zero.");
   }
   const amount = parseUnits(trimmed, decimals);
-  if (amount <= 0n) throw new DepositError("invalid_amount", "Jumlah harus lebih besar dari nol.");
+  if (amount <= 0n) throw new DepositError("invalid_amount", "The amount must be greater than zero.");
   return amount;
 }
 
@@ -93,36 +93,36 @@ export interface Blocker {
 export function depositBlockers(input: DepositInputs): Blocker[] {
   const blockers: Blocker[] = [];
   if (input.gate.isShutdown) {
-    blockers.push({ code: "shutdown", message: "Vault sudah shutdown: deposit ditutup permanen, penarikan tetap terbuka." });
+    blockers.push({ code: "shutdown", message: "The vault is shut down: deposits are closed permanently, withdrawals stay open." });
   }
   if (input.gate.isPaused) {
     blockers.push({
       code: "paused",
-      message: "Vault dijeda. `setPaused` memblokir deposit dan juga penarikan sampai tidak dijeda lagi.",
+      message: "The vault is paused. `setPaused` blocks deposits and withdrawals until it is unpaused.",
     });
   }
   if (input.gate.depositLimit === 0n) {
     blockers.push({
       code: "deposit_closed",
-      message: "`deposit_limit` = 0: deposit ditutup. Ini cara yang benar untuk menutup deposit, bukan `setPaused`.",
+      message: "`deposit_limit` = 0: deposits are closed. This is the correct way to close deposits, not `setPaused`.",
     });
   }
   if (input.maxAssets === 0n && input.gate.depositLimit > 0n) {
     blockers.push({
       code: "cap_full",
-      message: "Kapasitas deposit untuk akun ini sudah penuh (maxDeposit = 0).",
+      message: "This account has reached its deposit capacity (maxDeposit = 0).",
     });
   }
   if (input.maxAssets > 0n && input.assets > input.maxAssets) {
     blockers.push({
       code: "exceeds_cap",
-      message: `Jumlah melebihi kapasitas deposit sekarang (maxDeposit = ${input.maxAssets.toString()}).`,
+      message: `The amount exceeds the current deposit capacity (maxDeposit = ${input.maxAssets.toString()}).`,
     });
   }
   if (input.assets > input.balance) {
     blockers.push({
       code: "insufficient_balance",
-      message: "Saldo USDG akun ini tidak cukup untuk jumlah tersebut.",
+      message: "This account does not hold enough USDG for that amount.",
     });
   }
   return blockers;
@@ -181,7 +181,7 @@ export async function quoteDeposit(
   } catch (error) {
     throw new DepositError(
       "rpc",
-      "Angka deposit tidak dapat dibaca dari chain. Jangan menebak jumlah share.",
+      "The deposit numbers could not be read from the chain. The share amount is not guessed.",
       error instanceof Error ? error.message : String(error),
     );
   }
@@ -239,7 +239,7 @@ export async function submitDeposit(params: SubmitParams): Promise<DepositReceip
     approveTx = await params.signer.sendTransaction(preparedApprove.request);
     const approveReceipt = await params.client.waitForTransactionReceipt({ hash: approveTx });
     if (approveReceipt.status !== "success") {
-      throw new DepositError("reverted", "Transaksi approve gagal di chain.", approveTx);
+      throw new DepositError("reverted", "The approval transaction failed on chain.", approveTx);
     }
   }
 
@@ -252,14 +252,14 @@ export async function submitDeposit(params: SubmitParams): Promise<DepositReceip
   const depositTx = await params.signer.sendTransaction(prepared.request);
   const receipt = await params.client.waitForTransactionReceipt({ hash: depositTx });
   if (receipt.status !== "success") {
-    throw new DepositError("reverted", "Transaksi deposit gagal di chain.", depositTx);
+    throw new DepositError("reverted", "The deposit transaction failed on chain.", depositTx);
   }
 
   const event = readDepositEvent(receipt.logs, params.vault);
   if (event === null) {
     throw new DepositError(
       "no_event",
-      "Receipt sukses tetapi tidak memuat event Deposit. Jumlah share tidak dapat dipastikan.",
+      "The receipt succeeded but carries no Deposit event, so the share amount is not proven.",
       depositTx,
     );
   }

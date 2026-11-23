@@ -26,12 +26,12 @@ export async function fetchJson(url: string, fetchImpl: FetchLike = fetch as unk
   try {
     body = JSON.parse(text);
   } catch {
-    throw new ApiError(response.status, "not_json", `API membalas ${response.status} tanpa JSON`);
+    throw new ApiError(response.status, "not_json", `The API answered ${response.status} without JSON`);
   }
   if (!response.ok) {
     const error = (body as { error?: { code?: unknown; message?: unknown } }).error;
     const code = typeof error?.code === "string" ? error.code : "http_error";
-    const message = typeof error?.message === "string" ? error.message : `API membalas ${response.status}`;
+    const message = typeof error?.message === "string" ? error.message : `The API answered ${response.status}`;
     throw new ApiError(response.status, code, message);
   }
   return body;

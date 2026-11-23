@@ -39,9 +39,9 @@ test("an unset API URL is an error where it is used, not an empty string in a fe
 
 test("mandate is the operator's words and is kept only when non-empty", () => {
   const [withMandate] = parseVaultList(
-    JSON.stringify([{ address: "0x1111111111111111111111111111111111111111", label: "A", mandate: " USDG, batas 500rb " }]),
+    JSON.stringify([{ address: "0x1111111111111111111111111111111111111111", label: "A", mandate: " USDG, capped at 500k " }]),
   );
-  assert.equal(withMandate!.mandate, "USDG, batas 500rb");
+  assert.equal(withMandate!.mandate, "USDG, capped at 500k");
   const [without] = parseVaultList(JSON.stringify([{ address: "0x1111111111111111111111111111111111111111", label: "A" }]));
   assert.equal(without!.mandate, undefined);
   assert.throws(

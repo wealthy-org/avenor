@@ -36,7 +36,7 @@ test("asset input is parsed as exact integer units", () => {
   for (const bad of ["", "1,5", "1 000", "-1", "1e6", ".", "1.0000001", "01", "abc"]) {
     assert.throws(() => parseAssetInput(bad), DepositError, `should reject ${JSON.stringify(bad)}`);
   }
-  assert.throws(() => parseAssetInput("0"), /lebih besar dari nol/);
+  assert.throws(() => parseAssetInput("0"), /greater than zero/);
 });
 
 test("blockers name the exact gate, not a generic failure", () => {

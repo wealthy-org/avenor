@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  latestReportBlock,
+  latestReportTimestamp,
   parseAllocation,
   parseLive,
   parseReports,
@@ -43,7 +43,7 @@ test("vault row accepts small integers as JSON numbers and lowercases addresses"
   assert.equal(parsed.assetDecimals, 6);
   assert.equal(parsed.shareDecimals, 18);
   assert.equal(parsed.depositLimit, 500_000_000_000n);
-  assert.equal(parsed.deployedBlock, 118_337_511n);
+  assert.equal(parsed.recordedBlock, 118_337_511n);
 });
 
 test("vault row keeps an unindexed role manager as null instead of inventing one", () => {
@@ -58,7 +58,7 @@ test("vault row refuses a money value that arrived as a JSON number", () => {
 
 test("vault row refuses a bad address and an unknown source", () => {
   assert.throws(() => parseVaultRow(row({ asset_address: "0x123" })), /20-byte hex address/);
-  assert.throws(() => parseVaultRow(row({ source: "estimated" })), /indexed or onchain/);
+  assert.throws(() => parseVaultRow(row({ source: "estimated" })), /indexed, onchain or captured/);
 });
 
 function live(overrides: Record<string, unknown> = {}) {
@@ -169,14 +169,14 @@ test("roles require a delay or a stated reason for not having one", () => {
   assert.throws(() => parseRoles(roles({ timelockMinDelaySeconds: 10_000_000 })), /30 days/);
 });
 
-test("latestReportBlock ignores strategies that never reported", () => {
+test("latestReportTimestamp ignores strategies that never reported", () => {
   const none = parseAllocation(allocation([{ ...entry, lastReport: "0" }]), 1n);
-  assert.equal(latestReportBlock(none), null);
+  assert.equal(latestReportTimestamp(none), null);
   const both = parseAllocation(
-    allocation([entry, { ...entry, address: "0x3333333333333333333333333333333333333333", lastReport: "118338000" }]),
+    allocation([entry, { ...entry, address: "0x3333333333333333333333333333333333333333", lastReport: "1793380000" }]),
     1n,
   );
-  assert.equal(latestReportBlock(both), 118_338_000n);
+  assert.equal(latestReportTimestamp(both), 1_793_380_000n);
 });
 
 test("reports are parsed as strings and keep their own provenance", () => {

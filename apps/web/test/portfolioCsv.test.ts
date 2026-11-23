@@ -23,7 +23,7 @@ test("csv keeps base units and the block that produced them", () => {
 
 test("a failed row keeps its error instead of a zero balance", () => {
   const csv = portfolioCsv([
-    { ...ROW, positionAssets: null, maxAssets: null, totalIdle: null, error: "no_position: akun belum punya share" },
+    { ...ROW, positionAssets: null, maxAssets: null, totalIdle: null, error: "no_position: the account holds no shares" },
   ]);
   const line = csv.trimEnd().split("\n")[1]!;
   assert.match(line!, /,,,118337511,no_position/);

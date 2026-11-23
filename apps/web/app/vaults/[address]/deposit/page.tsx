@@ -31,19 +31,22 @@ export default async function DepositPage({ params }: Params) {
     const { code, message } = describe(error);
     return (
       <div className="shell stack">
-        <ErrorState code={code} message={`Konfigurasi AVENOR_VAULTS rusak: ${message}`} />
+        <ErrorState code={code} message={`Vault configuration error: ${message}`} />
       </div>
     );
   }
 
-  // Graceful fallback for staging vault
+  // Graceful fallback for the staging vault when the environment did not provide the list.
   if (vaults.length === 0 && address.toLowerCase() === "0x5aebce3956fed4542edbe75d420497378e3b18ca") {
     vaults = [
       {
         address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
         label: "Avenor USDG Managed Vault (Staging)",
         phase: "research",
-        mandate: "Staging fork — all numbers read directly from Robinhood Chain mainnet pinned block 118337511. Not intended for public deposit.",
+        mandate:
+          "Staging fork of Robinhood Chain state. Every number is read at one named block and printed " +
+            "with that block and its hash; this deployment has no code on mainnet. " +
+            "Not open for public deposits.",
       },
     ];
   }
@@ -63,10 +66,10 @@ export default async function DepositPage({ params }: Params) {
     try {
       detail = await loadVaultDetail(base, config.address);
     } catch {
-      detail = getDirectVaultDetail(config.address);
+      detail = await getDirectVaultDetail(config.address);
     }
   } else {
-    detail = getDirectVaultDetail(config.address);
+    detail = await getDirectVaultDetail(config.address);
   }
 
   const live = detail.live;
@@ -74,35 +77,61 @@ export default async function DepositPage({ params }: Params) {
     const { code, message } = describe(detail.liveError);
     return (
       <div className="shell stack">
-        <ErrorState code={code} message={`Angka vault tidak terbaca, jadi form deposit tidak ditampilkan: ${message}`} />
+        <ErrorState code={code} message={`On-chain vault data unavailable — deposit form cannot be shown: ${message}`} />
       </div>
     );
   }
 
+  const vaultName = detail.vault === null ? config.label : detail.vault.name;
+  const vaultSymbol = detail.vault === null ? "?" : detail.vault.symbol;
+  const assetAddress = (detail.vault === null ? config.address : detail.vault.assetAddress) as `0x${string}`;
+
   return (
     <div className="shell stack">
-      <div className="flex items-center gap-2 text-xs font-mono text-[#8b929e] mb-2">
-        <Link href={`/vaults/${config.address}`} className="hover:text-[#6db89b] transition-colors">
-          ← Back to Vault Detail
+      {/* Breadcrumb */}
+      <nav className="flex items-center gap-2 text-xs font-mono text-[#a3abb8]" aria-label="Breadcrumb">
+        <Link href={`/vaults/${config.address}`} className="hover:text-[#6db89b] transition-colors inline-flex items-center gap-1">
+          ← Back to vault
         </Link>
-        <span>/</span>
-        <span className="text-[#f8f9fa]">Deposit</span>
-      </div>
+        <span aria-hidden="true" className="text-[#a3abb8]">/</span>
+        <span className="text-[#f8f9fa] font-medium">Deposit</span>
+      </nav>
 
-      <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 backdrop-blur-sm shadow-xl">
-        <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">
-          Deposit into {detail.vault === null ? config.label : detail.vault.name} ({detail.vault === null ? "?" : detail.vault.symbol})
-        </h1>
-        <p className="mt-2 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl">
-          On-chain deposit capacity is enforced by the allocator vault smart contract. Position values represent an on-chain asset claim, not instant unallocated cash reserves.
-        </p>
+      {/* Page Header */}
+      <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-sm shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-[11px] uppercase tracking-widest text-[#6db89b] bg-[#6db89b]/10 border border-[#6db89b]/20 rounded-full px-2.5 py-0.5">
+                Deposit
+              </span>
+              <span className="font-mono text-[11px] uppercase tracking-widest text-[#8b929e] bg-white/[0.04] border border-white/[0.08] rounded-full px-2.5 py-0.5">
+                Robinhood Chain · chain ID 4663
+              </span>
+            </div>
+            <h1 className="font-display text-xl sm:text-3xl font-medium text-[#f8f9fa]">
+              Deposit into {vaultName}
+              {/* At 390px the vault name plus the symbol on one line wrapped to three; the symbol drops to
+                  its own line instead of breaking the name. */}
+              <span className="mt-1 block font-mono text-sm text-[#a3abb8] sm:mt-0 sm:ml-2 sm:inline sm:text-base">
+                ({vaultSymbol})
+              </span>
+            </h1>
+            <p className="text-sm text-[#b0b7c3] leading-relaxed max-w-2xl text-pretty">
+              Deposit capacity is read directly from the vault contract, not from application configuration.
+              Shares received represent a proportional claim on vault assets — not a guarantee of immediate liquidity.
+            </p>
+          </div>
+        </div>
       </header>
 
+      {/* Deposit Form */}
       <section className="card stack">
         <DepositForm
           vault={config.address}
-          asset={(detail.vault === null ? config.address : detail.vault.assetAddress) as `0x${string}`}
+          asset={assetAddress}
           assetSymbol="USDG"
+          shareDecimals={detail.vault === null ? 0 : detail.vault.shareDecimals}
           gate={{
             depositLimit: live.depositLimit,
             isPaused: live.isPaused,
@@ -114,21 +143,41 @@ export default async function DepositPage({ params }: Params) {
         <BlockProvenance
           blockNumber={live.blockNumber.toString()}
           blockTimestamp={live.blockTimestamp}
-          source="onchain"
+          source={live.source}
         />
       </section>
 
+      {/* Protocol Guarantees */}
       <section className="card stack">
-        <h2 className="text-lg font-medium text-[#f8f9fa]">Protocol Invariants & Operational Bounds</h2>
-        <ul className="space-y-2 text-sm text-[#b0b7c3] list-disc pl-5">
-          <li><strong>Zero Unlimited Approvals:</strong> Token allowances are strictly parameterized for the exact deposit amount.</li>
-          <li><strong>Zero Hidden Slippage:</strong> Deposits do not apply default loss buffers; redemptions require explicit parameterization.</li>
-          <li><strong>No Automated Retries:</strong> Reverted transactions or user rejections will never automatically re-broadcast to the chain.</li>
-          <li><strong>Authoritative Receipt Accounting:</strong> Previews are non-binding estimates; final share allocations derive strictly from the on-chain Deposit event receipt.</li>
+        <h2 className="font-display text-base font-medium text-[#f8f9fa]">Protocol Guarantees</h2>
+        <ul className="space-y-2 text-sm text-[#b0b7c3] leading-relaxed">
+          <li className="flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-[#6db89b] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            No unlimited approvals — allowance is set to exactly the deposit amount.
+          </li>
+          <li className="flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-[#6db89b] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            No hidden defaults — this form handles deposit only; withdrawal has its own explicit <code className="font-mono text-[11px] text-[#6db89b]">max_loss</code> parameter.
+          </li>
+          <li className="flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-[#6db89b] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            No automatic retry — a rejected signature or failed receipt requires explicit user action.
+          </li>
+          <li className="flex items-start gap-2.5">
+            <svg className="w-4 h-4 text-[#6db89b] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Final share count is sourced exclusively from the on-chain <code className="font-mono text-[11px] text-[#6db89b]">Deposit</code> event — never from a pre-signing estimate.
+          </li>
         </ul>
-        <p className="provenance pt-2">
-          Vault Contract: <AddressText address={config.address} /> · Underlying Asset:{" "}
-          <AddressText address={(detail.vault === null ? config.address : detail.vault.assetAddress) as `0x${string}`} />
+        <p className="provenance">
+          Vault <AddressText address={config.address} /> · asset <AddressText address={assetAddress} />
         </p>
       </section>
     </div>
