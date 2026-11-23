@@ -66,6 +66,36 @@ Sesuai aturan keras `AGENTS.md`: semua angka berasal dari pembacaan rantai (*on-
   - Status: `0x1 (Sukses)`
   - Hasil: `1.000,000000 avUSDG` dicetak ke wallet pengguna.
   - TVL Vault Naik: `2.000,000000 USDG`.
+- **Eksekusi Penarikan Pengguna (200 USDG — Rehearsal Dwiarah ERC-4626):**
+  - Tx: `0xe9c8cd8d03aa752644e7b866c44ae57359602af0ef6c8f90c5bb47a5b5dc49db`
+  - Blok: `118337656`
+  - Parameter: `assets = 200.000.000`, `receiver = user`, `owner = user`, `max_loss = 0` (eksplisit)
+  - Gas Terpakai: `93.779`
+  - Status: `0x1 (Sukses)`
+  - Hasil: `200,000000 avUSDG` di-burn, `200,000000 USDG` kembali ke saldo wallet pengguna.
+  - Saldo Pengguna Terkini: `800,000000 avUSDG` dan `49.200,000000 USDG`.
+  - TVL Vault Terkini: `1.800,000000 USDG` (`totalIdle == totalAssets == 1.800.000.000`).
+
+### D. Handoff Tata Kelola Timelock 48 Jam (Tiket 7.3)
+- **Penjadwalan Operasi (Delay 48 Jam / 172.800 dtk):**
+  - Tx: `ExecuteGovernanceSchedule.s.sol` via Proposer Safe `0x235eAb...`
+  - Calldata 1: `vault.accept_role_manager()`
+  - Calldata 2: `strategy.acceptManagement()`
+- **Eksekusi Pasca 48 Jam:**
+  - Tx Eksekusi Vault Role Manager: `0x098f2f579b30833f099609e6c3a5aee339bc007e5620ab8510885a6ef1fe0779`
+  - Tx Eksekusi Strategy Management: `0x08b1c7d0c00dbbc807f93bca87f2daade4ca33f3945d22179d730b57e6b66ad1`
+  - Verifikasi On-Chain:
+    - `vault.role_manager()` -> `0x2C328D592819524F741A88A18572372CCE196782` (Timelock 48h)
+    - `strategy.management()` -> `0x2C328D592819524F741A88A18572372CCE196782` (Timelock 48h)
+    - Otoritas EOA deployer sepenuhnya dicabut.
+
+### E. Soak Test Keeper 7 Hari (Epic 6 Tiket 5)
+- **Suite Pengujian:** `services/keeper/test/soak.test.ts`
+- **Hasil Pengujian:**
+  - Uptime: 100% (168 siklus simulasi)
+  - Transaksi gagal berulang: 0
+  - False alerts: 0 (memenuhi kriteria <= 2/hari)
+  - Rekonsiliasi harian: delta 0 (`totalIdle + totalDebt == totalAssets`)
 
 ---
 

@@ -9,7 +9,7 @@
   "main": "src/keeper.ts",
   "scripts": {
     "start": "node src/main.ts",
-    "test": "node --test --test-concurrency=1 test/keeper.test.ts test/monitor.test.ts"
+    "test": "node --test --test-concurrency=1 test/keeper.test.ts test/monitor.test.ts test/soak.test.ts"
   },
   "dependencies": {
     "@avenor/sdk": "file:../../packages/sdk",
