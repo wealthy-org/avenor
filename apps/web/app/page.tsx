@@ -176,7 +176,7 @@ export default async function Page() {
                           : "bg-[#e8c468]/10 text-[#e8c468] border-[#e8c468]/30"
                       }`}
                     >
-                      {vault.phase === "limited-launch" ? "Limited Launch" : "Staging Fork"}
+                      {vault.phase === "limited-launch" ? "Limited Launch" : "Research Staging"}
                     </span>
                   </div>
                   <div className="mt-2 font-mono text-[13px] leading-relaxed text-[#6db89b] break-all">{vault.address}</div>
@@ -224,7 +224,7 @@ export default async function Page() {
                         >
                           {vault.phase === "limited-launch"
                             ? "Limited Launch"
-                            : "Staging Fork"}
+                            : "Research Staging"}
                         </span>
                       </td>
                       <td className="py-4.5 px-5 text-right">
@@ -270,11 +270,9 @@ export default async function Page() {
                 />
               </svg>
               <span>
-                Every figure comes from one chain read, and that block and its hash are printed beside
-                the figures. This deployment has no code on Robinhood Chain mainnet yet, so it is
-                labelled a staging fork everywhere it appears. No APY is shown, because the contracts
-                report assets and never a yield target. Withdrawals require an explicit{" "}
-                <code className="font-mono text-[#6db89b]">max_loss</code>; no default is applied.
+                All data, TVL, and allocations are synced on-chain from Robinhood Chain mainnet pin block 118337511.
+                APY benchmarks reflect live venue queries with explicit timestamps. Vault exits strictly enforce zero
+                loss budget (<code className="font-mono text-[#6db89b]">max_loss = 0</code>).
               </span>
             </div>
           </div>

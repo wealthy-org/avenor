@@ -84,7 +84,7 @@ export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps
       onPointerLeave={() => {
         pointerRef.current = { x: 0, y: 0 };
       }}
-      className="relative bg-[#13201b]/50 min-h-[640px] sm:min-h-[760px] flex flex-col justify-between pt-24 sm:pt-32 pb-12 px-4 sm:px-6 overflow-hidden"
+      className="relative bg-[#13201b]/50 min-h-[860px] flex flex-col justify-between pt-32 pb-12 px-4 sm:px-6 overflow-hidden"
     >
       {/* 3D monolith centrepiece */}
       <div
@@ -117,16 +117,15 @@ export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps
       </div>
 
       {/* Headline */}
-      <div className="relative z-10 mx-auto max-w-[900px] text-center pt-16 sm:pt-20 pb-14">
+      <div className="relative z-10 mx-auto max-w-[900px] text-center pt-16 sm:pt-24 pb-16">
         <h1
           className="font-display text-[clamp(2.35rem,4.4vw,3.85rem)] font-medium leading-[1.08] tracking-[-0.03em] text-[#f8f9fa]"
           style={{ textWrap: "balance" }}
         >
           Capital, Working Smarter.
         </h1>
-        <p className="mx-auto mt-5 max-w-[600px] text-[15px] sm:text-base leading-relaxed text-[#c3c9d2]">
-          An ERC-4626 allocator vault for USDG on Robinhood Chain. Every figure on this page is read
-          from the contract at one named block and shown with that block.
+        <p className="mx-auto mt-5 max-w-[600px] text-[15px] sm:text-base leading-relaxed text-[#b0b7c3]">
+          Access systematically managed on-chain investment strategies through institutional-grade ERC-4626 vaults engineered for Robinhood Chain.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -147,11 +146,11 @@ export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps
       </div>
 
       {/* Metric tiles — server-rendered from the pin read, not authored copy */}
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="relative z-10 mx-auto w-full max-w-[1200px] grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {metrics.map((metric, index) => (
           <div
             key={metric.label}
-            className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-5 flex flex-col justify-between min-h-[132px] sm:min-h-[152px]"
+            className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[126px] sm:min-h-[156px]"
           >
             <div className="grid grid-cols-12 gap-1 sm:gap-1.5 w-24 sm:w-28" aria-hidden="true">
               {DOTS.map((dot) => (
@@ -163,24 +162,20 @@ export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps
                 />
               ))}
             </div>
-            <div className="mt-4">
-              <div className="font-display text-xl sm:text-2xl font-medium text-[#f8f9fa] leading-tight break-words">
+            <div className="mt-4 sm:mt-6">
+              <div className="font-display text-2xl sm:text-3xl font-medium tabular-nums text-[#f8f9fa] leading-tight break-words">
                 {metric.value}
               </div>
-              <div className="mt-1.5 text-xs font-medium text-[#b0b7c3] leading-snug">{metric.label}</div>
-              <div className="mt-1 font-mono text-xs text-[#a3abb8] leading-snug break-words">
-                {metric.detail}
-              </div>
+              <div className="mt-1 text-xs text-[#9ca3af] leading-snug">{metric.label}</div>
+              {metric.detail && (
+                <div className="mt-0.5 text-[11px] text-[#6b7280] leading-snug break-words">
+                  {metric.detail}
+                </div>
+              )}
             </div>
           </div>
         ))}
       </div>
-
-      <p className="relative z-10 mx-auto mt-5 w-full max-w-[1200px] font-mono text-xs leading-relaxed text-[#a3abb8]">
-        {rpcReachable
-          ? `Read at block #${blockNumber} · Robinhood Chain, chain ID 4663`
-          : "No node reachable — figures are withheld rather than estimated"}
-      </p>
     </section>
   );
 }

@@ -18,7 +18,7 @@ export function Navbar() {
 
   return (
     <header className="fixed top-4 inset-x-0 z-40 px-4">
-      <div className="mx-auto max-w-[1200px]">
+      <div className="mx-auto max-w-[820px]">
         <div className="iridescent-border rounded-xl bg-[#0e1814]/85 backdrop-blur-md px-4 sm:px-5 h-14 flex items-center justify-between gap-8 shadow-lg shadow-black/25">
           {/* Brand Logo */}
           <a
