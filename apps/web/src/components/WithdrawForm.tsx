@@ -174,7 +174,13 @@ export function WithdrawForm({ vault, assetSymbol, live }: WithdrawFormProps) {
         client,
         signer: {
           account,
-          sendTransaction: (request) => walletClient.sendTransaction(request as Parameters<typeof walletClient.sendTransaction>[0]),
+          sendTransaction: (request) => {
+            const req = request as Record<string, unknown>;
+            if ("abi" in req) {
+              return walletClient.writeContract(req as Parameters<typeof walletClient.writeContract>[0]);
+            }
+            return walletClient.sendTransaction(request as Parameters<typeof walletClient.sendTransaction>[0]);
+          },
         },
         vault,
         mode: quote.mode,
