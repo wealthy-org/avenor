@@ -10,10 +10,10 @@ Pemegang perintah: satu orang di keyboard, satu orang membaca output `-vv` (atur
 
 ```bash
 cd avenor
-python scripts/verify-all.py
+python scripts/verify-all.py --require-fork
 ```
 
-Harus berakhir `ALL CHECKS PASSED` termasuk `14/14` cek bytecode. Bila tidak: **stop**. Script deploy meng-assert ulang hash di dalam EVM, tapi kegagalan di sini lebih murah dibaca.
+Harus berakhir `ALL CHECKS PASSED` termasuk `14/14` cek bytecode. Tanpa `--require-fork`, run yang melewati `test/fork/*` hanya mencetak `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN`, dan itu bukan bentuk yang cukup untuk deploy. Bila tidak: **stop**. Script deploy meng-assert ulang hash di dalam EVM, tapi kegagalan di sini lebih murah dibaca.
 
 Yang di-assert script saat runtime, bukan hanya di CI:
 

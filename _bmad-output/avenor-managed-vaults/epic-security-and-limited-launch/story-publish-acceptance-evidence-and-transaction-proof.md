@@ -7,10 +7,26 @@ covers: [S6]
 after: [3]
 hitl: false
 risk: medium
-status: done
+status: in-progress
 ---
 
 # Publish acceptance evidence and transaction proof
+
+## Status koreksi (2026-11-29) — kembali ke `in-progress`
+
+Story ini sebelumnya ditandai `done`. Itu keliru, dan koreksinya ada di dua tempat:
+
+1. **Dokumen bukti tidak lolos uji provenance.** `docs/ACCEPTANCE_EVIDENCE.md` menyajikan transaksi fork lokal sebagai transaksi chain `4663`. Verifikasi ke `https://rpc.solidrpc.io/public/evm/4663` pada `2026-11-29`: `eth_getTransactionByHash` mengembalikan `null` untuk ketiga hash di §3, dan `eth_getCode` mengembalikan `0x` untuk vault, factory, emergency timelock, dan akun uji. Dokumen sudah dikoreksi (`§0 Cara Memeriksa Dokumen Ini` + banner provenance), tetapi koreksi dokumen bukan bukti penerimaan.
+2. **Kriteria `verify` belum terpenuhi.** Kriteria menuntut "setiap hash bisa dibuka di explorer". Di chain `4663` tidak ada explorer publik untuk hash-hash itu, karena transaksinya tidak pernah ada di sana.
+
+Yang masih dibutuhkan supaya story ini bisa `done`:
+
+- [ ] Deploy nyata di chain `4663` (Epic 7 story 3, masih terblokir: belum ada deployment mainnet).
+- [ ] Hash deposit / report / withdraw dari deployment itu, masing-masing dengan `eth_getTransactionByHash` yang mengembalikan objek (bukan `null`).
+- [ ] Rekonsiliasi `totalIdle + totalDebt == totalAssets` dari saldo chain, bukan dari capture fork.
+- [ ] `docs/ACCEPTANCE_EVIDENCE.md` §0 dihapus, karena tidak ada lagi kontradiksi yang perlu dijelaskan.
+
+Bukti rehearsal di dokumen itu tetap berguna sebagai latihan runbook dan sebagai bukti bytecode (VaultV3 + `MorphoVaultStrategy`), dan tidak boleh dihapus.
 
 ## Description
 

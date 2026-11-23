@@ -176,7 +176,7 @@ dengan deposit.
    memakai node JSON-RPC skrip.
 2. Wallet hanya lewat EIP-1193 injected (`window.ethereum`); belum ada connector WalletConnect/Coinbase.
 3. `AVENOR_VAULTS` belum diset di deployment mana pun: app berjalan pada keadaan "belum ada vault".
-4. `next build` belum masuk `scripts/verify-all.py` (waktu). Gate menjalankan `tsc --noEmit` + 83
+4. `next build` belum masuk `scripts/verify-all.py` (waktu). Gate menjalankan `tsc --noEmit` + 90
    test. Build dicatat manual di `docs/REPRODUCIBILITY.md` §7.
 5. Halaman detail belum dijalankan terhadap API + vault nyata: belum ada vault hasil
    `Deploy.s.sol` di chain 4663. Yang terbukti adalah parsing, perhitungan `bigint`, dan perilaku

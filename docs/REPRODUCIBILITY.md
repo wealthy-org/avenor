@@ -189,7 +189,7 @@ di `.tmp/pg-<pid>` pada port loopback acak dan menghapusnya; `--keep` mencetak
 di-skip — karena gate data plane yang diam-diam hijau lebih buruk daripada gate merah.
 
 Langkah 7 memakai `apps/web/node_modules` (dipasang `npm ci`, di-ignore git). Gate
-`scripts/verify-all.py` menjalankan `tsc --noEmit` + 86 test web (sepuluh berkas); `next build` sengaja di
+`scripts/verify-all.py` menjalankan `tsc --noEmit` + 90 test web (sepuluh berkas); `next build` sengaja di
 luar gate karena menambah ~40 s dan gate ini sudah ~4 menit, tetapi hasil build dicatat saat
 perubahan app: tiga rute statis (`/`, `/transparency`, `/_not-found`) dan empat rute dinamis
 (`/portfolio`, `/vaults/[address]`, `/vaults/[address]/deposit`, `/vaults/[address]/withdraw`,
@@ -217,7 +217,7 @@ Bukti bahwa `getChainId()` segar dan `block.chainid` tidak basi pada toolchain i
 
 1. Tidak ada deployment `VaultV3 3.1.1` di chain publik → tidak ada pembanding byte-per-byte untuk versi yang kita pakai (§3).
 2. `vault-periphery@672de1c` membangun terhadap `yearn-vaults-v3@5b698f94` (branch `v3.1.0`). Status per modul ada di `docs/COMPATIBILITY_MATRIX.md`: `Accountant` teruji terhadap ABI kita (8 unit test + wiring deploy); `RoleManager`/`TimelockExecutor`/`DebtAllocator` tidak dipakai jalur produk dan karenanya tidak diuji dan tidak diklaim; `Yearn-ERC4626-Router` ditolak (ADR-11).
-3. Fork test Robinhood Chain ada di `packages/contracts/test/fork/` dan dijalankan `python scripts/fork-test.py` (11 test: `VenueProbe` 7 probe venue + `VaultE2E` 4 test e2e vault). `verify-all.py` sengaja tidak menjalankannya tanpa flag — `--with-fork` mendelegasikan ke script itu. Cakupan e2e: deploy lokal di atas fork → deposit → `update_debt` → `report` (gain + fee share ke accountant) → `redeemUnderlying` + `distribute` ke treasury → withdraw penuh dan sebagian. Yang **belum**: pola perubahan kas idle venue antar blok (butuh banyak pin, dan endpoint arsip gratis terus berubah).
+3. Fork test Robinhood Chain ada di `packages/contracts/test/fork/` dan dijalankan `python scripts/fork-test.py` (11 test: `VenueProbe` 7 probe venue + `VaultE2E` 4 test e2e vault). `verify-all.py` sengaja tidak menjalankannya di jalur default — `--with-fork` (atau `AVENOR_WITH_FORK=1`) mendelegasikan ke script itu. Karena itu gate membedakan dua hasil: `ALL CHECKS PASSED` hanya dicetak bila tidak ada gate yang dilewati, sedangkan run parsial mencetak `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN` dan menyebutkan `test/fork/*`. `--require-fork` mengubah kondisi itu menjadi kegagalan, dan itulah bentuk yang dipakai sebelum deploy (`docs/DEPLOYMENT.md`). Cakupan e2e: deploy lokal di atas fork → deposit → `update_debt` → `report` (gain + fee share ke accountant) → `redeemUnderlying` + `distribute` ke treasury → withdraw penuh dan sebagian. Yang **belum**: pola perubahan kas idle venue antar blok (butuh banyak pin, dan endpoint arsip gratis terus berubah).
 4. Verifikasi source on-chain belum mungkin: explorer diblokir Cloudflare dan RPC publik tidak menyediakan endpoint verifikasi.
 5. Indexer/SDK/API diuji pada database dan node lokal (anvil + fake RPC yang mengikuti bentuk respons
    `eth_getLogs`/`eth_call`), **bukan** pada rantai `4663`: belum ada deployment indexer, dan reorg

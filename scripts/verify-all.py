@@ -16,15 +16,22 @@ Runs, in order, stopping at the first failure:
  10. node --test services/keeper     keeper planning, simulation gate, nonce, monitoring, alerts
  11. tsc + node --test apps/web      web numeric primitives, components and config validation
  12. scripts/verify-bytecode.py all  core bytecode evidence (slow; skip with --no-bytecode)
+ 13. scripts/fork-test.py            fork tests against the pinned block (opt-in, see below)
 
 Steps 8–11 need Node 22.6+ (step 11 also needs `apps/web/node_modules`, i.e. `npm install`); step 9 also needs a local Postgres (`initdb`/`pg_ctl`) because it
 runs against a real database in `.tmp/`, not a mock. It fails loudly when Postgres is missing
 instead of skipping, because a silently skipped data-plane gate is worse than a red one.
 
-Fork tests are deliberately excluded: they need a live archive RPC and an `anvil` fork with
-three specific flags, so they run through `python scripts/fork-test.py` (which verifies the
-pinned state before spending ~90s on `forge`). Running them here without those flags produces
-a fake failure. `--with-fork` delegates to that script instead of reimplementing it.
+Fork tests are deliberately not in the default path: they need a live archive RPC and an
+`anvil` fork with three specific flags, so they run through `python scripts/fork-test.py`
+(which verifies the pinned state before spending ~90s on `forge`). Running them here without
+those flags produces a fake failure. `--with-fork` (or `AVENOR_WITH_FORK=1`) delegates to that
+script instead of reimplementing it.
+
+**A run that did not cover `test/fork/*` does not print `ALL CHECKS PASSED`.** It prints
+`ALL CHECKED CHECKS PASSED` and lists what was not run, because a green summary over a partial
+run is the exact claim this script exists to prevent. `--require-fork` turns the same condition
+into a failure, for whoever needs the full gate before shipping.
 
 Every step is something a reviewer can run alone; this script exists so nobody has
 to remember the list, not to hide it.
@@ -34,6 +41,7 @@ Usage:
 """
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -99,8 +107,15 @@ def main() -> int:
         action="store_true",
         help="also run scripts/fork-test.py (needs archive RPC; ~90s)",
     )
+    ap.add_argument(
+        "--require-fork",
+        action="store_true",
+        help="run the fork tests and fail instead of passing when they could not run",
+    )
     ap.add_argument("-q", "--quiet", action="store_true")
     args = ap.parse_args()
+    # Not run is not passed: every gate that is skipped is named in the final summary.
+    not_run: list[str] = []
 
     run("no secrets tracked", [python(), "scripts/check-secrets.py"], ROOT, args.quiet)
     run("vendored dependencies", [python(), "scripts/check-vendor.py"], ROOT, args.quiet)
@@ -160,12 +175,21 @@ def main() -> int:
         WEB,
         args.quiet,
     )
-    if args.with_fork:
+    # `--require-fork` implies the run: demanding the fork gate without asking for it would just fail.
+    fork_requested = (
+        args.with_fork or args.require_fork or os.environ.get("AVENOR_WITH_FORK", "") == "1"
+    )
+    fork_ran = False
+    if fork_requested:
         run("fork test (pin 118337511)", [python(), "scripts/fork-test.py"], ROOT, args.quiet)
+        fork_ran = True
     else:
-        print("[--] fork test skipped (pass --with-fork; needs an archive RPC)")
+        print("[!!] fork test NOT RUN: this run says nothing about test/fork/*")
+        print("     run `python scripts/fork-test.py`, or pass --with-fork / set AVENOR_WITH_FORK=1")
+        not_run.append("fork test (test/fork/*, pin 118337511)")
     if args.no_bytecode:
-        print("[--] bytecode evidence skipped (--no-bytecode)")
+        print("[!!] bytecode evidence NOT RUN: --no-bytecode was passed")
+        not_run.append("bytecode evidence (14 checks)")
     else:
         run(
             "bytecode evidence (14 checks)",
@@ -173,7 +197,17 @@ def main() -> int:
             ROOT,
             args.quiet,
         )
-    print("\nALL CHECKS PASSED")
+    if args.require_fork and not fork_ran:
+        print("\n[FAIL] --require-fork was passed and the fork tests did not run")
+        return 1
+
+    if not_run:
+        print(f"\nALL CHECKED CHECKS PASSED — {len(not_run)} GATE(S) NOT RUN:")
+        for item in not_run:
+            print(f"  - {item}")
+        print("This is a partial result, not a green gate.")
+    else:
+        print("\nALL CHECKS PASSED")
     return 0
 
 
