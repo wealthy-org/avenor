@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@avenor/sdk": "file:../../packages/sdk",
-    "next": "15.5.4",
+    "next": "15.5.29",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "viem": "2.58.4"
