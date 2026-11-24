@@ -121,7 +121,11 @@ contract ChainConfigTest is Test {
             vm.parseJsonUint(
                 json46630, ".infrastructure.tokenizedStrategyImplementation.runtimeCodesize"
             ),
-            0
+            18_224
+        );
+        assertEq(
+            vm.parseJsonString(json46630, ".infrastructure.tokenizedStrategyImplementation.status"),
+            "deployed"
         );
     }
 }

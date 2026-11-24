@@ -274,9 +274,16 @@ Upstream Yearn (commit `48c53aba0395885b3f579d0a4b426de276a7b69e`) menggunakan u
    `keccak256(0xff ++ CreateX ++ guardedSalt ++ initcodeHash)[12:]`
    = `0x3110D1Eec90f0651C18e75AD37711A8777342504`.
 
-### 9.2 Implementasi & Verifikasi Unit Test
+### 9.2 Implementasi & Verifikasi On-Chain di Testnet 46630
 
 - **Script deploy:** `packages/contracts/script/DeployCanonicalTokenizedStrategy.s.sol`
-- **Unit test:** `packages/contracts/test/unit/TokenizedStrategyDeployTest.t.sol`
-  - `test_canonicalAddressCalculation()`: Membuktikan perhitungan CREATE2 menghasilkan `0x3110D1Eec90f0651C18e75AD37711A8777342504`.
-  - `test_deployViaMockCreateXAtCanonicalAddress()`: Membuktikan eksekusi CREATE2 menghasilkan kontrak di alamat kanonik dengan ukuran runtime tepat `18.224` byte.
+- **Unit test:** `packages/contracts/test/unit/TokenizedStrategyDeployTest.t.sol` (semua lulus)
+- **Deployment Nyata di Robinhood Chain Testnet (46630):**
+  - **Status:** Berhasil (`0x1` status)
+  - **Transaction Hash:** `0x34b2c8e00e570c8687f7e83f827fda23e9b3083132395407215c2166af990912`
+  - **Block Number:** `157499658`
+  - **Deployer (EOA):** `0x56d845a35EDe1436B8053f705b4b189c412A8648`
+  - **Alamat Kontrak:** `0x3110D1Eec90f0651C18e75AD37711A8777342504`
+  - **Runtime Codesize:** `18.224` byte (cocok 100%)
+  - **Runtime Keccak:** `0x38c3b5bb5cd304e4759807d31f37c440ff9cb9811b35c3c61b8c81e3d61fd16f` (identik byte-per-byte dengan mainnet 4663, Ethereum, Arbitrum, dan Base).
+
