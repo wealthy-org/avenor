@@ -11,7 +11,7 @@ Vault ERC-4626 untuk USDG di Robinhood Chain (`4663`), di atas Yearn V3 Allocato
 1. **Jangan mem-patch core Yearn V3** (`packages/core`). Kode baru hanya adapter, hook, script, test. Bila sebuah fitur menuntut perubahan core, tulis ADR baru yang menolak fitur tersebut — jangan ubah kontrak.
 2. **Jangan mengarang angka.** Semua angka venue/TVL/likuiditas harus dari RPC atau API dengan `blockNumber` dan timestamp; simpan query di `docs/REFERENCE_CAPTURE.md`.
 3. **Jangan mengklaim "audited"** untuk pin 2026, adapter kita, atau konfigurasi kita. Audit upstream 2023 boleh disebut dengan cakupan dan tanggalnya.
-4. **Jangan menjanjikan likuiditas instan.** `steakUSDG` hanya sebagian kecil likuid segera (kas idle `27.024,457979` USDG vs TVL `538.856,055994` = **5,02%** pada pin `118337511`; `maxWithdraw` venue balas `0` dan tidak boleh dipakai sebagai sinyal). UI wajib membedakan "nilai posisi" dan "dapat ditarik sekarang".
+4. **Jangan menjanjikan likuiditas instan.** `steakUSDG` hanya sebagian kecil likuid segera (kas idle `27.024.457,98` USDG vs TVL `538.856.055,99` = **5,02%** pada pin `118337511`; `maxWithdraw` venue balas `0` dan tidak boleh dipakai sebagai sinyal). UI wajib membedakan "nilai posisi" dan "dapat ditarik sekarang".
 5. **`max_loss` eksplisit.** Jangan memakai default `redeem` (`10000`) maupun `withdraw` (`0`) secara implisit; SDK harus memaksa parameter.
 6. **Freeze deposit pakai `deposit_limit`/`deposit_hook`.** `setPaused` hanya untuk insiden dan harus dinyatakan memblokir penarikan.
 7. **`role_manager` = TimelockController ≥ 48 jam** sebelum deposit publik. Guardian harus alamat terpisah dan bukan proposer timelock.

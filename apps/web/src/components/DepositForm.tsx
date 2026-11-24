@@ -35,7 +35,14 @@ export interface DepositFormProps {
   /** `decimals()` of the share token, read from the vault: VaultV3 uses the asset's decimals (6). */
   shareDecimals: number;
   /** Snapshot of the gate from the API, so the form can refuse before touching the wallet. */
-  gate: { depositLimit: bigint; isPaused: boolean; isShutdown: boolean; blockNumber: bigint; blockTimestamp: string };
+  gate: {
+    depositLimit: bigint;
+    isPaused: boolean;
+    isShutdown: boolean;
+    blockNumber: bigint;
+    blockTimestamp: string;
+    source?: "onchain" | "captured" | "unavailable" | string;
+  };
 }
 
 type Phase = "idle" | "quoting" | "signing" | "pending" | "done" | "error";
@@ -207,14 +214,24 @@ export function DepositForm({ vault, asset, assetSymbol, gate, shareDecimals }: 
           </div>
           <div className="flex flex-col gap-0.5">
             <span className="text-xs font-mono uppercase tracking-wider text-[#a3abb8]">Deposit gate</span>
-            <span className={`text-xs font-medium ${gateClosed ? "text-[#f87171]" : "text-[#6db89b]"}`}>
+            <span
+              className={`text-xs font-medium ${
+                gateClosed
+                  ? "text-[#f87171]"
+                  : gate.source === "captured" || gate.source === "unavailable"
+                    ? "text-[#e8c468]"
+                    : "text-[#6db89b]"
+              }`}
+            >
               {gate.isShutdown
                 ? "Shutdown — deposits permanently closed"
                 : gate.isPaused
                   ? "Paused — deposits and withdrawals blocked"
                   : gate.depositLimit === 0n
                     ? "Closed — the cap is 0"
-                    : "Open — below the cap"}
+                    : gate.source === "captured" || gate.source === "unavailable"
+                      ? "Staging / Rehearsal Fork (Not live)"
+                      : "Open — below the cap"}
             </span>
           </div>
         </div>

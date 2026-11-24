@@ -125,6 +125,7 @@ contract Deploy is Script {
     error RefundRatioRequiresFundedAccountant(uint16 refundRatio);
     error ManagementFeeWithMaxFee(uint16 managementFee, uint16 maxFee);
     error AccountantNotWired(string what, address expected);
+    error UnsupportedChain(uint256 chainId);
 
     struct Config {
         Mode mode;
@@ -1008,11 +1009,27 @@ contract Deploy is Script {
     /// @dev Not `view`: the dry-run branch derives placeholder operator addresses with
     ///      `makeAddr`, which writes to the cheatcode state.
     function configFromEnv() public returns (Config memory cfg) {
+        // forge-lint: disable-next-line(environment-read-across-mutation)
+        uint256 chainId = block.chainid;
+
+        if (chainId == 4663 || chainId == 31337) {
+            cfg.usdg = vm.envOr("USDG_ADDRESS", USDG_4663);
+            cfg.venue = vm.envOr("VENUE_ADDRESS", STEAK_USDG_4663);
+        } else if (chainId == 46630) {
+            // Testnet (46630): never use mainnet 4663 addresses even if set in .env
+            address envUsdg = vm.envOr("USDG_ADDRESS", address(0));
+            address envVenue = vm.envOr("VENUE_ADDRESS", address(0));
+            if (envUsdg == USDG_4663) envUsdg = address(0);
+            if (envVenue == STEAK_USDG_4663) envVenue = address(0);
+            cfg.usdg = envUsdg;
+            cfg.venue = envVenue;
+        } else {
+            revert UnsupportedChain(chainId);
+        }
+
         string memory modeRaw = vm.envOr("DEPLOY_MODE", string("dry-run"));
         cfg.mode = _modeFromString(modeRaw);
         cfg.actor = vm.envOr("DEPLOYER_ADDRESS", msg.sender);
-        cfg.usdg = vm.envOr("USDG_ADDRESS", USDG_4663);
-        cfg.venue = vm.envOr("VENUE_ADDRESS", STEAK_USDG_4663);
         cfg.timelock = vm.envOr("TIMELOCK_ADDRESS", address(0));
         cfg.proposer = vm.envOr("PROPOSER_ADDRESS", address(0));
         if (cfg.proposer == address(0)) cfg.proposer = cfg.actor;

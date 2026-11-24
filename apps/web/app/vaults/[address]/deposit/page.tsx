@@ -36,23 +36,41 @@ export default async function DepositPage({ params }: Params) {
     );
   }
 
-  // Graceful fallback for the staging vault when the environment did not provide the list.
-  if (vaults.length === 0 && address.toLowerCase() === "0x5aebce3956fed4542edbe75d420497378e3b18ca") {
-    vaults = [
-      {
-        address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
-        label: "Avenor USDG Managed Vault (Staging)",
-        phase: "research",
-        mandate:
-          "Staging fork of Robinhood Chain state. Every number is read at one named block and printed " +
-            "with that block and its hash; this deployment has no code on mainnet. " +
-            "Not open for public deposits.",
-      },
-    ];
-  }
-
   const config = vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase());
   if (config === undefined) notFound();
+
+  if (config.phase === "research") {
+    return (
+      <div className="shell stack">
+        <nav className="flex items-center gap-2 text-xs font-mono text-[#a3abb8]" aria-label="Breadcrumb">
+          <Link href={`/vaults/${config.address}`} className="hover:text-[#6db89b] transition-colors inline-flex items-center gap-1">
+            ← Back to vault
+          </Link>
+          <span aria-hidden="true" className="text-[#a3abb8]">/</span>
+          <span className="text-[#f8f9fa] font-medium">Deposit</span>
+        </nav>
+        <div className="rounded-xl bg-[#101b16] border border-amber-500/30 p-8 text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-display font-medium text-white">Not Open for Public Deposits</h2>
+          <p className="max-w-md mx-auto text-sm text-[#a3abb8] leading-relaxed">
+            This vault is currently in the <strong>Research Phase</strong> on a rehearsal fork. Public deposit transactions are strictly disabled until testnet deployment and audit verification.
+          </p>
+          <div>
+            <Link
+              href={`/vaults/${config.address}`}
+              className="inline-flex items-center gap-1.5 text-xs font-mono text-[#6db89b] hover:underline"
+            >
+              ← Return to vault overview
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   let detail;
   let base = "";
@@ -82,9 +100,20 @@ export default async function DepositPage({ params }: Params) {
     );
   }
 
-  const vaultName = detail.vault === null ? config.label : detail.vault.name;
-  const vaultSymbol = detail.vault === null ? "?" : detail.vault.symbol;
-  const assetAddress = (detail.vault === null ? config.address : detail.vault.assetAddress) as `0x${string}`;
+  if (detail.vault === null || !detail.vault.assetAddress) {
+    return (
+      <div className="shell stack">
+        <ErrorState
+          code="asset_unavailable"
+          message="Underlying asset address could not be verified on-chain. Deposit form disabled for safety."
+        />
+      </div>
+    );
+  }
+
+  const vaultName = detail.vault.name;
+  const vaultSymbol = detail.vault.symbol;
+  const assetAddress = detail.vault.assetAddress as `0x${string}`;
 
   return (
     <div className="shell stack">
@@ -138,6 +167,7 @@ export default async function DepositPage({ params }: Params) {
             isShutdown: live.isShutdown,
             blockNumber: live.blockNumber,
             blockTimestamp: live.blockTimestamp,
+            source: live.source,
           }}
         />
         <BlockProvenance

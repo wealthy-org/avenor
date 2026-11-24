@@ -72,18 +72,6 @@ export default async function VaultPage({ params }: Params) {
     );
   }
 
-  // Graceful fallback for the staging vault when the environment did not provide the list.
-  if (vaults.length === 0 && address.toLowerCase() === "0x5aebce3956fed4542edbe75d420497378e3b18ca") {
-    vaults = [
-      {
-        address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
-        label: "Avenor USDG Managed Vault (Staging)",
-        phase: "research",
-        mandate: MANDATE_FALLBACK,
-      },
-    ];
-  }
-
   const config = vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase());
   if (config === undefined) notFound();
 
@@ -162,13 +150,19 @@ export default async function VaultPage({ params }: Params) {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <Link
-              href={`/vaults/${vault.address}/deposit`}
-              style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
-              className="inline-flex items-center justify-center rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-5 py-3 text-sm font-semibold hover:bg-white transition-colors shadow-[0_0_20px_rgba(255,255,255,0.12)] whitespace-nowrap cursor-pointer"
-            >
-              Deposit USDG
-            </Link>
+            {config.phase === "research" ? (
+              <span className="inline-flex items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 px-4 py-2.5 text-xs font-mono whitespace-nowrap">
+                Research Phase · Deposits Closed
+              </span>
+            ) : (
+              <Link
+                href={`/vaults/${vault.address}/deposit`}
+                style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
+                className="inline-flex items-center justify-center rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-5 py-3 text-sm font-semibold hover:bg-white transition-colors shadow-[0_0_20px_rgba(255,255,255,0.12)] whitespace-nowrap cursor-pointer"
+              >
+                Deposit USDG
+              </Link>
+            )}
             <Link
               href={`/vaults/${vault.address}/withdraw`}
               className="inline-flex items-center justify-center rounded-lg border border-white/[0.14] bg-[#14221c] text-[#f8f9fa] px-5 py-3 text-sm font-medium hover:bg-white/[0.08] transition-colors whitespace-nowrap cursor-pointer"

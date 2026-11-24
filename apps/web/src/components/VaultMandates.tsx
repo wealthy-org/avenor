@@ -135,6 +135,50 @@ const ROADMAP: Mandate[] = [
     ],
   },
   {
+    slug: "cross-venue-relative-value",
+    name: "Cross-Venue Relative Value",
+    status: "Roadmap · no contract deployed",
+    offered: false,
+    accentColor: "#34d399",
+    accentGlow: "rgba(52, 211, 153, 0.15)",
+    description:
+      "Dynamic allocation exploiting yield spreads across vetted lending venues and automated market makers. No contract is deployed yet; carries no rates or caps.",
+    facts: [
+      { label: "Asset", value: "USDG" },
+      { label: "Strategy venue", value: "Multi-venue (planned)" },
+      { label: "Deposit limit", value: "Not deployed" },
+      { label: "Rate", value: "Not quoted" },
+    ],
+    bounds: [
+      "Concentration limits per venue enforced by debt allocator",
+      "Minimum liquidity reserve maintained at all times",
+      "No synthetic leverage",
+      "No contract exists, so no audit scope exists",
+    ],
+  },
+  {
+    slug: "macro-rate-divergence",
+    name: "Macro / Rate Divergence",
+    status: "Roadmap · no contract deployed",
+    offered: false,
+    accentColor: "#fbbf24",
+    accentGlow: "rgba(251, 191, 36, 0.15)",
+    description:
+      "Systematic positioning across short-dated yield curves and interest rate divergences. Listed for catalog completeness; no contract deployed, no rates quoted.",
+    facts: [
+      { label: "Asset", value: "USDG" },
+      { label: "Strategy venue", value: "Curve / Rate protocols" },
+      { label: "Deposit limit", value: "Not deployed" },
+      { label: "Rate", value: "Not quoted" },
+    ],
+    bounds: [
+      "Strict duration matching and delta neutrality",
+      "Rebalance cooldown enforced on-chain",
+      "Real-time divergence monitoring via keeper",
+      "No contract exists, so no audit scope exists",
+    ],
+  },
+  {
     slug: "custom-institutional",
     name: "Custom Mandates",
     status: "Roadmap · discussion only",

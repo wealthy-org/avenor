@@ -23,7 +23,7 @@ Perencanaan BMAD: [`_bmad-output/avenor-managed-vaults/`](_bmad-output/avenor-ma
 
 ## Fakta yang membentuk desain
 
-- `steakUSDG` (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`) adalah venue utama: ~538 juta USD TVL dengan ~73,5 juta USDG likuid segera (**13,6%**). Bukan likuiditas instan.
+- `steakUSDG` (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`) adalah venue utama: ~538 juta USD TVL (~538.856.055,99 USDG) dengan ~27,02 juta USDG likuid segera (~27.024.457,98 USDG = **5,02%** pada pin 118337511). Bukan likuiditas instan.
 - `setPaused(true)` memblokir penarikan (`VaultV3.vy:774`, `:592`). Karena itu freeze risiko memakai `deposit_limit`/`deposit_hook`, bukan pause.
 - `withdraw` default `max_loss = 0`; `redeem` default `max_loss = 10000`. SDK tidak boleh mengekspos default itu.
 - Core tidak punya virtual shares → anti share-inflation lewat seed dead shares + minimum deposit.
@@ -36,9 +36,9 @@ packages/core        artefak beku VaultV3/VaultFactory (Vyper tidak dipatch) + s
 packages/contracts   MorphoVaultStrategy, DepositCapHook, script deploy, test (Foundry, sudah ada)
 packages/contracts/lib  dependensi vendored + hash-verified (OZ 4.9.5, tokenized-strategy 3.1.1, forge-std 1.9.6)
 packages/sdk         pembaca state, penulis tx, encode max_loss wajib, parser log
-packages/indexer     RPC → Postgres, rekonsiliasi
-packages/keeper      alokasi, report, healthcheck
-packages/app         katalog, detail, transaksi, portfolio, transparency
+services/indexer     RPC → Postgres, rekonsiliasi
+services/keeper      alokasi, report, healthcheck
+apps/web             katalog, detail, transaksi, portfolio, transparency
 packages/config      alamat + parameter per chain
 docs/                dokumen wajib brief §17
 deployments/         catatan deploy per mode

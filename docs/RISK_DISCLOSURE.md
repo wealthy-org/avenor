@@ -10,7 +10,7 @@ Sesuai aturan ketat `AGENTS.md`: dokumen ini tidak memperhalus risiko (*no sugar
 
 1. **Kas Idle Terbatas di Venue Upstream:**
    - Vault Avenor menempatkan sebagian besar asetnya ke venue upstream (Morpho Vault V2 `steakUSDG`).
-   - Pada pin baseline `118337511`, kas idle `steakUSDG` hanya tercatat **`27.024,457979` USDG** dari total TVL **`538.856,055994` USDG** (**5,02%**).
+   - Pada pin baseline `118337511`, kas idle `steakUSDG` hanya tercatat **`27.024.457,98` USDG** dari total TVL **`538.856.055,99` USDG** (**5,02%**).
    - Sebanyak 94,98% aset dipinjamkan ke pasar *Morpho Blue* aktif.
 2. **Ketergantungan Penarikan:**
    - Penarikan dari vault Avenor dapat dilayani secara instan **hanya sebesar kas idle** yang ada di vault atau kas idle yang berhasil ditarik dari strategi venue.

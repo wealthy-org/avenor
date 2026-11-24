@@ -36,21 +36,6 @@ export default async function WithdrawPage({ params }: Params) {
     );
   }
 
-  // Graceful fallback for the staging vault when the environment did not provide the list.
-  if (vaults.length === 0 && address.toLowerCase() === "0x5aebce3956fed4542edbe75d420497378e3b18ca") {
-    vaults = [
-      {
-        address: "0x5aeBcE3956FeD4542EDBe75d420497378E3B18CA",
-        label: "Avenor USDG Managed Vault (Staging)",
-        phase: "research",
-        mandate:
-          "Staging fork of Robinhood Chain state. Every number is read at one named block and printed " +
-            "with that block and its hash; this deployment has no code on mainnet. " +
-            "Not open for public deposits.",
-      },
-    ];
-  }
-
   const config = vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase());
   if (config === undefined) notFound();
 

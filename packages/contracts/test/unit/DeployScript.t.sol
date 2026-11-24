@@ -500,4 +500,17 @@ contract DeployScriptTest is Test {
         );
         deployer.deployAll(cfg);
     }
+
+    function test_unsupportedChainReverts() public {
+        vm.chainId(1);
+        vm.expectRevert(abi.encodeWithSelector(Deploy.UnsupportedChain.selector, uint256(1)));
+        deployer.configFromEnv();
+    }
+
+    function test_testnetChain46630NeverUsesMainnetDefaults() public {
+        vm.chainId(46630);
+        Deploy.Config memory cfg = deployer.configFromEnv();
+        assertEq(cfg.usdg, address(0));
+        assertEq(cfg.venue, address(0));
+    }
 }

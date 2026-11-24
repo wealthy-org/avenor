@@ -79,9 +79,12 @@ def python() -> str:
 def forge() -> str:
     if LOCAL_FORGE.exists():
         return str(LOCAL_FORGE)
+    user_forge = Path.home() / ".foundry" / "bin" / ("forge.exe" if os.name == "nt" else "forge")
+    if user_forge.exists():
+        return str(user_forge)
     found = shutil.which("forge")
     if not found:
-        raise SystemExit("forge not found (expected .tools/foundry/forge.exe or PATH)")
+        raise SystemExit("forge not found (expected .tools/foundry/forge.exe, ~/.foundry/bin or PATH)")
     return found
 
 

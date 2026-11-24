@@ -93,15 +93,19 @@ export default async function Page() {
   }
 
   if (vaults.length === 0) {
-    vaults = [
-      {
-        address: STAGING_VAULT as `0x${string}`,
-        label: "Avenor USDG Managed Vault (Staging)",
-        phase: "research" as const,
-        mandate:
-          MANDATE_FALLBACK,
-      },
-    ];
+    return (
+      <div className="shell py-24 text-center">
+        <div className="max-w-xl mx-auto rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-8 space-y-4">
+          <h2 className="text-2xl font-display font-medium text-white">No Vaults Configured</h2>
+          <p className="text-sm text-[#a3abb8] leading-relaxed">
+            No vaults are currently configured in the application environment (<code className="font-mono text-[#6db89b]">AVENOR_VAULTS</code>).
+          </p>
+          <p className="text-xs text-[#6b7280]">
+            Please set the <code className="font-mono text-[#6db89b]">AVENOR_VAULTS</code> environment variable to display verified vaults.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   // One snapshot per request. The hero tiles, the ticker, the mandate facts and the block chip all come
@@ -270,9 +274,8 @@ export default async function Page() {
                 />
               </svg>
               <span>
-                All data, TVL, and allocations are synced on-chain from Robinhood Chain mainnet pin block 118337511.
-                APY benchmarks reflect live venue queries with explicit timestamps. Vault exits strictly enforce zero
-                loss budget (<code className="font-mono text-[#6db89b]">max_loss = 0</code>).
+                All TVL and allocation figures are captured on a local rehearsal fork of Robinhood Chain at pin block {live.blockNumber.toString()}.
+                Vault exits strictly enforce an explicit zero loss budget (<code className="font-mono text-[#6db89b]">max_loss = 0</code>).
               </span>
             </div>
           </div>

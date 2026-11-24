@@ -49,3 +49,37 @@ test("mandate is the operator's words and is kept only when non-empty", () => {
     /mandate must be a non-empty string/,
   );
 });
+
+test("vault detail source does not contain hardcoded staging fallback address 0x5aebce", async () => {
+  const { readFileSync } = await import("node:fs");
+  const pageSource = readFileSync(new URL("../app/vaults/[address]/page.tsx", import.meta.url), "utf8");
+  const depositSource = readFileSync(new URL("../app/vaults/[address]/deposit/page.tsx", import.meta.url), "utf8");
+  const withdrawSource = readFileSync(new URL("../app/vaults/[address]/withdraw/page.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(pageSource, /0x5aebce3956fed4542edbe75d420497378e3b18ca/i);
+  assert.doesNotMatch(depositSource, /0x5aebce3956fed4542edbe75d420497378e3b18ca/i);
+  assert.doesNotMatch(withdrawSource, /0x5aebce3956fed4542edbe75d420497378e3b18ca/i);
+});
+
+test("vault detail hides deposit button when phase is research", async () => {
+  const { readFileSync } = await import("node:fs");
+  const pageSource = readFileSync(new URL("../app/vaults/[address]/page.tsx", import.meta.url), "utf8");
+  assert.match(pageSource, /config\.phase === "research"/);
+  assert.match(pageSource, /Research Phase · Deposits Closed/);
+});
+
+test("deposit page forbids deposits for research phase and prevents vault address asset fallback", async () => {
+  const { readFileSync } = await import("node:fs");
+  const depositSource = readFileSync(new URL("../app/vaults/[address]/deposit/page.tsx", import.meta.url), "utf8");
+  assert.match(depositSource, /config\.phase === "research"/);
+  assert.match(depositSource, /Not Open for Public Deposits/);
+  assert.doesNotMatch(depositSource, /detail\.vault === null \? config\.address : detail\.vault\.assetAddress/);
+});
+
+test("landing hero does not claim institutional-grade or mainnet sync or APY benchmarks", async () => {
+  const { readFileSync } = await import("node:fs");
+  const heroSource = readFileSync(new URL("../src/components/PrismHero.tsx", import.meta.url), "utf8");
+  const homeSource = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(heroSource, /institutional-grade/i);
+  assert.doesNotMatch(homeSource, /synced on-chain from Robinhood Chain mainnet/i);
+  assert.doesNotMatch(homeSource, /APY benchmarks reflect live venue queries/i);
+});

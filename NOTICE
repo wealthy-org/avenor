@@ -1,0 +1,23 @@
+# Avenor — Third-Party Notices and License Inventory
+
+This project incorporates components subject to open-source licenses:
+
+1. Yearn V3 Vault Core (`packages/core`)
+   - Origin: https://github.com/yearn/yearn-vaults-v3 (commit f449264, tag v3.1.1)
+   - License: GNU Affero General Public License v3.0 (AGPL-3.0)
+   - Copyright (c) 2023-2026 Yearn Finance contributors
+
+2. Yearn Tokenized Strategy (`packages/contracts/lib/tokenized-strategy`)
+   - Origin: https://github.com/yearn/tokenized-strategy (commit 48c53ab, tag v3.1.1)
+   - License: GNU Affero General Public License v3.0 (AGPL-3.0)
+   - Copyright (c) 2023-2026 Yearn Finance contributors
+
+3. OpenZeppelin Contracts (`packages/contracts/lib/openzeppelin-contracts`)
+   - Origin: https://github.com/OpenZeppelin/openzeppelin-contracts (v4.9.5)
+   - License: MIT License
+   - Copyright (c) 2016-2024 OpenZeppelin
+
+4. Forge Standard Library (`packages/contracts/lib/forge-std`)
+   - Origin: https://github.com/foundry-rs/forge-std (v1.9.6)
+   - License: MIT License or Apache 2.0
+   - Copyright (c) 2022-2024 Foundry contributors

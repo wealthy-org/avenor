@@ -119,3 +119,14 @@ test("the capture constants name their own origin, and the canonical header besi
   assert.equal(staging.CANONICAL_HEADER_AT_CAPTURE_HEIGHT.timestamp, "2026-11-19T15:54:29.000Z");
   assert.match(staging.CANONICAL_HEADER_AT_CAPTURE_HEIGHT.note, /anvil|fork/i);
 });
+
+test("VaultMandates contains all 6 mandates required by Brief §5 with roadmap status for un-deployed", async () => {
+  const { readFileSync } = await import("node:fs");
+  const source = readFileSync(new URL("../src/components/VaultMandates.tsx", import.meta.url), "utf8");
+  assert.match(source, /USDG Managed Yield/);
+  assert.match(source, /Treasury Reserve/);
+  assert.match(source, /ETH Basis Yield/);
+  assert.match(source, /Cross-Venue Relative Value/);
+  assert.match(source, /Macro \/ Rate Divergence/);
+  assert.match(source, /Custom Mandates/);
+});

@@ -10,10 +10,13 @@ import { Test } from "forge-std/Test.sol";
 ///      test only guards that the recorded provenance stays attached to the numbers.
 contract ChainConfigTest is Test {
     string internal constant PATH = "../config/4663.json";
+    string internal constant PATH_46630 = "../config/46630.json";
     string internal json;
+    string internal json46630;
 
     function setUp() public {
         json = vm.readFile(PATH);
+        json46630 = vm.readFile(PATH_46630);
     }
 
     /// @dev forge's JSON path lookup matches keys anywhere in the document, so a key
@@ -90,5 +93,35 @@ contract ChainConfigTest is Test {
         // Guards against a future edit pasting an address whose codesize was never read.
         assertEq(vm.parseJsonUint(json, ".infrastructure.yearnVaultFactory.codesize"), 0);
         vm.parseJsonString(json, ".infrastructure.yearnVaultFactory.conclusion");
+    }
+
+    function test_testnetChainIdentityIsRecorded() external view {
+        assertEq(vm.parseJsonUint(json46630, "._meta.network.chainId"), 46630);
+        assertEq(vm.parseJsonUint(json46630, "._meta.observed_at.blockNumber"), 157_460_667);
+        assertEq(vm.parseJsonUint(json46630, "._meta.observed_at.blockTimestamp"), 1_795_532_440);
+        assertEq(
+            vm.parseJsonBytes32(json46630, "._meta.observed_at.blockHash"),
+            bytes32(0xcf591c0b9419b5e8a0cc50db6a78c2f9ab0c90c01b3a13cdee16b763837be900)
+        );
+    }
+
+    function test_testnetUSDGIsExplicitlyMarkedMock() external view {
+        assertEq(vm.parseJsonUint(json46630, ".tokens.usdg.decimals"), 6);
+        assertEq(vm.parseJsonBool(json46630, ".tokens.usdg.isMock"), true);
+    }
+
+    function test_testnetTokenizedStrategyIsCanonical() external view {
+        assertEq(
+            vm.parseJsonAddress(
+                json46630, ".infrastructure.tokenizedStrategyImplementation.address"
+            ),
+            0x3110D1Eec90f0651C18e75AD37711A8777342504
+        );
+        assertEq(
+            vm.parseJsonUint(
+                json46630, ".infrastructure.tokenizedStrategyImplementation.runtimeCodesize"
+            ),
+            0
+        );
     }
 }

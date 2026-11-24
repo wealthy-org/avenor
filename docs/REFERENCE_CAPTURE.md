@@ -66,7 +66,7 @@ Query: Morpho Blue API `vaultV2s(where:{chainId_in:[4663], assetAddress_in:[USDG
 
 Kesimpulan bukti: **satu venue produksi yang layak ada** (`steakUSDG`), dan ia hanya sebagian kecil likuid segera. Ini menentukan desain withdrawal (butuh buffer idle + antrian strategi + estimasi likuiditas ber-timestamp), bukan sekadar "withdraw kapan saja".
 
-Koreksi (2026-11-19, pin `118337511`): tabel di atas adalah survei awal pada blok yang berbeda dan kolom "likuiditas"-nya bukan `maxWithdraw` venue. Diukur ulang pada pin: TVL `538.856,055994` USDG, kas idle venue (USDG yang benar-benar bisa dibayar) `27.024,457979` USDG = **5,02%**, bukan 13,6%. `steakUSDG.maxWithdraw()`/`maxRedeem()` membalas `0` pada blok itu padahal kas ada dan seluruh posisi 8,33 juta bisa ditebus — jadi getter tersebut **tidak boleh** dipakai sebagai angka "dapat ditarik". Angka itu harus `min(convertToAssets(balanceOf(strategy)), USDG.balanceOf(venue))` dengan `blockNumber` + `blockHash`. Detail + probe: `docs/VENUE_INTEGRATIONS.md` §4.
+Koreksi (2026-11-19, pin `118337511`): tabel di atas adalah survei awal pada blok yang berbeda dan kolom "likuiditas"-nya bukan `maxWithdraw` venue. Diukur ulang pada pin: TVL `538.856.055,99` USDG, kas idle venue (USDG yang benar-benar bisa dibayar) `27.024.457,98` USDG = **5,02%**, bukan 13,6%. `steakUSDG.maxWithdraw()`/`maxRedeem()` membalas `0` pada blok itu padahal kas ada dan seluruh posisi 8,33 juta bisa ditebus — jadi getter tersebut **tidak boleh** dipakai sebagai angka "dapat ditarik". Angka itu harus `min(convertToAssets(balanceOf(strategy)), USDG.balanceOf(venue))` dengan `blockNumber` + `blockHash`. Detail + probe: `docs/VENUE_INTEGRATIONS.md` §4.
 
 ### 4a. Probe deposit/withdraw pada pin (dijalankan 2026-11-20, state blok `118337511`)
 
@@ -111,7 +111,7 @@ Angka di UI sebelumnya diambil dari capture tanpa provenance dan sebagian tidak 
 
 Catatan fabrikasi yang diperbaiki:
 
-- `538.856,055994` yang tampil sebagai "nilai vault" adalah `totalAssets` **venue** `steakUSDG` (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`, Morpho Vault V2, 18 desimal), bukan saldo vault Avenor.
+- `538.856.055,99` yang tampil sebagai "nilai vault" adalah `totalAssets` **venue** `steakUSDG` (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`, Morpho Vault V2, 18 desimal), bukan saldo vault Avenor.
 - `511.831,60` berasal dari API deployment jarak jauh yang disuntikkan lewat blok `env` di `next.config.mjs`; blok itu dihapus, dan halaman kini membaca node per request (`src/lib/vaultRead.ts`).
 - Alamat tanpa kode (`0xB56Ec0F9…`, `0x2C328D59…491f`, `0xdEc68A40…c287`) tidak lagi dipakai sebagai sumber angka.
 - `eth_getCode` vault di mainnet Robinhood Chain mengembalikan `0x`: semua angka adalah angka fork, dan UI menyebutnya begitu.

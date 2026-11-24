@@ -26,7 +26,7 @@ Aturan brief §5: tidak ada venue masuk produksi hanya karena TVL-nya besar. Set
 | Purinta USDG | `PurintaUSDG` `0x37788ff0c1d4e45A7FE06BC7e71e0cc00121d0A8` | 67.3K | 53.6K | 5,70% / 5,41% | kecil, kurator tunggal |
 | NetNet Credit | `nnUSDG` `0x99347d5F70D3838763f6Bddcf80304C8aa953B57` | 641.5K | **0** | 19,04% / 16,99% | likuiditas nol → tidak bisa jadi venue penarikan |
 
-Angka baris `steakUSDG` yang sudah dikonfirmasi langsung on-chain (block `118337511`, bukan estimasi API): `name="Steakhouse USDG"`, `asset` USDG 6 desimal, **`decimals=18`**, `totalAssets=538856055994280` (538.856,06 USDG), `totalSupply=531418644510854399888342585`, `convertToAssets(1e18)=1013995` (pps `1.013995`), `convertToShares(1e6)=986197776937474866`, `maxDeposit(0x0)=0`, `curator()=0x9023FBD6A08C666491A2d1648737E400cF42D2Fb`, `liquidity()` **revert** (fungsi Vault V2 tidak ada di venue ini), dan **`USDG.balanceOf(venue)=27024457979514`** (27.024.457,979514 USDG idle — ini batas pembayaran nyata, lihat §4).
+Angka baris `steakUSDG` yang sudah dikonfirmasi langsung on-chain (block `118337511`, bukan estimasi API): `name="Steakhouse USDG"`, `asset` USDG 6 desimal, **`decimals=18`**, `totalAssets=538856055994280` (538.856.055,99 USDG), `totalSupply=531418644510854399888342585`, `convertToAssets(1e18)=1013995` (pps `1.013995`), `convertToShares(1e6)=986197776937474866`, `maxDeposit(0x0)=0`, `curator()=0x9023FBD6A08C666491A2d1648737E400cF42D2Fb`, `liquidity()` **revert** (fungsi Vault V2 tidak ada di venue ini), dan **`USDG.balanceOf(venue)=27024457979514`** (27.024.457,979514 USDG idle — ini batas pembayaran nyata, lihat §4).
 
 Kesimpulan yang harus dipakai di PRD dan UX:
 

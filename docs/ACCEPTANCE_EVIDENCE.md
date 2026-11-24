@@ -42,7 +42,7 @@ Baris terakhir menjelaskan kenapa tinggi blok drill (`26450185/195/395`) tidak m
 - **Block Pin Baseline:** `118337511`, hash kanonik `0xbaa980abd65e0c748b3b5f69d2352b69dd33b03138179bf61c988137291ba0af`, timestamp `1795103654` = `2026-11-19T15:54:14 UTC` (dibaca dengan `eth_getBlockByNumber` di chain `4663`)
 - **Hardfork EVM:** Cancun (`PUSH0` aktif)
 - **Token Dasar (Asset):** USDG (`0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168`, 6 desimal)
-- **Upstream Morpho Venue:** steakUSDG (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`, Morpho Vault V2, 21.808 byte kode, `shareDecimals` 18, `totalAssets` `538856055994280` = `538.856,055994` USDG, kas idle `27.024,457979` USDG = 5,02% pada pin). Penulisan lama `0xBeEff033b7F3B9B53c2f8c50Ed7E4E7fEf3c09dd` salah dua digit dan alamat itu tidak punya kode.
+- **Upstream Morpho Venue:** steakUSDG (`0xBeEff033F34C046626B8D0A041844C5d1A5409dd`, Morpho Vault V2, 21.808 byte kode, `shareDecimals` 18, `totalAssets` `538856055994280` = `538.856.055,99` USDG, kas idle `27.024.457,98` USDG = 5,02% pada pin). Penulisan lama `0xBeEff033b7F3B9B53c2f8c50Ed7E4E7fEf3c09dd` salah dua digit dan alamat itu tidak punya kode.
 - **Yearn TokenizedStrategy Canonical:** `0x3110D1Eec90f0651C18e75AD37711A8777342504` (API 3.1.1)
 
 ---

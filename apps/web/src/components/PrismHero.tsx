@@ -125,7 +125,7 @@ export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps
           Capital, Working Smarter.
         </h1>
         <p className="mx-auto mt-5 max-w-[600px] text-[15px] sm:text-base leading-relaxed text-[#b0b7c3]">
-          Access systematically managed on-chain investment strategies through institutional-grade ERC-4626 vaults engineered for Robinhood Chain.
+          Systematically managed ERC-4626 allocator vaults on Robinhood Chain. Every figure is verifiable on-chain with block provenance.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -146,7 +146,17 @@ export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps
       </div>
 
       {/* Metric tiles — server-rendered from the pin read, not authored copy */}
-      <div className="relative z-10 mx-auto w-full max-w-[1200px] grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="relative z-10 mx-auto w-full max-w-[1200px] space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#a3abb8] flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${rpcReachable ? "bg-[#6db89b]" : "bg-[#e8c468]"}`} />
+            {rpcReachable ? "Live On-Chain State" : "Rehearsal Fork State (Pin Block " + blockNumber + ")"}
+          </span>
+          <span className="text-[11px] font-mono text-[#6b7280]">
+            Chain ID 4663 · Block {blockNumber}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {metrics.map((metric, index) => (
           <div
             key={metric.label}
@@ -175,6 +185,7 @@ export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps
             </div>
           </div>
         ))}
+        </div>
       </div>
     </section>
   );

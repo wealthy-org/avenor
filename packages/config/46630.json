@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "purpose": "Chain 46630 (Robinhood Chain Testnet) constants consumed by deploy script, test harness and indexer.",
+    "generated_from": "direct eth_call/eth_getCode reads on rpc.testnet.chain.robinhood.com",
+    "network": {
+      "name": "Robinhood Chain testnet",
+      "chainId": 46630,
+      "nativeCurrency": "ETH",
+      "explorer": "https://testnet.robinhoodchain.com"
+    },
+    "observed_at": {
+      "blockNumber": 157460667,
+      "blockTimestamp": 1795532440,
+      "blockHash": "0xcf591c0b9419b5e8a0cc50db6a78c2f9ab0c90c01b3a13cdee16b763837be900",
+      "hostDate": "2026-11-24",
+      "note": "Probed live via rpc.testnet.chain.robinhood.com at block 157460667"
+    },
+    "rpc": {
+      "primary": "https://rpc.testnet.chain.robinhood.com",
+      "fallbacks": [],
+      "retired": [],
+      "archive": false
+    }
+  },
+  "tokens": {
+    "usdg": {
+      "address": "0x0000000000000000000000000000000000000000",
+      "symbol": "mockUSDG",
+      "decimals": 6,
+      "totalSupply": "0",
+      "evidence": "Mainnet USDG (0x5fc5360D...) has no code on 46630; MockUSDG is used for stage rehearsal",
+      "isMock": true
+    }
+  },
+  "venues": {
+    "steakUSDG": {
+      "address": "0x0000000000000000000000000000000000000000",
+      "kind": "MockMorphoVault",
+      "asset": "0x0000000000000000000000000000000000000000",
+      "shareDecimals": 18,
+      "curator": "0x0000000000000000000000000000000000000000",
+      "status": "mock",
+      "note": "steakUSDG has no code on testnet. MockVenue is deployed for drill and integration test."
+    }
+  },
+  "infrastructure": {
+    "createx": "0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed",
+    "tokenizedStrategyImplementation": {
+      "address": "0x3110D1Eec90f0651C18e75AD37711A8777342504",
+      "runtimeCodesize": 0,
+      "targetCodesize": 18224,
+      "status": "pending_deployment",
+      "note": "Must be deployed to canonical address on 46630 per P1-3"
+    },
+    "tokenizedStrategyFactory": "0x0000000000000000000000000000000000000000",
+    "yearnVaultFactory": {
+      "codesize": 0,
+      "conclusion": "No Yearn VaultFactory on testnet. Avenor deploys its own factory."
+    }
+  }
+}
