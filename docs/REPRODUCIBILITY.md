@@ -243,3 +243,40 @@ Bukti bahwa `getChainId()` segar dan `block.chainid` tidak basi pada toolchain i
    publik tidak bisa dipaksa dengan jujur. Yang terbukti: rollback terhadap reorg nyata di anvil,
    rekonsiliasi terhadap angka `eth_call` yang diinjeksi, dan API yang mengembalikan provenance.
 6. `docs/SECURITY_DIFF.md` sudah ditulis (rentang perubahan `yearn-vaults-v3`, perbaikan ChainSecurity, transfer hook, `TokenizedStrategy` 2023 → 2026), tetapi tetap bukan audit: tidak ada auditor yang memeriksa kombinasi pin kita.
+
+## 9. Bukti D — Deployment Deterministik TokenizedStrategy v3.1.1 ke Chain 46630 (P1-3)
+
+Alamat kanonik `TokenizedStrategy v3.1.1` di Ethereum, Arbitrum, Base, dan Robinhood Chain `4663` adalah `0x3110D1Eec90f0651C18e75AD37711A8777342504`. Pada Robinhood Chain Testnet (`46630`), alamat ini semula belum ter-deploy (`codesize = 0`).
+
+Karena `BaseStrategy.tokenizedStrategyAddress` di-hardcode ke alamat tersebut dan dependensi vendored tidak boleh di-patch, Avenor wajib men-deploy implementasi resmi ke alamat yang identik persis di `46630`.
+
+### 9.1 Mekanisme CREATE2 via CreateX
+
+Upstream Yearn (commit `48c53aba0395885b3f579d0a4b426de276a7b69e`) menggunakan universal deployer **CreateX** (`0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed`).
+
+1. **Deployer:** CreateX pada `0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed` (terpasang di `4663` dan `46630` dengan runtime 11.838 byte).
+2. **Raw Salt:** `bytes32(uint256(0x0a47))` (`0x0000000000000000000000000000000000000000000000000000000000000a47`).
+3. **Guard Logic CreateX:**
+   Dalam `CreateX._guard(salt)`:
+   - `bytes20(salt) == address(0)` (20 byte pertama adalah nol).
+   - `salt[20] == hex"00"` (flag redeploy protection bernilai false).
+   - Kondisi ini jatuh ke jalur permissionless: `guardedSalt = keccak256(abi.encode(salt))`.
+   - Nilai guarded salt yang dihasilkan adalah:
+     `0x6b38d02c6d833fcd9319e92fdee40c8b2ca0e465fb7bd0bdf5d856bfb88fc6c2`.
+   - **Bukti Permissionless:** Nilai guarded salt di atas sama sekali tidak terikat pada `msg.sender` maupun `block.chainid`. Siapa pun, wallet apa pun, dapat memanggil `CREATEX.deployCreate2(rawSalt, initCode)` dan menghasilkan alamat yang sama persis.
+4. **InitCode & CBOR Metadata:**
+   - Creation bytecode `TokenizedStrategy` (solc 0.8.18, evm paris, optimizer 200 runs).
+   - Constructor argument: `abi.encode(address(0x311de24e48C360B9A7765E7aB7eCDBABCd27B134))`.
+   - CBOR metadata IPFS hash release kanonik Yearn:
+     `0x49ffc6d2a2b2b1a9383a4dbcbfe90cd3510b08442f760c46ad0a99d22509ab41`.
+   - Hash initcode terverifikasi: `0xe23d55b3b806a456e4cb8f7a4e17aab1fd0f57933c106eb1295add9284127016`.
+5. **Rumus CREATE2:**
+   `keccak256(0xff ++ CreateX ++ guardedSalt ++ initcodeHash)[12:]`
+   = `0x3110D1Eec90f0651C18e75AD37711A8777342504`.
+
+### 9.2 Implementasi & Verifikasi Unit Test
+
+- **Script deploy:** `packages/contracts/script/DeployCanonicalTokenizedStrategy.s.sol`
+- **Unit test:** `packages/contracts/test/unit/TokenizedStrategyDeployTest.t.sol`
+  - `test_canonicalAddressCalculation()`: Membuktikan perhitungan CREATE2 menghasilkan `0x3110D1Eec90f0651C18e75AD37711A8777342504`.
+  - `test_deployViaMockCreateXAtCanonicalAddress()`: Membuktikan eksekusi CREATE2 menghasilkan kontrak di alamat kanonik dengan ukuran runtime tepat `18.224` byte.

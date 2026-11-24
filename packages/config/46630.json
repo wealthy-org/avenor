@@ -49,8 +49,9 @@
       "address": "0x3110D1Eec90f0651C18e75AD37711A8777342504",
       "runtimeCodesize": 0,
       "targetCodesize": 18224,
-      "status": "pending_deployment",
-      "note": "Must be deployed to canonical address on 46630 per P1-3"
+      "status": "ready_to_deploy",
+      "script": "DeployCanonicalTokenizedStrategy.s.sol",
+      "note": "Deterministic deployment script prepared per P1-3 via CreateX"
     },
     "tokenizedStrategyFactory": "0x0000000000000000000000000000000000000000",
     "yearnVaultFactory": {
