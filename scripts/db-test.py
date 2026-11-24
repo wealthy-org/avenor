@@ -75,6 +75,45 @@ def wait_for_port(port: int, timeout: float = 60.0) -> None:
     raise SystemExit(f"Postgres did not start listening on 127.0.0.1:{port} within {timeout:.0f}s")
 
 
+def pid_alive(pid: int) -> bool:
+    """Is this PID a live process right now? Used to leave a `--keep` cluster alone."""
+    if os.name == "nt":
+        proc = subprocess.run(["tasklist", "/FI", f"PID eq {pid}", "/NH"], capture_output=True, text=True)
+        return str(pid) in proc.stdout
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def prune_stale(keep: Path | None) -> None:
+    """Remove cluster dirs left behind by earlier runs.
+
+    Only dirs whose `postmaster.pid` names a process that is no longer alive, and whose directory
+    has not been touched in the last ten minutes, are candidates. A live cluster -- including one
+    someone kept with `--keep`, and this run's own dir -- is never touched.
+    """
+    cutoff = time.time() - 600
+    for stale in TMP.glob("pg-*"):
+        if keep is not None and stale.resolve() == keep.resolve():
+            continue
+        if not stale.is_dir() or stale.stat().st_mtime > cutoff:
+            continue
+        pid_file = stale / "postmaster.pid"
+        if pid_file.exists():
+            first = pid_file.read_text(encoding="ascii", errors="ignore").splitlines()
+            pid = first[0].strip() if first else ""
+            if pid.isdigit() and pid_alive(int(pid)):
+                continue
+        for _ in range(20):
+            try:
+                shutil.rmtree(stale)
+                break
+            except OSError:
+                time.sleep(0.25)
+
+
 def stop_cluster(pg_ctl: str, data: Path) -> None:
     """Stop the cluster without trusting `pg_ctl`'s exit behaviour."""
     try:
@@ -132,7 +171,10 @@ def main() -> int:
         raise SystemExit("node not found on PATH; the indexer tests need Node >= 22.6")
 
     TMP.mkdir(parents=True, exist_ok=True)
+    # Sweep leftovers first: a dir from a run that was killed mid-start cannot be reused, and
+    # leaking one per run is how the directory grows without anyone noticing.
     data = TMP / f"pg-{os.getpid()}"
+    prune_stale(keep=data)
     if data.exists():
         shutil.rmtree(data)
 
@@ -150,28 +192,54 @@ def main() -> int:
         logfile = data / "server.log"
         if not args.quiet:
             print(f"[..] pg_ctl start on port {port}")
-        start_flags = 0
-        if os.name == "nt":
-            start_flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-        subprocess.Popen(
-            [
-                pg_ctl,
-                "-D",
-                str(data),
-                "-l",
-                str(logfile),
-                "-o",
-                f"-p {port} -c listen_addresses=127.0.0.1 -c fsync=off -c full_page_writes=off",
-                "start",
-            ],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=start_flags,
-            start_new_session=os.name != "nt",
-        )
+        # `-W` is the whole trick: it tells `pg_ctl` to hand the server off and return instead of
+        # waiting. That is what the old detached Popen was imitating (`pg_ctl -w` blocks here because
+        # it inherits stdin), and the imitation was flaky -- roughly one start in four died before
+        # `postgres` ever wrote its pid file, with the reason sent to a `DEVNULL` stderr.
+        #
+        # Output goes to files, not to pipes. `capture_output=True` here deadlocks: `pg_ctl -W`
+        # exits, but the long-lived `postgres` it spawned inherits the pipe, so `run()` waits for
+        # an EOF that only arrives when the server shuts down. Files give `pg_ctl` a real handle and
+        # leave nothing to wait on.
         started = True
-        wait_for_port(port)
+        with open(data / "pg_ctl.out", "wb") as out, open(data / "pg_ctl.err", "wb") as err:
+            ctl = subprocess.run(
+                [
+                    pg_ctl,
+                    "-D",
+                    str(data),
+                    "-l",
+                    str(logfile),
+                    "-W",
+                    "-o",
+                    f"-p {port} -c listen_addresses=127.0.0.1 -c fsync=off -c full_page_writes=off",
+                    "start",
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=out,
+                stderr=err,
+                timeout=120,
+            )
+        if ctl.returncode != 0 and not args.quiet:
+            print(f"[!!] pg_ctl exited {ctl.returncode}", file=sys.stderr)
+        try:
+            wait_for_port(port)
+        except SystemExit as e:
+            # The cluster dir was being deleted on failure, which threw away the one file that
+            # explains why `postgres` never listened. Print it, then keep the dir.
+            detail = []
+            for name in ("pg_ctl.err", "pg_ctl.out", "server.log"):
+                path = data / name
+                if path.is_file():
+                    body = path.read_text(encoding="utf-8", errors="replace").strip()
+                    if body:
+                        detail.append(f"--- {name} ---\n{body[-2000:]}")
+            print(str(e), file=sys.stderr)
+            if detail:
+                print("\n".join(detail), file=sys.stderr)
+            print(f"cluster kept at {data} for diagnosis", file=sys.stderr)
+            args.keep = True
+            return 1
 
         run([createdb, "-h", "127.0.0.1", "-p", str(port), "-U", "postgres", "avenor_test"])
 
@@ -206,15 +274,19 @@ def main() -> int:
             print(f"stop with: {pg_ctl} -D {data} -m immediate stop")
         elif started:
             stop_cluster(pg_ctl, data)
-
-    if not args.keep and data.exists():
-        # pg_ctl stop can return before Windows releases the files; retry briefly.
-        for _ in range(20):
-            try:
-                shutil.rmtree(data)
-                break
-            except OSError:
-                time.sleep(0.25)
+            # This lives in `finally` on purpose. It used to sit after the try/finally, where it
+            # was unreachable: `return 0` exits the function past it, so every green run leaked
+            # its cluster dir. `pg_ctl stop` can also return before Windows releases the files,
+            # hence the retry instead of trusting one attempt.
+            for _ in range(20):
+                try:
+                    shutil.rmtree(data)
+                    break
+                except OSError:
+                    time.sleep(0.25)
+            else:
+                if not args.quiet:
+                    print(f"[!!] could not remove {data}; `prune_stale` will retry next run", file=sys.stderr)
 
 
 if __name__ == "__main__":

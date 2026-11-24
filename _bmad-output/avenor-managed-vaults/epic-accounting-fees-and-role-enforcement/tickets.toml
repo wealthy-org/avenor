@@ -1,4 +1,9 @@
 # tickets.toml — Epic 3: Accounting, Fee Engine, Role Enforcement & Invariants
+# Status lives in the leaf/plan frontmatter (`status:`), never here. This file declares the
+# graph — id, title, description, verify, covers, after, hitl, risk — and nothing else.
+# `status`/`completed` used to sit here and were read by no tool, so the file looked like a
+# status source while `tickets.py` answered from the frontmatter instead. Dates below are kept
+# as comments so the record is not lost.
 
 [[entry]]
 id = 1
@@ -10,7 +15,7 @@ covers = ["S2"]
 after = []
 hitl = false
 risk = "medium"
-status = "done"
+# status = "done"  # inert: tracked in frontmatter
 note = """
 Landing: `script/Deploy.s.sol` (_deployAccountant + addVault + set_accountant, proposal 10
 target), `src/interfaces/IAccountant.sol`, `test/unit/AccountantFees.t.sol` (8 test),

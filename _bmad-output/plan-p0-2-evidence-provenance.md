@@ -53,7 +53,7 @@ context: []
 ## Verification
 
 **Commands:**
-- `python scripts/verify-all.py` — expected: `ALL CHECKS PASSED`
+- `python scripts/verify-all.py` — expected: `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN` (fork + bytecode are opt-in; the summary must name them, not claim green)
 
 **Manual checks:**
 - The banner names the fork, the anvil clock, and the check command, in the same wording in both files.

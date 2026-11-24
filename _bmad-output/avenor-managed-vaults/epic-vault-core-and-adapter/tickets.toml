@@ -1,4 +1,9 @@
 # tickets.toml — Epic 2: Vault Core Deployment, Morpho Adapter & Fork Parity
+# Status lives in the leaf/plan frontmatter (`status:`), never here. This file declares the
+# graph — id, title, description, verify, covers, after, hitl, risk — and nothing else.
+# `status`/`completed` used to sit here and were read by no tool, so the file looked like a
+# status source while `tickets.py` answered from the frontmatter instead. Dates below are kept
+# as comments so the record is not lost.
 
 [[entry]]
 id = 1
@@ -10,8 +15,8 @@ covers = ["S1"]
 after = []
 hitl = false
 risk = "low"
-status = "done"
-completed = "2026-11-19"
+# status = "done"  # inert: tracked in frontmatter
+# completed = "2026-11-19"  # inert: tracked in frontmatter
 
 [[entry]]
 id = 2
@@ -23,8 +28,8 @@ covers = ["S1"]
 after = [1]
 hitl = false
 risk = "high"
-status = "done"
-completed = "2026-11-19"
+# status = "done"  # inert: tracked in frontmatter
+# completed = "2026-11-19"  # inert: tracked in frontmatter
 
 [[entry]]
 id = 3
@@ -36,9 +41,9 @@ covers = ["S1"]
 after = [1]
 hitl = false
 risk = "medium"
-status = "done"
+# status = "done"  # inert: tracked in frontmatter
 started = "2026-11-19"
-completed = "2026-11-19"
+# completed = "2026-11-19"  # inert: tracked in frontmatter
 note = "Dua run `python scripts/fork-test.py` berurutan 6/6 PASS (71,76s dan 94,45s) melawan state pin 118337511 via archive keyless. Tiga bug invocation ditemukan dan didokumentasikan, bukan di-workaround: (1) default hardfork `london` -> bytecode venue PUSH0 halt `EvmError: NotActivated`, perlu `--hardfork cancun` (JANGAN ubah evm_version di foundry.toml, itu merusak bukti bytecode); (2) chain 4663 Arbitrum Orbit, `block.number` = tinggi L1 (26450152), tinggi L2 = ArbSys(0x64).arbBlockNumber() = 118337511 -> pin diverifikasi lewat `arbBlockNumber()`; (3) forge 1.9 butuh `eth_getAccountInfo` dan mengirim parameter EIP-1898 berbentuk object yang ditolak drpc/solidrpc -> `--fork-state-by-number` + anvil lokal `--fork-url http://127.0.0.1:<port>`. Probe venue menemukan bug adapter nyata (`venue.maxWithdraw` = 0 walau kas idle 27M) yang sudah diperbaiki di `MorphoVaultStrategy._venueLiquidity()` + diuji unit dan fork. Endpoint: rpc.solidrpc.io/public/evm/4663 (utama), robinhood.api.onfinality.io/public (cadangan); drpc sudah prune pin ini."
 
 [[entry]]
@@ -51,9 +56,9 @@ covers = ["S1"]
 after = [3]
 hitl = false
 risk = "high"
-status = "done"
+# status = "done"  # inert: tracked in frontmatter
 started = "2026-11-19"
-completed = "2026-11-19"
+# completed = "2026-11-19"  # inert: tracked in frontmatter
 
 [[entry]]
 id = 5
@@ -65,9 +70,9 @@ covers = ["S1"]
 after = [2, 4]
 hitl = false
 risk = "high"
-status = "done"
+# status = "done"  # inert: tracked in frontmatter
 started = "2026-11-20"
-completed = "2026-11-20"
+# completed = "2026-11-20"  # inert: tracked in frontmatter
 note = """
 Tidak ada test baru yang perlu ditulis: `test/fork/VaultE2E.t.sol` sudah memuat keempat skenario
 (352 baris) dan sebelumnya belum pernah dijalankan sampai hijau pada pin. Yang dikerjakan ticket ini

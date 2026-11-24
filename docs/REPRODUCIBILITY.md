@@ -177,8 +177,9 @@ node --test --test-concurrency=1 services/keeper/test/keeper.test.ts services/ke
 cd apps/web && npm ci        # sekali per checkout; butuh `@avenor/sdk` lewat file:../../packages/sdk
 node node_modules/typescript/bin/tsc --noEmit
 node --test --test-concurrency=1 test/format.test.ts test/vaults.test.ts test/components.test.ts \
-  test/vaultView.test.ts test/api.test.ts test/vaultLoader.test.ts test/deposit.test.ts test/withdraw.test.ts test/evidence.test.ts
-npx next build               # tidak masuk gate (lambat); wajib hijau sebelum klaim app bisa dibangun
+  test/vaultView.test.ts test/api.test.ts test/vaultLoader.test.ts test/deposit.test.ts test/withdraw.test.ts \
+  test/evidence.test.ts test/portfolioCsv.test.ts
+node node_modules/next/dist/bin/next build   # ~40s; gate: --with-web-build
 ```
 
 Prasyarat langkah 4–7: Node ≥ 22.6 (diukur pada `v24.19.0`) dan binary Postgres (`initdb`, `pg_ctl`;
@@ -188,12 +189,30 @@ di `.tmp/pg-<pid>` pada port loopback acak dan menghapusnya; `--keep` mencetak
 `127.0.0.1` dengan port acak berperan sebagai chain dan sebagai receiver alert. Suite ini **gagal keras** bila Postgres tidak ada — bukan
 di-skip — karena gate data plane yang diam-diam hijau lebih buruk daripada gate merah.
 
+Dua bug di harness itu sendiri baru ketahuan pada `2026-12-01`; keduanya membuat gate berbohong dengan
+cara berbeda, dan keduanya sudah diperbaiki:
+
+1. **Cluster bocor satu per run.** Blok pembersihan duduk *setelah* `try/finally`, sehingga `return 0`
+   di dalam `try` keluar dari fungsi sebelum blok itu tercapai. Akibatnya setiap run hijau
+   meninggalkan `.tmp/pg-<pid>` (84 direktori menumpuk di mesin ini). Sekarang pembersihan ada di
+   dalam `finally`, ditambah `prune_stale()` yang menyapu direktori lama yang `postmaster.pid`-nya
+   sudah mati; direktori dari cluster hidup — termasuk milik `--keep` — tidak pernah disentuh.
+2. **`pg_ctl` gagal start saat stdout-nya pipe.** Persis begitulah `verify-all.py` menjalankannya
+   (`capture_output=True`). `pg_ctl` dijalankan detached dengan `stdout/stderr = DEVNULL`; dengan
+   handle pipe, `postgres` tidak pernah naik, pesan aslinya masuk ke `stderr` yang sudah dibuang, dan
+   yang terlihat hanya `Postgres did not start listening ... within 60s`. Gejalanya menipu: skrip
+   yang sama lulus bila dijalankan dari shell dengan output ke file. Sekarang `pg_ctl` menulis ke
+   `.tmp/pg-<pid>/pg_ctl.out` dan `pg_ctl.err`, dan keduanya terhapus bersama cluster.
+
 Langkah 7 memakai `apps/web/node_modules` (dipasang `npm ci`, di-ignore git). Gate
-`scripts/verify-all.py` menjalankan `tsc --noEmit` + 90 test web (sepuluh berkas); `next build` sengaja di
-luar gate karena menambah ~40 s dan gate ini sudah ~4 menit, tetapi hasil build dicatat saat
-perubahan app: tiga rute statis (`/`, `/transparency`, `/_not-found`) dan empat rute dinamis
-(`/portfolio`, `/vaults/[address]`, `/vaults/[address]/deposit`, `/vaults/[address]/withdraw`,
-semuanya `force-dynamic`), First Load JS 102–219 kB pada rute penarikan (viem di klien).
+`scripts/verify-all.py` menjalankan `tsc --noEmit` + 90 test web (sepuluh berkas). `next build` adalah
+langkah 12 dan **opt-in** lewat `--with-web-build` (atau `AVENOR_WITH_WEB_BUILD=1`) karena menambah
+~40 s; bila tidak dijalankan, ringkasan gate menyebutkannya sebagai gate yang tidak jalan, bukan
+menghitungnya sebagai lulus. Hasil build pada `2026-12-01`: tiga rute statis (`/`, `/transparency`,
+`/_not-found`) dan empat rute dinamis (`/portfolio`, `/vaults/[address]`, `/vaults/[address]/deposit`,
+`/vaults/[address]/withdraw`, semuanya `force-dynamic`), First Load JS 102–219 kB pada rute penarikan
+(viem di klien). `tsc` tidak menggantikannya: rute yang rusak atau pelanggaran batas client/server
+lolos typecheck dan hanya gagal di sini.
 
 `scripts/verify-bytecode.py` membaca `packages/core/artifacts/*.json`, meng-compile ulang dari pin yang tercatat, dan membandingkan hash. Bila pin berubah, script gagal — bukan diam-diam menghasilkan hash baru.
 

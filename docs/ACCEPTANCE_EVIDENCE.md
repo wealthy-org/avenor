@@ -134,7 +134,45 @@ Semua hash di bagian ini dieksekusi di fork lokal anvil dan **tidak ada** di cha
 
 ## 4. Bukti Verifikasi Suite Penuh (verify-all.py)
 
-Perintah verifikasi tunggal `python scripts/verify-all.py --no-bytecode` mencatat hasil hijau di commit `083c9f9`:
+**Run penuh, `2026-12-01`:** `python scripts/verify-all.py --with-fork --with-web-build` (tanpa `--no-bytecode`) selesai dalam `9m32s` dengan exit code 0 dan baris terakhir `ALL CHECKS PASSED`. Yang ikut dalam run itu: 101 unit test (11 suite), fork test pin `118337511` **11 test** (`VenueProbe` 7 + `VaultE2E` 4, dua suite `ok`), bukti bytecode `14/14`, dan `next build`.
+
+```text
+[ok] forge test (unit): Ran 11 test suites in 129.18s (130.82s CPU time): 101 tests passed, 0 failed, 0 skipped (101 total tests)
+[ok] web build (next build): ƒ  (Dynamic)  server-rendered on demand
+[ok] fork test (pin 118337511): local fork   : state at pin reproduced via https://rpc.solidrpc.io/...(redacted)
+[ok] bytecode evidence (14 checks): 14/14 checks passed
+
+ALL CHECKS PASSED
+```
+
+Batas run ini, dinyatakan supaya tidak dibaca lebih jauh dari yang dibuktikan: fork adalah anvil lokal di atas state chain `4663` pada pin `118337511` — ia membuktikan bytecode, wiring, dan perilaku terhadap state venue asli, **bukan** deploy di `4663` (lihat §0). Endpoint arsip publik memang berfluktuasi: satu percobaan `scripts/fork-test.py` pada hari yang sama berakhir `BLOCKED: no endpoint could serve the pinned state`, dan percobaan berikutnya hijau 11/11. Karena itu `--require-fork` adalah bentuk yang dipakai sebelum deploy, dan kegagalan jaringan tidak boleh dibaca sebagai kegagalan kode.
+
+**Run parsial, `2026-12-01`:** `python scripts/verify-all.py --no-bytecode --with-web-build` (commit `6ae57da` + perbaikan gate yang menyertai commit ini). Log ini bukan gate penuh: `test/fork/*` dan bukti bytecode tidak jalan, dan ringkasan mencetak itu apa adanya.
+
+```text
+[ok] no secrets tracked: tidak ada rahasia ter-commit
+[ok] vendored dependencies: OK: 603 vendored files verified, impl 0x3110D1Eec90f0651C18e75AD37711A8777342504, API 3.1.1
+[ok] generated interfaces: OK: 2 generated interfaces up to date
+[ok] sdk abi matches artifact: sdk abi matches the artifact
+[ok] forge build: No files changed, compilation skipped
+[ok] forge fmt --check
+[ok] forge test (unit): Ran 11 test suites in 87.01s (87.77s CPU time): 101 tests passed, 0 failed, 0 skipped (101 total tests)
+[ok] sdk tests: ℹ duration_ms 2009.5
+[ok] indexer + data plane tests: [ok] indexer schema tests   (32 test)
+[ok] keeper tests: ℹ duration_ms 6804.3                     (22 test)
+[ok] web typecheck
+[ok] web tests: ℹ duration_ms 13106.1                       (90 test)
+[ok] web build (next build): ƒ  (Dynamic)  server-rendered on demand
+[!!] fork test NOT RUN: this run says nothing about test/fork/*
+[!!] bytecode evidence NOT RUN: --no-bytecode was passed
+
+ALL CHECKED CHECKS PASSED — 2 GATE(S) NOT RUN:
+  - fork test (test/fork/*, pin 118337511)
+  - bytecode evidence (14 checks)
+This is a partial result, not a green gate.
+```
+
+Angka yang **tidak** berubah dan tidak boleh dipakai sebagai pengganti angka lama di atas: 101 unit test, 11 fork test, 32 indexer/data-plane, 22 keeper, 90 web, 10.000 run invariant. Blok log lama di bawah disimpan sebagai riwayat (angka di dalamnya sudah basi: 86 web test, dan ringkasan `ALL CHECKS PASSED` untuk run `--no-bytecode`):
 
 ```text
 [ok] no secrets tracked: tidak ada rahasia ter-commit
@@ -152,11 +190,13 @@ Perintah verifikasi tunggal `python scripts/verify-all.py --no-bytecode` mencata
 ALL CHECKS PASSED
 ```
 
+> **Koreksi `2026-12-01`:** baris `ALL CHECKS PASSED` di blok di atas adalah bug gate, bukan hasil: `--no-bytecode` melewati bukti bytecode dan tidak menjalankan `test/fork/*`, tetapi ringkasannya tidak membedakan "lulus" dari "tidak jalan". `scripts/verify-all.py` sekarang mencetak `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN` untuk run parsial dan mengembalikan exit code 1 bila `--require-fork` diminta. Angka `86` juga basi; suite web sekarang 90 test di sepuluh berkas.
+
 ---
 
-## 5. Bukti Rekonsiliasi On-Chain (Mathematical Integrity)
+## 5. Bukti Rekonsiliasi (Mathematical Integrity)
 
-Pembacaan langsung via RPC (`eth_call`) pada blok `118337653`:
+Pembacaan `eth_call` di **fork anvil** pada tinggi `118337653` (kanonik chain `4663`: hash `0xf64c2e4bf0e472eb65dddd3170dd4bb77a92fc55fc92bacf5b59cc929ef560b9`, timestamp `1795103668` = `2026-11-19T15:54:28Z`, dibaca `2026-12-01`). Tinggi blok itu nyata; vaultnya tidak — `eth_getCode` di chain `4663` untuk alamat vault mengembalikan `0x`, jadi angka di bawah hanya sah sebagai pembacaan state fork.
 - `totalAssets`: `2.000.000.000` base units (2.000,00 USDG)
 - `totalIdle`: `2.000.000.000` base units (2.000,00 USDG)
 - `totalDebt`: `0` base units (0,00 USDG)
@@ -167,6 +207,8 @@ Pembacaan langsung via RPC (`eth_call`) pada blok `118337653`:
 ---
 
 ## 6. Integrasi Antarmuka Web App & Portofolio
+
+Sama seperti §3: semua angka di bagian ini berasal dari fork anvil, bukan dari vault terdeploy di `4663`. `docs/WEB_APP.md` §8 mencatat batasnya — deposit/withdraw belum pernah dijalankan terhadap wallet nyata karena vault terdeploy belum ada, dan `apps/web/src/config/vaults.ts` masih fase `research`.
 
 - **Katalog Vault (`/`):** Menampilkan vault staging fase `research` dengan provenance blok.
 - **Detail Vault (`/vaults/[address]`):** Membaca live on-chain numbers, alokasi strategi, dan peran Timelock dari API staging.

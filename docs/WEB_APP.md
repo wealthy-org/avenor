@@ -176,8 +176,10 @@ dengan deposit.
    memakai node JSON-RPC skrip.
 2. Wallet hanya lewat EIP-1193 injected (`window.ethereum`); belum ada connector WalletConnect/Coinbase.
 3. `AVENOR_VAULTS` belum diset di deployment mana pun: app berjalan pada keadaan "belum ada vault".
-4. `next build` belum masuk `scripts/verify-all.py` (waktu). Gate menjalankan `tsc --noEmit` + 90
-   test. Build dicatat manual di `docs/REPRODUCIBILITY.md` §7.
+4. `next build` ada di gate sebagai langkah 12, tetapi **opt-in**: `python scripts/verify-all.py
+   --with-web-build` (atau `AVENOR_WITH_WEB_BUILD=1`). Tanpanya gate hanya menjalankan `tsc --noEmit`
+   + 90 test, dan ringkasan gate menyebut `web build (next build)` sebagai gate yang tidak jalan
+   (bukan sebagai lulus). `node_modules` yang hilang menggagalkan langkah itu, tidak melewatinya.
 5. Halaman detail belum dijalankan terhadap API + vault nyata: belum ada vault hasil
    `Deploy.s.sol` di chain 4663. Yang terbukti adalah parsing, perhitungan `bigint`, dan perilaku
    error terhadap body API yang dibentuk test.

@@ -53,7 +53,7 @@ context: []
 **Commands:**
 - `cd apps/web && npx tsc --noEmit -p tsconfig.json` — expected: no output
 - `cd apps/web && npm test` — expected: all pass, including the two new tests
-- `python scripts/verify-all.py` — expected: `ALL CHECKS PASSED`
+- `python scripts/verify-all.py` — expected: `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN` (fork + bytecode are opt-in; the summary must name them, not claim green)
 
 ## Implementation Notes
 

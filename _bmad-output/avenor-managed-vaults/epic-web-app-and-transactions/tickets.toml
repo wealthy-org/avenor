@@ -1,4 +1,9 @@
 # tickets.toml — Epic 5: Web App
+# Status lives in the leaf/plan frontmatter (`status:`), never here. This file declares the
+# graph — id, title, description, verify, covers, after, hitl, risk — and nothing else.
+# `status`/`completed` used to sit here and were read by no tool, so the file looked like a
+# status source while `tickets.py` answered from the frontmatter instead. Dates below are kept
+# as comments so the record is not lost.
 
 [[entry]]
 id = 1

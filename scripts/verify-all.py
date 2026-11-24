@@ -15,8 +15,9 @@ Runs, in order, stopping at the first failure:
   9. scripts/db-test.py              indexer schema, ingestion, reorg, reconciliation, API
  10. node --test services/keeper     keeper planning, simulation gate, nonce, monitoring, alerts
  11. tsc + node --test apps/web      web numeric primitives, components and config validation
- 12. scripts/verify-bytecode.py all  core bytecode evidence (slow; skip with --no-bytecode)
- 13. scripts/fork-test.py            fork tests against the pinned block (opt-in, see below)
+ 12. next build                    the app bundle actually builds (slow; opt-in, see below)
+ 13. scripts/verify-bytecode.py all  core bytecode evidence (slow; skip with --no-bytecode)
+ 14. scripts/fork-test.py            fork tests against the pinned block (opt-in, see below)
 
 Steps 8–11 need Node 22.6+ (step 11 also needs `apps/web/node_modules`, i.e. `npm install`); step 9 also needs a local Postgres (`initdb`/`pg_ctl`) because it
 runs against a real database in `.tmp/`, not a mock. It fails loudly when Postgres is missing
@@ -27,6 +28,12 @@ Fork tests are deliberately not in the default path: they need a live archive RP
 (which verifies the pinned state before spending ~90s on `forge`). Running them here without
 those flags produces a fake failure. `--with-fork` (or `AVENOR_WITH_FORK=1`) delegates to that
 script instead of reimplementing it.
+
+`next build` is the same shape of gate: ~40s on top of a ~4 minute run, so it is opt-in through
+`--with-web-build` (or `AVENOR_WITH_WEB_BUILD=1`) and named in the summary when it does not run.
+It is not decoration: `tsc --noEmit` type-checks the sources but never bundles them, so a broken
+route, a client/server boundary violation or an unreadable `dynamic` export passes step 11 and
+fails only here. Missing `apps/web/node_modules` fails loudly instead of skipping.
 
 **A run that did not cover `test/fork/*` does not print `ALL CHECKS PASSED`.** It prints
 `ALL CHECKED CHECKS PASSED` and lists what was not run, because a green summary over a partial
@@ -112,6 +119,11 @@ def main() -> int:
         action="store_true",
         help="run the fork tests and fail instead of passing when they could not run",
     )
+    ap.add_argument(
+        "--with-web-build",
+        action="store_true",
+        help="also run `next build` (needs apps/web/node_modules; ~40s)",
+    )
     ap.add_argument("-q", "--quiet", action="store_true")
     args = ap.parse_args()
     # Not run is not passed: every gate that is skipped is named in the final summary.
@@ -175,6 +187,27 @@ def main() -> int:
         WEB,
         args.quiet,
     )
+    web_build_requested = (
+        args.with_web_build or os.environ.get("AVENOR_WITH_WEB_BUILD", "") == "1"
+    )
+    if web_build_requested:
+        if not (WEB / "node_modules").is_dir():
+            # Not a skip: a build gate that quietly does nothing is the failure mode this flag exists
+            # to remove. `run()` prints the tail of the child's output on failure, so this fails alone.
+            print("[FAIL] web build failed")
+            print("apps/web/node_modules is missing: run `npm ci` in apps/web first")
+            return 1
+        # `npx` is a .cmd shim on Windows; call the Next binary through node directly.
+        run(
+            "web build (next build)",
+            ["node", "node_modules/next/dist/bin/next", "build"],
+            WEB,
+            args.quiet,
+        )
+    else:
+        print("[!!] web build NOT RUN: this run says nothing about `next build`")
+        print("     pass --with-web-build / set AVENOR_WITH_WEB_BUILD=1")
+        not_run.append("web build (`next build`, needs `npm ci` in apps/web)")
     # `--require-fork` implies the run: demanding the fork gate without asking for it would just fail.
     fork_requested = (
         args.with_fork or args.require_fork or os.environ.get("AVENOR_WITH_FORK", "") == "1"

@@ -162,8 +162,8 @@ python scripts/verify-all.py
 Hasil eksekusi:
 - **Foundry Unit Tests:** 101 tests passed (0 failed, 0 skipped).
 - **Invariant Tests:** 10.000 runs passed (0 violations).
-- **Web App Tests:** 86 tests passed (0 failed).
-- **Indexer & Data Plane:** 31 tests passed (0 failed).
+- **Web App Tests:** 90 tests passed (0 failed).
+- **Indexer & Data Plane:** 32 tests passed (0 failed).
 - **Keeper Tests:** 22 tests passed (0 failed).
 - **Bytecode Verification:** 14/14 checks passed (100% bit-for-bit cocok).
 

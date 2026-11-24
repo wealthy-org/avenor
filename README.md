@@ -61,9 +61,9 @@ deployments/         catatan deploy per mode
 
 Sudah selesai dan terverifikasi: toolchain (Foundry `1.9.0`, Python 3.11 + Vyper `0.3.10`/`0.3.7`, solc `0.8.18`), reproduksi bytecode v3.0.2 on-chain, build deterministik pin v3.1.1, dan kecocokan `TokenizedStrategy v3.1.1` dengan implementasi kanonik di chain `4663`. Rincian: `docs/REPRODUCIBILITY.md`.
 
-`packages/contracts` sudah berdiri: build hijau (`forge build`, `forge fmt --check`, 65 unit test), strategi `MorphoVaultStrategy` + `script/Deploy.s.sol` (termasuk `Accountant` fee/limit) + `DeployLocal.s.sol` rehearsal, interface `IVaultV3`/`IVaultFactory` **di-generate** dari artefak yang diverifikasi (bukan `cast interface`), dependensi vendored + dicek `scripts/check-vendor.py` (603 file, byte-for-byte sama dengan commit pin), dan `packages/config/4663.json` sebagai satu sumber alamat + provenance blok.
+`packages/contracts` sudah berdiri: build hijau (`forge build`, `forge fmt --check`, 101 unit test), strategi `MorphoVaultStrategy` + `script/Deploy.s.sol` (termasuk `Accountant` fee/limit) + `DeployLocal.s.sol` rehearsal, interface `IVaultV3`/`IVaultFactory` **di-generate** dari artefak yang diverifikasi (bukan `cast interface`), dependensi vendored + dicek `scripts/check-vendor.py` (603 file, byte-for-byte sama dengan commit pin), dan `packages/config/4663.json` sebagai satu sumber alamat + provenance blok.
 
-Fork test chain `4663` (pin `118337511`) **hijau**: 6 test melawan state venue asli, dua run berurutan. Perintahnya satu, dan tiga flag wajib (`--fork-state-by-number`, `--hardfork cancun`, anvil lokal) sudah dibungkus di script:
+Fork test chain `4663` (pin `118337511`) **hijau**: 11 test melawan state venue asli (`VenueProbe` 7 probe + `VaultE2E` 4 test), dua run berurutan. Perintahnya satu, dan tiga flag wajib (`--fork-state-by-number`, `--hardfork cancun`, anvil lokal) sudah dibungkus di script:
 
 ```bash
 python scripts/fork-status.py        # apakah pin masih dilayani RPC mana pun
@@ -76,8 +76,11 @@ Satu perintah untuk memeriksa ulang seluruh klaim yang bisa diperiksa lokal:
 
 ```bash
 python scripts/verify-all.py          # dependensi vendored, interface, build, fmt, test, bytecode
+python scripts/verify-all.py --with-web-build   # + `next build` app (~40s, opt-in)
 ```
 
 `verify-all.py` tidak menjalankan fork test (butuh jaringan); jalankan `scripts/fork-test.py` terpisah.
+Gate yang tidak jalan (fork, bytecode, web build) selalu disebut namanya di ringkasan, dan run parsial
+mencetak `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN`, bukan `ALL CHECKS PASSED`.
 
 Rencana kerja: lihat `_bmad-output/avenor-managed-vaults/initiative-avenor-managed-vaults.md` dan `tickets.toml`.
