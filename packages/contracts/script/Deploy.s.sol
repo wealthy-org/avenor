@@ -534,7 +534,7 @@ contract Deploy is Script {
     ///      `setManagement`; the prod proposal carries the matching `acceptManagement()`.
     function _handoffStrategy(
         Deployment memory d,
-        Config memory cfg
+        Config memory /* cfg */
     ) internal {
         if (TS_IMPL.code.length == 0 || d.management == address(0)) return;
         IStrategyDeploy strategy = IStrategyDeploy(d.strategy);

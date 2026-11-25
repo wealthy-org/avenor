@@ -128,4 +128,27 @@ contract ChainConfigTest is Test {
             "deployed"
         );
     }
+
+    function test_testnetStageDeploymentIsRecorded() external view {
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.vault"),
+            0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.strategy"),
+            0x8f151132f80277b7D42Ad9615172E6De1B26Cf93
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.accountant"),
+            0xA499C9F98cE3a66B79dD9CaA99AA894DDE298e32
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.timelock"),
+            0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.emergencyTimelock"),
+            0xde3f5071559d929d18092EEf7f3B106e39BCD4b6
+        );
+    }
 }

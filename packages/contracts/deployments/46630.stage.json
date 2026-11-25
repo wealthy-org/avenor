@@ -1,0 +1,74 @@
+{
+  "deployment": {
+    "accountant": "0xA499C9F98cE3a66B79dD9CaA99AA894DDE298e32",
+    "blockNumber": 12207721,
+    "chainId": 46630,
+    "deployer": "0x56d845a35EDe1436B8053f705b4b189c412A8648",
+    "depositLimit": 0,
+    "emergencyTimelock": "0xde3f5071559d929d18092EEf7f3B106e39BCD4b6",
+    "factory": "0x351039141Bd6CB9f4a613a24cD26a537a86ED538",
+    "factoryRuntimeHash": "0xdfc2a10112cf82c15ada486a586ff1a5bebd312e9dbe86ef8c13d92683bddec2",
+    "gitRev": "",
+    "guardian": "0x83227a7b21Ead1e0581D03144B85Cb63Fd585af1",
+    "keeper": "0x9c4D1f60c74Af03ca92D634A54d55A998CE25d75",
+    "maxDebt": 0,
+    "minimumTotalIdle": 0,
+    "mode": "stage",
+    "placeholdersUsed": true,
+    "profitMaxUnlockTime": 604800,
+    "seedAssets": 0,
+    "strategy": "0x8f151132f80277b7D42Ad9615172E6De1B26Cf93",
+    "strategyManagement": "0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA",
+    "timelock": "0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc",
+    "timestamp": 1795587133,
+    "tokenizedStrategyAddress": "0x3110D1Eec90f0651C18e75AD37711A8777342504",
+    "treasury": "0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58",
+    "vault": "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+    "vaultOriginal": "0x8e3C196bcD62772c931fe62aAA76FDb7edAD8258",
+    "vaultRuntimeHash": "0x6909c58e42814ae46cadd909f29f19163751b77ff4a2ccf62c5a87e933e02be6"
+  },
+  "roleMatrix": {
+    "deployer": 0,
+    "emergencyTimelock": 4,
+    "guardian": 8192,
+    "keeper": 96,
+    "strategyActivation": 1795587133,
+    "strategyCurrentDebt": 0,
+    "strategyMaxDebt": 0,
+    "timelock": 3995,
+    "treasury": 4096
+  },
+  "feeConfig": {
+    "accountantRedeemMaxLoss": 0,
+    "custom": false,
+    "feeManager": "0x56d845a35EDe1436B8053f705b4b189c412A8648",
+    "feeRecipient": "0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58",
+    "managementFee": 0,
+    "maxFee": 0,
+    "maxGain": 500,
+    "maxLoss": 200,
+    "performanceFee": 1000,
+    "refundRatio": 0,
+    "strategyKeeper": "0x9c4D1f60c74Af03ca92D634A54d55A998CE25d75",
+    "strategyPerformanceFee": 0,
+    "strategyPerformanceFeeRecipient": "0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58",
+    "strategyProfitMaxUnlockTime": 0,
+    "vaultAccountant": "0xA499C9F98cE3a66B79dD9CaA99AA894DDE298e32",
+    "vaultAddedToAccountant": true
+  },
+  "pendingActions": {
+    "items": [
+      "timelock must call accept_role_manager() (48h delayed op)",
+      "strategy.acceptManagement() by the new management",
+      "fee manager: Accountant.redeemUnderlying + distribute(USDG) to feeRecipient",
+      "set KEEPER_ROLES/ALLOWLIST in keeper app (epic 6)",
+      "seed dead shares once treasury is funded"
+    ]
+  },
+  "proposalTargets": {
+    "items": []
+  },
+  "proposalCalldatas": {
+    "items": []
+  }
+}
