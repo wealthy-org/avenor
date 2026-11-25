@@ -110,3 +110,57 @@ Verified on MorphoVaultStrategy `0x8f151132f80277b7D42Ad9615172E6De1B26Cf93`:
 - Average Gas Price: **0.020000001 gwei**
 - Total Gas Cost Paid: **0.0004128 ETH** (~$1.40 equivalent)
 - Remaining Deployer Balance: **0.0095468 ETH** (plenty for subsequent operations)
+
+
+---
+
+## 6. Multisig & Timelock Governance Drill
+
+Per Manager Report `AVENOR_TESTNET_REPORT.md` §11 and operational next steps, the governance handoff flow consists of two specific actions:
+
+### 6.1. Strategy Ownership Acceptance
+- **Target:** MorphoVaultStrategy `0x8f151132f80277b7D42Ad9615172E6De1B26Cf93`
+- **Caller:** Governance Safe (2/3) `0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA`
+- **Method:** `acceptManagement()`
+- **Calldata:** `0xc8c2fe6c`
+- **Safe Multisig Execution:**
+  Governance Safe executes `execTransaction` with `to = 0x8f15...`, `value = 0`, `data = 0xc8c2fe6c`.
+
+### 6.2. 48-Hour Timelock Role Manager Acceptance
+- **Target:** Vault `0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0`
+- **Executing Timelock:** TimelockController (48h) `0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc`
+- **Proposer & Executor:** Governance Safe (2/3) `0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA`
+- **Method:** `accept_role_manager()`
+- **Calldata:** `0xf776bf1f`
+- **Operation Hash (Salt = 1):** `0x9068381b1398cc7c6ca1753431c50f21db62ca44305f6d4d1fa3b450cd17d05f`
+- **Flow:**
+  1. `timelock.schedule(vault, 0, 0xf776bf1f, bytes32(0), salt=1, delay=172800)`
+  2. Wait 48 hours (`172,800` seconds).
+  3. `timelock.execute(vault, 0, 0xf776bf1f, bytes32(0), salt=1)`
+  4. Vault `role_manager()` transitions to TimelockController.
+
+Automated rehearsal script:
+```bash
+forge script packages/contracts/script/ExecuteTestnet46630Governance.s.sol:ExecuteTestnet46630Governance \
+  --root packages/contracts \
+  --rpc-url https://rpc.testnet.chain.robinhood.com -vvv
+```
+
+---
+
+## 7. Frontend Staging Connection Guide
+
+To connect the deployed web frontend to this live testnet stack, update the environment variables in Cloudflare Pages / Vercel (or `.env.local` for local development):
+
+```env
+# 1. Official Robinhood Chain Testnet RPC
+NEXT_PUBLIC_RPC_URL=https://rpc.testnet.chain.robinhood.com
+
+# 2. Vault Catalog Configuration (JSON array)
+AVENOR_VAULTS=[{"address":"0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0","label":"Avenor USDG Managed Vault (Testnet)","phase":"research","mandate":"Testnet Stage Rehearsal"}]
+```
+
+When connected:
+- The dashboard reads on-chain figures directly from `0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0`.
+- The vault will clearly display `phase: "research"` with deposits blocked (`deposit_limit == 0`).
+- The block provenance tag will reflect the current live testnet block from `https://rpc.testnet.chain.robinhood.com`.
