@@ -5,8 +5,21 @@
 // user has to read from the console.
 
 import type { Address } from "viem";
+import { chainLabel } from "../config/networks.ts";
 
-export const AVENOR_CHAIN_ID = 4663;
+/**
+ * A viem chain object for the id a page read from the node. `rpcUrls` is a placeholder: every transport
+ * in this app is either an explicit `http(url)` or the injected wallet, and a fabricated endpoint here
+ * would be a URL nobody verified.
+ */
+export function chainConfig(chainId: number) {
+  return {
+    id: chainId,
+    name: chainLabel(chainId),
+    nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: { default: { http: ["https://placeholder.invalid"] } },
+  } as const;
+}
 
 /** The subset of EIP-1193 this app uses. `on`/`removeListener` stay optional: not every wallet has them. */
 export interface Eip1193Provider {
@@ -76,7 +89,7 @@ export function findInjectedProvider(bag: unknown): Eip1193Provider | null {
  */
 export async function connectWallet(provider: Eip1193Provider | null): Promise<ConnectedWallet> {
   if (provider === null) {
-    throw new WalletError("no_provider", "No wallet in this browser. Install a wallet that supports Robinhood Chain (4663).");
+    throw new WalletError("no_provider", "No wallet in this browser. Install a wallet that supports Robinhood Chain.");
   }
   try {
     const accounts = await provider.request({ method: "eth_requestAccounts" });
@@ -108,18 +121,20 @@ export interface SwitchResult {
 }
 
 /**
- * Try `wallet_switchEthereumChain`. We do not call `wallet_addEthereumChain` with numbers we did
- * not verify, and we do not pretend a failed switch succeeded.
+ * Try `wallet_switchEthereumChain` to the chain the caller read from the node. The id is a parameter,
+ * not a constant: a deployment on chain 46630 must not ask the wallet for 4663. We do not call
+ * `wallet_addEthereumChain` with numbers we did not verify, and we do not pretend a failed switch
+ * succeeded.
  */
-export async function switchToAvenorChain(provider: Eip1193Provider): Promise<SwitchResult> {
+export async function switchToChain(provider: Eip1193Provider, chainId: number): Promise<SwitchResult> {
   try {
     await provider.request({
       method: "wallet_switchEthereumChain",
-      params: [{ chainId: `0x${AVENOR_CHAIN_ID.toString(16)}` }],
+      params: [{ chainId: `0x${chainId.toString(16)}` }],
     });
-    const chainId = await readChainId(provider);
-    if (chainId !== AVENOR_CHAIN_ID) {
-      return { switched: false, reason: `The wallet stayed on chain ${chainId}, not ${AVENOR_CHAIN_ID}.` };
+    const now = await readChainId(provider);
+    if (now !== chainId) {
+      return { switched: false, reason: `The wallet stayed on chain ${now}, not ${chainId}.` };
     }
     return { switched: true, reason: null };
   } catch (error) {
@@ -128,4 +143,9 @@ export async function switchToAvenorChain(provider: Eip1193Provider): Promise<Sw
     const message = error instanceof Error ? error.message : String(error);
     return { switched: false, reason: `The wallet refused or could not switch chains: ${message}` };
   }
+}
+
+/** Backward-compatible test name; production callers use explicit node chain IDs. */
+export function switchToAvenorChain(provider: Eip1193Provider): Promise<SwitchResult> {
+  return switchToChain(provider, 4663);
 }

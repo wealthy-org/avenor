@@ -1,27 +1,26 @@
-// Portfolio surface. Server side resolves the configured vault list and API base; the wallet read
-// happens in the browser because positions are per account and the API must never guess an account.
+// Portfolio surface. Server side resolves the configured vault list, the chain this deployment reads
+// and the API base; the wallet read happens in the browser because positions are per account and the
+// API must never guess an account.
+//
+// There is no fallback vault here. An empty `AVENOR_VAULTS` used to resolve to the chain-4663 capture
+// address, so a deployment on another chain showed "unreadable" for a vault it had no business reading.
+// An empty list is reported as an empty list.
 
 import Link from "next/link";
 import { PortfolioPanel } from "@/components/PortfolioPanel";
 import { ErrorState } from "@/components/primitives";
 import { parseVaultList, type VaultConfig } from "@/config/vaults";
-import { STAGING_VAULT } from "@/config/staging";
 import { ApiError } from "@/lib/api";
-import { STAGING_SHARE_DECIMALS } from "@/lib/serverData";
+import { readChainFacts } from "@/lib/chainFacts";
 
 export const dynamic = "force-dynamic";
-
-const MANDATE_FALLBACK =
-  "Staging fork of Robinhood Chain state. Every number is read at one named block and printed " +
-            "with that block and its hash; this deployment has no code on mainnet. " +
-            "Not open for public deposits.";
 
 function describe(error: unknown): { code: string; message: string } {
   if (error instanceof ApiError) return { code: error.code, message: error.message };
   return { code: "unknown", message: error instanceof Error ? error.message : String(error) };
 }
 
-export default function PortfolioPage() {
+export default async function PortfolioPage() {
   let vaults: VaultConfig[] = [];
   try {
     vaults = parseVaultList(process.env.AVENOR_VAULTS);
@@ -34,16 +33,29 @@ export default function PortfolioPage() {
     );
   }
 
-  // Fallback for the staging vault when the environment did not provide the list.
   if (vaults.length === 0) {
-    vaults = [
-      {
-        address: STAGING_VAULT,
-        label: "Avenor USDG Managed Vault (Staging)",
-        phase: "research",
-        mandate: MANDATE_FALLBACK,
-      },
-    ];
+    return (
+      <div className="shell stack">
+        <ErrorState
+          code="no_vault_configured"
+          message="No vault is listed in AVENOR_VAULTS, so this portfolio has nothing to read. Nothing is shown in its place."
+        />
+      </div>
+    );
+  }
+
+  const facts = await readChainFacts(process.env.NEXT_PUBLIC_RPC_URL);
+  if (facts.chainId === null) {
+    return (
+      <div className="shell stack">
+        <ErrorState
+          code="chain_id_unreadable"
+          message={`The chain id could not be read, so the wallet cannot be asked for the right network: ${
+            facts.error ?? "the node did not answer eth_chainId"
+          }`}
+        />
+      </div>
+    );
   }
 
   // The browser calls this app's own `/v1` routes, which read the node per request. An absolute
@@ -67,13 +79,16 @@ export default function PortfolioPage() {
           This page keeps apart two things that are usually mixed: the value of a position according to the vault, and
           the amount that can actually be withdrawn right now. Both are read at the same block, and that block is shown.
         </p>
+        <p className="mt-2 font-mono text-xs text-[#8b929e]">
+          {facts.label} · chain ID {facts.chainId}
+        </p>
       </header>
 
       <section className="card">
         <PortfolioPanel
           vaults={vaults.map((entry) => ({ address: entry.address, label: entry.label }))}
           base={base}
-          shareDecimals={STAGING_SHARE_DECIMALS}
+          chainId={facts.chainId}
         />
       </section>
 

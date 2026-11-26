@@ -1,21 +1,27 @@
-import { STAGING_VAULT } from "@/config/staging";
 import { parseVaultList } from "@/config/vaults";
 import { money, percentBps, shortAddress } from "@/lib/format";
-import { getDirectVaultDetail } from "@/lib/serverData";
+import { getDirectVaultDetail, getVaultEvidence } from "@/lib/serverData";
+import { chainSummary, readChainFacts } from "@/lib/chainFacts";
+import { buildContractRows, type ContractRow } from "@/lib/contractRows";
 import type { VaultDetail } from "@/lib/vaultLoader";
 import type { Live } from "@/lib/vaultView";
 import { PrismHero, type HeroMetric } from "@/components/PrismHero";
 import { StrategyMarquee, type MarqueeLive } from "@/components/StrategyMarquee";
-import { VaultMandates, type MandateLive } from "@/components/VaultMandates";
+import { VaultMandates, type MandateLive, type MandateIdentity } from "@/components/VaultMandates";
 import { HowItWorks } from "@/components/HowItWorks";
 import { SecuritySection } from "@/components/SecuritySection";
 import { ContractsSection } from "@/components/ContractsSection";
 import { CtaBanner } from "@/components/CtaBanner";
 import Link from "next/link";
 
+/**
+ * Fallback mandate text, used only when `AVENOR_VAULTS` did not supply one. It names no chain and no
+ * deployment: the chain is read from the node, so a sentence here that said "staging fork" would be
+ * describing a network this render never touched.
+ */
 const MANDATE_FALLBACK =
-  "Staging fork of Robinhood Chain state. Every number on this page is read from the node at one named " +
-  "block and printed with that block; this deployment has no code on mainnet. Not open for public deposits.";
+  "Every number on this page is read from the node at one named block and printed with that block " +
+  "and its hash. Not open for public deposits.";
 
 /**
  * Hero tiles built from the same snapshot read the vault page uses. A figure that cannot be derived
@@ -66,12 +72,23 @@ function marqueeLive(live: Live): MarqueeLive {
   };
 }
 
-function mandateLive(live: Live, detail: VaultDetail): MandateLive {
+function mandateLive(live: Live, detail: VaultDetail, chainLine: string): MandateLive {
   const strategy = detail.allocation?.strategies[0] ?? null;
   return {
     ...marqueeLive(live),
     currentDebt: dec(strategy?.currentDebt ?? null),
     maxDebt: dec(strategy?.maxDebt ?? null),
+    venueLine: chainLine,
+  };
+}
+
+function mandateIdentity(detail: VaultDetail): MandateIdentity {
+  const strategy = detail.allocation?.strategies[0] ?? null;
+  return {
+    vaultAddress: detail.vault.address,
+    asset: detail.vault.assetAddress,
+    strategy: strategy?.address ?? null,
+    roleManager: detail.roles?.roleManager ?? null,
   };
 }
 
@@ -143,20 +160,47 @@ export default async function Page() {
     );
   }
 
+  // The chain this render actually talked to. A failure is printed as a failure: no fallback to the
+  // chain the capture was recorded on, because that would name a network the read never touched.
+  const facts = await readChainFacts(process.env.NEXT_PUBLIC_RPC_URL);
+  const chainLine = chainSummary(facts);
+  const vaultAddress = detail.vault?.address ?? vaults[0].address;
+  const evidence = await getVaultEvidence(vaultAddress);
+  const contracts = buildContractRows({
+    vault: {
+      address: vaultAddress,
+      name: detail.vault?.name ?? vaults[0].label,
+      symbol: detail.vault?.symbol ?? "?",
+      assetAddress: detail.vault?.assetAddress ?? vaultAddress,
+      assetDecimals: detail.vault?.assetDecimals ?? 0,
+      shareDecimals: detail.vault?.shareDecimals ?? 0,
+      roleManager: detail.vault?.roleManager ?? null,
+      accountant: detail.vault?.accountant ?? null,
+      depositLimit: live.depositLimit,
+      recordedBlock: live.blockNumber,
+      source: live.source,
+    },
+    allocation: detail.allocation,
+    roles: detail.roles,
+    evidence,
+    blockNumber: live.blockNumber,
+  });
+
   return (
     <div className="w-full">
       {/* 1. Hero 3D Monolith Section with Interactive Tilt & 4 Floating Metric Cards */}
       <PrismHero
         blockNumber={live.blockNumber.toString()}
         rpcReachable={live.source === "onchain"}
+        chainLine={chainLine}
         metrics={heroMetricsFrom(live)}
       />
 
       {/* 2. Infinite Continuous Strategy Ticker */}
-      <StrategyMarquee live={marqueeLive(live)} />
+      <StrategyMarquee live={marqueeLive(live)} chainLine={chainLine} />
 
       {/* 3. Interactive Mandate Explorer ("One vault, one strategy.") */}
-      <VaultMandates live={mandateLive(live, detail)} />
+      <VaultMandates live={mandateLive(live, detail, chainLine)} identity={mandateIdentity(detail)} />
 
       {/* 4. On-Chain Configured Vaults Catalog */}
       <section
@@ -174,8 +218,8 @@ export default async function Page() {
               </h3>
             </div>
             <span className="font-mono text-xs text-[#a3abb8] flex flex-wrap items-center gap-x-1.5">
-              <span>{vaults.length} vault configured · Robinhood Chain,</span>
-              <span className="whitespace-nowrap">chain ID 4663</span>
+              <span>{vaults.length} vault configured ·</span>
+              <span className="whitespace-nowrap">{chainLine}</span>
             </span>
           </div>
 
@@ -291,8 +335,9 @@ export default async function Page() {
                 />
               </svg>
               <span>
-                All TVL and allocation figures are captured on a local rehearsal fork of Robinhood Chain at pin block {live.blockNumber.toString()}.
-                Vault exits strictly enforce an explicit zero loss budget (<code className="font-mono text-[#6db89b]">max_loss = 0</code>).
+                Every figure on this page is read from the node during this render at block {live.blockNumber.toString()}{" "}
+                ({live.source === "onchain" ? "answered by the node" : "answered from a committed capture"}).
+                Vault exits send an explicit loss budget chosen in the withdrawal form; the app never defaults one.
               </span>
             </div>
           </div>
@@ -306,7 +351,11 @@ export default async function Page() {
       <SecuritySection />
 
       {/* 7. Verified Smart Contracts */}
-      <ContractsSection />
+      <ContractsSection
+        rows={contracts}
+        chainLine={chainLine}
+        note={`Addresses named by the vault itself in this render: its own row, its allocation, its roles, and the code read at ${vaultAddress}. A row never describes a contract this page did not read.`}
+      />
 
       {/* 8. Call To Action Banner with Iridescent Sheen */}
       <CtaBanner />

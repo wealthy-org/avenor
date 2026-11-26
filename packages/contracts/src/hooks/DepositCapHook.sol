@@ -225,7 +225,6 @@ contract DepositCapHook is IDepositHook {
     ) external onlyGovernance {
         for (uint256 i; i < accounts.length; ++i) {
             address account = accounts[i];
-            // forge-lint: disable-next-line(require-revert-in-loop)
             if (account == address(0)) revert ZeroAddress("account");
             allowed[account] = isAllowed;
             emit SetAllowed(account, isAllowed);

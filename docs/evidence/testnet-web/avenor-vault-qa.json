@@ -1,0 +1,828 @@
+[
+  {
+    "command": [
+      "network",
+      "requests",
+      "--clear"
+    ],
+    "error": null,
+    "result": {
+      "cleared": true,
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      }
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "console",
+      "--clear"
+    ],
+    "error": null,
+    "result": {
+      "cleared": true,
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      }
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "errors",
+      "--clear"
+    ],
+    "error": null,
+    "result": {
+      "errors": [],
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      }
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "errors"
+    ],
+    "error": null,
+    "result": {
+      "errors": [],
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      }
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "open",
+      "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0"
+    ],
+    "error": null,
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      },
+      "targetId": "DBB1F2C53A72A1682F06B9DBA3D30947",
+      "title": "AVENOR — Institutional On-Chain Investment Strategies",
+      "url": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0"
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "wait",
+      "--load",
+      "domcontentloaded"
+    ],
+    "error": null,
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      },
+      "state": "domcontentloaded"
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "wait",
+      "150"
+    ],
+    "error": null,
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      },
+      "ms": 150,
+      "waited": "timeout"
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "wait",
+      "--fn",
+      "(() => {\n  const expected = \"USDG\".replace(/\\s+/g, \" \").trim();\n  if (!expected) return false;\n  const root = document.body || document.documentElement;\n  if (!root) return false;\n  const skipTags = new Set([\"SCRIPT\", \"STYLE\", \"NOSCRIPT\", \"SVG\"]);\n  const normalize = (value) => String(value ?? \"\").replace(/\\s+/g, \" \").trim();\n  const isVisibleElement = (element) => {\n    if (!(element instanceof HTMLElement)) return false;\n    if (skipTags.has(element.tagName)) return false;\n    const style = window.getComputedStyle(element);\n    if (style.display === \"none\" || style.visibility === \"hidden\" || Number(style.opacity) === 0) return false;\n    return element.getClientRects().length > 0;\n  };\n  const ancestorsAllowVisibility = (node) => {\n    for (let element = node.parentElement; element; element = element.parentElement) {\n      const style = window.getComputedStyle(element);\n      if (style.display === \"none\" || Number(style.opacity) === 0) return false;\n      if (element === root) break;\n    }\n    return true;\n  };\n  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);\n  let visitedText = 0;\n  for (let node = textWalker.nextNode(); node && visitedText < 6000; node = textWalker.nextNode(), visitedText += 1) {\n    const parent = node.parentElement;\n    if (!(parent instanceof HTMLElement) || skipTags.has(parent.tagName)) continue;\n    if (window.getComputedStyle(parent).visibility === \"hidden\" || !ancestorsAllowVisibility(node)) continue;\n    if (normalize(node.nodeValue).includes(expected)) return true;\n  }\n  const elementWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);\n  let visitedElements = 0;\n  for (let node = elementWalker.nextNode(); node && visitedElements < 3000; node = elementWalker.nextNode(), visitedElements += 1) {\n    const element = node;\n    if (!isVisibleElement(element) || !ancestorsAllowVisibility(element) || !(\"value\" in element)) continue;\n    if (normalize(element.value).includes(expected)) return true;\n  }\n  return false;\n})()",
+      "--timeout",
+      "5000"
+    ],
+    "error": null,
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      },
+      "result": true
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "wait",
+      "--fn",
+      "(() => {\n  const expected = \"Research Phase\".replace(/\\s+/g, \" \").trim();\n  if (!expected) return false;\n  const root = document.body || document.documentElement;\n  if (!root) return false;\n  const skipTags = new Set([\"SCRIPT\", \"STYLE\", \"NOSCRIPT\", \"SVG\"]);\n  const normalize = (value) => String(value ?? \"\").replace(/\\s+/g, \" \").trim();\n  const isVisibleElement = (element) => {\n    if (!(element instanceof HTMLElement)) return false;\n    if (skipTags.has(element.tagName)) return false;\n    const style = window.getComputedStyle(element);\n    if (style.display === \"none\" || style.visibility === \"hidden\" || Number(style.opacity) === 0) return false;\n    return element.getClientRects().length > 0;\n  };\n  const ancestorsAllowVisibility = (node) => {\n    for (let element = node.parentElement; element; element = element.parentElement) {\n      const style = window.getComputedStyle(element);\n      if (style.display === \"none\" || Number(style.opacity) === 0) return false;\n      if (element === root) break;\n    }\n    return true;\n  };\n  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);\n  let visitedText = 0;\n  for (let node = textWalker.nextNode(); node && visitedText < 6000; node = textWalker.nextNode(), visitedText += 1) {\n    const parent = node.parentElement;\n    if (!(parent instanceof HTMLElement) || skipTags.has(parent.tagName)) continue;\n    if (window.getComputedStyle(parent).visibility === \"hidden\" || !ancestorsAllowVisibility(node)) continue;\n    if (normalize(node.nodeValue).includes(expected)) return true;\n  }\n  const elementWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);\n  let visitedElements = 0;\n  for (let node = elementWalker.nextNode(); node && visitedElements < 3000; node = elementWalker.nextNode(), visitedElements += 1) {\n    const element = node;\n    if (!isVisibleElement(element) || !ancestorsAllowVisibility(element) || !(\"value\" in element)) continue;\n    if (normalize(element.value).includes(expected)) return true;\n  }\n  return false;\n})()",
+      "--timeout",
+      "5000"
+    ],
+    "error": null,
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      },
+      "result": true
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "network",
+      "requests"
+    ],
+    "error": null,
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      },
+      "requests": [
+        {
+          "headers": {
+            "Upgrade-Insecure-Requests": "1",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "text/html",
+          "requestId": "31E70F9BDF29CBBF17115E622CBAEE9F",
+          "resourceType": "Document",
+          "responseHeaders": {
+            "age": "0",
+            "cache-control": "private, no-cache, no-store, max-age=0, must-revalidate",
+            "content-encoding": "br",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "link": "</_next/static/css/ca3bc4646b7adfa3.css>; rel=preload; as=\"style\"",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "vary": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+            "x-matched-path": "/vaults/[address]",
+            "x-powered-by": "Next.js",
+            "x-vercel-cache": "MISS",
+            "x-vercel-id": "sin1::iad1::2f6l9-1795667193258-e42e0766a9ad"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "text/css",
+          "requestId": "9264.2",
+          "resourceType": "Stylesheet",
+          "responseHeaders": {
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public,max-age=31536000,immutable",
+            "content-disposition": "inline; filename=\"ca3bc4646b7adfa3.css\"",
+            "content-encoding": "br",
+            "content-type": "text/css; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "etag": "W/\"c2f048444ea3511a9cdbc22ceb284c4f\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:49 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/_next/static/css/ca3bc4646b7adfa3.css",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::4sfrl-1795667196728-8aa276478630"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/_next/static/css/ca3bc4646b7adfa3.css"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "application/javascript",
+          "requestId": "9264.4",
+          "resourceType": "Script",
+          "responseHeaders": {
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public,max-age=31536000,immutable",
+            "content-disposition": "inline; filename=\"webpack-722b7195cc5da806.js\"",
+            "content-encoding": "br",
+            "content-type": "application/javascript; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "etag": "W/\"4c9331922a1fe2874c176f26dbe7c458\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:49 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/_next/static/chunks/webpack-722b7195cc5da806.js",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::4sfrl-1795667196738-3603eb057930"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/_next/static/chunks/webpack-722b7195cc5da806.js"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "application/javascript",
+          "requestId": "9264.5",
+          "resourceType": "Script",
+          "responseHeaders": {
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public,max-age=31536000,immutable",
+            "content-disposition": "inline; filename=\"4bd1b696-c023c6e3521b1417.js\"",
+            "content-encoding": "br",
+            "content-type": "application/javascript; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "etag": "W/\"81cd3b2d7a933bcc456bfcdf03a6ba1f\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:49 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/_next/static/chunks/4bd1b696-c023c6e3521b1417.js",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::4sfrl-1795667196745-e6cfea24837c"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/_next/static/chunks/4bd1b696-c023c6e3521b1417.js"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "application/javascript",
+          "requestId": "9264.6",
+          "resourceType": "Script",
+          "responseHeaders": {
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public,max-age=31536000,immutable",
+            "content-disposition": "inline; filename=\"255-73938ce8a8eac1ad.js\"",
+            "content-encoding": "br",
+            "content-type": "application/javascript; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "etag": "W/\"b32b3bacdc40092458b13e2951a450c5\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:49 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/_next/static/chunks/255-73938ce8a8eac1ad.js",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::46rhr-1795667196744-f3b800f09eb7"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/_next/static/chunks/255-73938ce8a8eac1ad.js"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "application/javascript",
+          "requestId": "9264.7",
+          "resourceType": "Script",
+          "responseHeaders": {
+            "accept-ranges": "bytes",
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public,max-age=31536000,immutable",
+            "content-disposition": "inline; filename=\"main-app-99a43faf3f256635.js\"",
+            "content-length": "555",
+            "content-type": "application/javascript; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "etag": "\"70b2e7619cfd48eb8a3a2c9609cb2384\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:49 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/_next/static/chunks/main-app-99a43faf3f256635.js",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::vtnss-1795667196744-c7e120f7880a"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/_next/static/chunks/main-app-99a43faf3f256635.js"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "application/javascript",
+          "requestId": "9264.8",
+          "resourceType": "Script",
+          "responseHeaders": {
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public,max-age=31536000,immutable",
+            "content-disposition": "inline; filename=\"619-ba102abea3e3d0e4.js\"",
+            "content-encoding": "br",
+            "content-type": "application/javascript; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "etag": "W/\"4c7db5ac1f23479f02552e0af20cff57\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:49 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/_next/static/chunks/619-ba102abea3e3d0e4.js",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::zvsn9-1795667196744-75a572632a3a"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/_next/static/chunks/619-ba102abea3e3d0e4.js"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "application/javascript",
+          "requestId": "9264.9",
+          "resourceType": "Script",
+          "responseHeaders": {
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public,max-age=31536000,immutable",
+            "content-disposition": "inline; filename=\"layout-8b5675bfc573df29.js\"",
+            "content-encoding": "br",
+            "content-type": "application/javascript; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "etag": "W/\"0d565b0931ead5fd27f3e8a92c638a0d\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:49 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/_next/static/chunks/app/layout-8b5675bfc573df29.js",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::hs5nr-1795667196745-132e51970aa2"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/_next/static/chunks/app/layout-8b5675bfc573df29.js"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "application/javascript",
+          "requestId": "9264.10",
+          "resourceType": "Script",
+          "responseHeaders": {
+            "accept-ranges": "bytes",
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public,max-age=31536000,immutable",
+            "content-disposition": "inline; filename=\"page-1ba8b7006e197c90.js\"",
+            "content-length": "187",
+            "content-type": "application/javascript; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "etag": "\"e467e5a5de8430e04cb302a9478590fe\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:49 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/_next/static/chunks/app/vaults/%5Baddress%5D/page-1ba8b7006e197c90.js",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::2f6l9-1795667196746-e2704915f501"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://avenor-kappa.vercel.app/_next/static/chunks/app/vaults/%5Baddress%5D/page-1ba8b7006e197c90.js"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "text/css",
+          "requestId": "9264.11",
+          "resourceType": "Stylesheet",
+          "responseHeaders": {
+            "access-control-allow-origin": "*",
+            "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+            "cache-control": "private, max-age=86400, stale-while-revalidate=604800",
+            "content-encoding": "gzip",
+            "content-type": "text/css; charset=utf-8",
+            "cross-origin-opener-policy": "same-origin-allow-popups",
+            "cross-origin-resource-policy": "cross-origin",
+            "date": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "expires": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "last-modified": "Thu, 26 Nov 2026 04:26:36 GMT",
+            "link": "<https://fonts.gstatic.com>; rel=preconnect; crossorigin",
+            "server": "ESF",
+            "strict-transport-security": "max-age=31536000",
+            "timing-allow-origin": "*",
+            "vary": "Sec-Fetch-Dest, Sec-Fetch-Mode, Sec-Fetch-Site",
+            "x-content-type-options": "nosniff",
+            "x-frame-options": "SAMEORIGIN",
+            "x-xss-protection": "0"
+          },
+          "status": 200,
+          "timestamp": 1795667197894,
+          "url": "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..600;1,9..40,400..500&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+        },
+        {
+          "headers": {
+            "Origin": "https://avenor-kappa.vercel.app",
+            "Referer": "https://fonts.googleapis.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "font/woff2",
+          "requestId": "9264.26",
+          "resourceType": "Font",
+          "responseHeaders": {
+            "accept-ranges": "bytes",
+            "access-control-allow-origin": "*",
+            "age": "447793",
+            "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+            "cache-control": "public, max-age=31536000",
+            "content-length": "62724",
+            "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+            "content-type": "font/woff2",
+            "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+            "cross-origin-resource-policy": "cross-origin",
+            "date": "Sat, 21 Nov 2026 00:03:23 GMT",
+            "expires": "Sun, 21 Nov 2027 00:03:23 GMT",
+            "last-modified": "Wed, 10 Sep 2025 16:30:14 GMT",
+            "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+            "server": "sffe",
+            "timing-allow-origin": "*",
+            "x-content-type-options": "nosniff",
+            "x-xss-protection": "0"
+          },
+          "status": 200,
+          "timestamp": 1795667197895,
+          "url": "https://fonts.gstatic.com/s/dmsans/v17/rP2Hp2ywxg089UriCZOIHQ.woff2"
+        },
+        {
+          "headers": {
+            "Origin": "https://avenor-kappa.vercel.app",
+            "Referer": "https://fonts.googleapis.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "font/woff2",
+          "requestId": "9264.42",
+          "resourceType": "Font",
+          "responseHeaders": {
+            "accept-ranges": "bytes",
+            "access-control-allow-origin": "*",
+            "age": "517191",
+            "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+            "cache-control": "public, max-age=31536000",
+            "content-length": "27348",
+            "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+            "content-type": "font/woff2",
+            "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+            "cross-origin-resource-policy": "cross-origin",
+            "date": "Fri, 20 Nov 2026 04:46:45 GMT",
+            "expires": "Sat, 20 Nov 2027 04:46:45 GMT",
+            "last-modified": "Tue, 09 Sep 2025 18:38:57 GMT",
+            "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+            "server": "sffe",
+            "timing-allow-origin": "*",
+            "x-content-type-options": "nosniff",
+            "x-xss-protection": "0"
+          },
+          "status": 200,
+          "timestamp": 1795667197895,
+          "url": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yw.woff2"
+        },
+        {
+          "headers": {
+            "Origin": "https://avenor-kappa.vercel.app",
+            "Referer": "https://fonts.googleapis.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "font/woff2",
+          "requestId": "9264.32",
+          "resourceType": "Font",
+          "responseHeaders": {
+            "accept-ranges": "bytes",
+            "access-control-allow-origin": "*",
+            "age": "560472",
+            "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+            "cache-control": "public, max-age=31536000",
+            "content-length": "31432",
+            "content-security-policy-report-only": "require-trusted-types-for 'script'; report-uri https://csp.withgoogle.com/csp/apps-themes",
+            "content-type": "font/woff2",
+            "cross-origin-opener-policy": "same-origin; report-to=\"apps-themes\"",
+            "cross-origin-resource-policy": "cross-origin",
+            "date": "Thu, 19 Nov 2026 16:45:24 GMT",
+            "expires": "Fri, 19 Nov 2027 16:45:24 GMT",
+            "last-modified": "Wed, 10 Sep 2025 16:52:37 GMT",
+            "report-to": "{\"group\":\"apps-themes\",\"max_age\":2592000,\"endpoints\":[{\"url\":\"https://csp.withgoogle.com/csp/report-to/apps-themes\"}]}",
+            "server": "sffe",
+            "timing-allow-origin": "*",
+            "x-content-type-options": "nosniff",
+            "x-xss-protection": "0"
+          },
+          "status": 200,
+          "timestamp": 1795667197895,
+          "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "mimeType": "text/html",
+          "requestId": "9264.55",
+          "resourceType": "Other",
+          "responseHeaders": {
+            "access-control-allow-origin": "*",
+            "age": "3047",
+            "cache-control": "public, max-age=0, must-revalidate",
+            "content-disposition": "inline; filename=\"404\"",
+            "content-encoding": "br",
+            "content-type": "text/html; charset=utf-8",
+            "date": "Thu, 26 Nov 2026 04:26:37 GMT",
+            "etag": "W/\"84e464b6347b248f8538f47ef3238a39\"",
+            "last-modified": "Thu, 26 Nov 2026 03:35:50 GMT",
+            "server": "Vercel",
+            "strict-transport-security": "max-age=63072000; includeSubDomains; preload",
+            "x-matched-path": "/404",
+            "x-next-error-status": "404",
+            "x-vercel-cache": "HIT",
+            "x-vercel-id": "sin1::vtnss-1795667197842-f92bbf1b6e92"
+          },
+          "status": 404,
+          "timestamp": 1795667197895,
+          "url": "https://avenor-kappa.vercel.app/favicon.ico"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "next-router-prefetch": "1",
+            "next-router-state-tree": "%5B%22%22%2C%7B%22children%22%3A%5B%22vaults%22%2C%7B%22children%22%3A%5B%5B%22address%22%2C%220xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0%22%2C%22d%22%5D%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%2Ctrue%5D",
+            "next-url": "/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "rsc": "1",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "requestId": "9264.56",
+          "resourceType": "Fetch",
+          "timestamp": 1795667197907,
+          "url": "https://avenor-kappa.vercel.app/?_rsc=aksF_O1Tu33dOSyT"
+        },
+        {
+          "headers": {
+            "Referer": "https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/158.0.0.0 Safari/537.36",
+            "next-router-prefetch": "1",
+            "next-router-state-tree": "%5B%22%22%2C%7B%22children%22%3A%5B%22vaults%22%2C%7B%22children%22%3A%5B%5B%22address%22%2C%220xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0%22%2C%22d%22%5D%2C%7B%22children%22%3A%5B%22__PAGE__%22%2C%7B%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%5D%7D%2Cnull%2Cnull%2Ctrue%5D",
+            "next-url": "/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+            "rsc": "1",
+            "sec-ch-ua": "\"Chromium\";v=\"158\", \"Not.A/Brand\";v=\"24\", \"Google Chrome\";v=\"158\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\""
+          },
+          "method": "GET",
+          "requestId": "9264.57",
+          "resourceType": "Fetch",
+          "timestamp": 1795667197907,
+          "url": "https://avenor-kappa.vercel.app/vaults/0xda4d625b2e14a3c07d21d6effe66f91aed517da0/withdraw?_rsc=aksF_O1Tu33dOSyT"
+        }
+      ]
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "console"
+    ],
+    "error": null,
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      },
+      "messages": []
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "errors"
+    ],
+    "error": null,
+    "result": {
+      "errors": [],
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      }
+    },
+    "success": true
+  },
+  {
+    "command": [
+      "screenshot",
+      "C:\\laragon\\www\\kevin-work\\wealthy-project\\avenor\\docs\\evidence\\testnet-web\\avenor-vault-desktop.png"
+    ],
+    "error": null,
+    "result": {
+      "lifecycle": {
+        "effectiveLaunch": {
+          "browserLaunched": true,
+          "engine": "chrome",
+          "launchHash": 10555201366498914000
+        },
+        "launched": false,
+        "relaunchedBrowser": false,
+        "restartedBackground": false,
+        "restoreStatus": "not_configured",
+        "reused": true,
+        "saveStatus": "not_attempted"
+      },
+      "path": "C:\\laragon\\www\\kevin-work\\wealthy-project\\avenor\\docs\\evidence\\testnet-web\\avenor-vault-desktop.png"
+    },
+    "success": true
+  }
+]

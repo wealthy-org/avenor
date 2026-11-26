@@ -7,10 +7,8 @@
 //      "not known" are different answers and only one of them is safe.
 
 import Link from "next/link";
-import { createPublicClient, http } from "viem";
 import { notFound } from "next/navigation";
 import { Amount, AddressText, BlockProvenance, ErrorState, Percent, StatusPill } from "@/components/primitives";
-import { readEvidence, type ContractEvidence } from "@/lib/evidence";
 import { ApiError } from "@/lib/api";
 import { loadVaultDetail, type VaultDetail } from "@/lib/vaultLoader";
 import { blockTime, epochTime, liquiditySplit, percentBps } from "@/lib/format";
@@ -115,22 +113,12 @@ export default async function VaultPage({ params }: Params) {
   // Read straight from the chain: the artifact in this repo describes what we built, not what the
   // address runs. Without a reachable node the captured answer is shown instead, together with the
   // query that produced it, so the section never prints a stack trace or a made-up fingerprint.
-  let evidence: ContractEvidence | null;
-  let evidenceSource: "live" | "captured";
-  const rpc = process.env.NEXT_PUBLIC_RPC_URL;
-  if (typeof rpc !== "string" || rpc.trim() === "") {
-    evidence = getVaultEvidence(vault.address);
-    evidenceSource = "captured";
-  } else {
-    try {
-      const client = createPublicClient({ transport: http(rpc.trim(), { timeout: 8_000 }) });
-      evidence = await readEvidence(client, vault.address as `0x${string}`, live === null ? undefined : live.blockNumber);
-      evidenceSource = "live";
-    } catch {
-      evidence = getVaultEvidence(vault.address);
-      evidenceSource = "captured";
-    }
-  }
+  // Read straight from the chain. `null` means the node could not answer and the committed capture
+  // does not describe this address or this chain; the section then says so instead of printing a
+  // fingerprint from another deployment.
+  const evidence = await getVaultEvidence(vault.address);
+  const evidenceSource: "live" | "captured" | "unreadable" =
+    evidence === null ? "unreadable" : evidence.codeError === null ? "live" : "captured";
 
   const split = live === null ? null : liquiditySplit({ idle: live.totalIdle, totalAssets: live.totalAssets });
   const lastReport = allocation === null ? null : latestReportTimestamp(allocation);
@@ -607,8 +595,8 @@ export default async function VaultPage({ params }: Params) {
             {evidence === null
               ? "not read"
               : evidenceSource === "live"
-                ? "read live from the configured RPC"
-                : `captured at block ${evidence.blockNumber.toString()}; the node did not answer this render`}
+                ? `read live from the configured RPC at block ${evidence.blockNumber.toString()}`
+                : `captured at block ${evidence.blockNumber.toString()}; this render the node did not answer: ${evidence.codeError ?? "no reason recorded"}`}
           </span>
         </div>
         {evidence === null ? (

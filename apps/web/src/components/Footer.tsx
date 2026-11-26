@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AvenorLogo } from "./AvenorLogo";
 
-export function Footer() {
+export function Footer({ chainLine }: { chainLine?: string }) {
   return (
     <footer className="bg-[#0b1310]/85 backdrop-blur-sm border-t border-white/[0.08]">
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 py-12">
@@ -13,11 +13,11 @@ export function Footer() {
               Institutional on-chain investment strategies · Capital, Working Smarter.
             </span>
           </div>
-          <span className="font-mono text-[13px] text-[#a3abb8] flex flex-wrap items-center gap-x-1.5">
-            <span className="whitespace-nowrap">Robinhood Chain ·</span>
-            <span className="whitespace-nowrap">chain ID 4663 ·</span>
-            <span className="whitespace-nowrap">staging fork</span>
-          </span>
+          {chainLine ? (
+            <span className="font-mono text-[13px] text-[#a3abb8] flex flex-wrap items-center gap-x-1.5">
+              <span className="whitespace-nowrap">{chainLine}</span>
+            </span>
+          ) : null}
         </div>
 
         {/* Bottom row */}

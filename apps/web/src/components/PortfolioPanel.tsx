@@ -9,15 +9,15 @@ import { createPublicClient, http, type Address } from "viem";
 import { Amount, AddressText } from "@/components/primitives";
 import { fetchJson } from "@/lib/api";
 import {
-  AVENOR_CHAIN_ID,
   WalletError,
+  chainConfig,
   connectWallet,
   findInjectedProvider,
   mapWalletError,
   readChainId,
-  switchToAvenorChain,
+  switchToChain,
 } from "@/lib/wallet";
-import { parsePosition, type Position } from "@/lib/vaultView";
+import { parsePosition, parseVaultRow, type Position } from "@/lib/vaultView";
 import { portfolioCsv, type CsvRow } from "@/lib/portfolioCsv";
 import { quoteWithdraw, type WithdrawQuote } from "@/lib/withdraw";
 import { blockTime, percentBps } from "@/lib/format";
@@ -25,8 +25,8 @@ import { blockTime, percentBps } from "@/lib/format";
 export interface PortfolioProps {
   vaults: { address: string; label: string }[];
   base: string;
-  /** `decimals()` of the share token this portfolio is denominated in, read from the vault (6). */
-  shareDecimals: number;
+  /** `eth_chainId` of the node the API read, so the wallet is asked for that chain and no other. */
+  chainId: number;
 }
 
 interface Problem {
@@ -52,15 +52,10 @@ function rpcUrl(): string | null {
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
-const CHAIN = {
-  id: AVENOR_CHAIN_ID,
-  name: "Robinhood Chain",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: ["https://placeholder.invalid"] } },
-} as const;
-
 interface Row {
   vault: { address: string; label: string };
+  /** `share_decimals` of this vault's row, read per vault. `null` until the row answered. */
+  shareDecimals: number | null;
   position: Position | null;
   positionError: Problem | null;
   quote: WithdrawQuote | null;
@@ -77,7 +72,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function PortfolioPanel({ vaults, base, shareDecimals }: PortfolioProps) {
+export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: PortfolioProps) {
+  const CHAIN = chainConfig(nodeChainId);
   const [account, setAccount] = useState<Address | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -98,7 +94,14 @@ export function PortfolioPanel({ vaults, base, shareDecimals }: PortfolioProps) 
       const client = createPublicClient({ chain: CHAIN, transport: http(url) });
       const next: Row[] = [];
       for (const vault of vaults) {
-        const row: Row = { vault, position: null, positionError: null, quote: null, quoteError: null };
+        const row: Row = { vault, shareDecimals: null, position: null, positionError: null, quote: null, quoteError: null };
+        try {
+          row.shareDecimals = parseVaultRow(await fetchJson(`${base}/v1/vaults/${vault.address}`)).shareDecimals;
+        } catch (error) {
+          row.positionError = describe(error);
+          next.push(row);
+          continue;
+        }
         try {
           row.position = parsePosition(await fetchJson(`${base}/v1/vaults/${vault.address}/positions/${owner}`));
         } catch (error) {
@@ -121,7 +124,7 @@ export function PortfolioPanel({ vaults, base, shareDecimals }: PortfolioProps) 
       }
       setRows(next);
     },
-    [base, vaults],
+    [base, vaults, nodeChainId],
   );
 
   const download = useCallback(() => {
@@ -157,8 +160,8 @@ export function PortfolioPanel({ vaults, base, shareDecimals }: PortfolioProps) 
     try {
       const bag = (globalThis as { ethereum?: unknown }).ethereum;
       const connected = await connectWallet(findInjectedProvider({ ethereum: bag }));
-      if (connected.chainId !== AVENOR_CHAIN_ID) {
-        const switched = await switchToAvenorChain(connected.provider);
+      if (connected.chainId !== nodeChainId) {
+        const switched = await switchToChain(connected.provider, nodeChainId);
         if (!switched.switched) {
           setProblem({
             code: "wrong_network",
@@ -167,8 +170,8 @@ export function PortfolioPanel({ vaults, base, shareDecimals }: PortfolioProps) 
           });
           return;
         }
-        if ((await readChainId(connected.provider)) !== AVENOR_CHAIN_ID) {
-          setProblem({ code: "wrong_network", message: `The wallet is not on chain ${AVENOR_CHAIN_ID}.`, detail: null });
+        if ((await readChainId(connected.provider)) !== nodeChainId) {
+          setProblem({ code: "wrong_network", message: `The wallet is not on chain ${nodeChainId}.`, detail: null });
           return;
         }
       }
@@ -179,7 +182,7 @@ export function PortfolioPanel({ vaults, base, shareDecimals }: PortfolioProps) 
     } finally {
       setBusy(false);
     }
-  }, [load]);
+  }, [load, nodeChainId]);
 
   const withPosition = rows.filter((row) => row.position !== null && row.position.shares > 0n);
   const allRead = rows.length > 0 && rows.every((row) => row.position !== null);
@@ -302,8 +305,12 @@ export function PortfolioPanel({ vaults, base, shareDecimals }: PortfolioProps) 
             </div>
           ) : row.position === null ? null : (
             <div>
-              <Field label="Shares (indexed)">
-                <Amount value={row.position.shares} kind="shares" decimals={shareDecimals} />
+              <Field label="Shares (read from the vault)">
+                {row.shareDecimals === null ? (
+                  <span className="text-[#e8c468]">share decimals not read</span>
+                ) : (
+                  <Amount value={row.position.shares} kind="shares" decimals={row.shareDecimals} />
+                )}
               </Field>
               <Field label="Last activity">
                 <span className="text-[#b0b7c3]">

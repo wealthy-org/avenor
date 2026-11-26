@@ -17,19 +17,21 @@ import {
   type DepositReceipt,
 } from "@/lib/deposit";
 import {
-  AVENOR_CHAIN_ID,
   WalletError,
+  chainConfig,
   connectWallet,
   findInjectedProvider,
   mapWalletError,
   readChainId,
-  switchToAvenorChain,
+  switchToChain,
 } from "@/lib/wallet";
 import { Amount, AddressText } from "@/components/primitives";
 import { blockTime } from "@/lib/format";
 
 export interface DepositFormProps {
   vault: Address;
+  /** `eth_chainId` of the node this page read, so the wallet is asked for that chain and no other. */
+  chainId: number;
   asset: Address;
   assetSymbol: string;
   /** `decimals()` of the share token, read from the vault: VaultV3 uses the asset's decimals (6). */
@@ -53,13 +55,6 @@ interface Problem {
   detail: string | null;
 }
 
-const CHAIN = {
-  id: AVENOR_CHAIN_ID,
-  name: "Robinhood Chain",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: ["https://placeholder.invalid"] } },
-} as const;
-
 function rpcUrl(): string {
   const value = process.env.NEXT_PUBLIC_RPC_URL;
   if (typeof value !== "string" || value.trim() === "") {
@@ -80,7 +75,8 @@ function describe(error: unknown): Problem {
   };
 }
 
-export function DepositForm({ vault, asset, assetSymbol, gate, shareDecimals }: DepositFormProps) {
+export function DepositForm({ vault, asset, chainId: nodeChainId, assetSymbol, gate, shareDecimals }: DepositFormProps) {
+  const CHAIN = chainConfig(nodeChainId);
   const [phase, setPhase] = useState<Phase>("idle");
   const [account, setAccount] = useState<Address | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
@@ -96,7 +92,8 @@ export function DepositForm({ vault, asset, assetSymbol, gate, shareDecimals }: 
     } catch {
       return null;
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- CHAIN is rebuilt from nodeChainId, which is in the dep list
+  }, [nodeChainId]);
 
   const blocked = useMemo(() => (quote === null ? [] : depositBlockers({ assets: quote.assets, maxAssets: quote.maxAssets, balance: quote.balance, gate: quote.gate })), [quote]);
 
@@ -108,8 +105,8 @@ export function DepositForm({ vault, asset, assetSymbol, gate, shareDecimals }: 
       const connected = await connectWallet(findInjectedProvider({ ethereum: bag }));
       setAccount(connected.account);
       setChainId(connected.chainId);
-      if (connected.chainId !== AVENOR_CHAIN_ID) {
-        const result = await switchToAvenorChain(connected.provider);
+      if (connected.chainId !== nodeChainId) {
+        const result = await switchToChain(connected.provider, nodeChainId);
         if (result.switched) {
           setChainId(await readChainId(connected.provider));
         } else {
@@ -119,7 +116,7 @@ export function DepositForm({ vault, asset, assetSymbol, gate, shareDecimals }: 
     } catch (error) {
       setProblem(describe(error));
     }
-  }, []);
+  }, [nodeChainId]);
 
   const reprice = useCallback(async () => {
     if (account === null || client === null) {
@@ -158,8 +155,8 @@ export function DepositForm({ vault, asset, assetSymbol, gate, shareDecimals }: 
     setNotice(null);
     setPhase("signing");
     try {
-      if ((await readChainId(provider)) !== AVENOR_CHAIN_ID) {
-        setProblem({ code: "wrong_network", message: `Wallet is not on chain ${AVENOR_CHAIN_ID}. Switch networks and retry.`, detail: null });
+      if ((await readChainId(provider)) !== nodeChainId) {
+        setProblem({ code: "wrong_network", message: `Wallet is not on chain ${nodeChainId}. Switch networks and retry.`, detail: null });
         setPhase("error");
         return;
       }
@@ -301,10 +298,10 @@ export function DepositForm({ vault, asset, assetSymbol, gate, shareDecimals }: 
           </div>
 
           {/* Chain Warning */}
-          {chainId !== null && chainId !== AVENOR_CHAIN_ID ? (
+          {chainId !== null && chainId !== nodeChainId ? (
             <div className="rounded-xl bg-[#1a1200] border border-[#e8c468]/20 p-3.5" role="alert">
               <p className="text-sm text-[#e8c468]">
-                ⚠ Wallet is connected to chain {chainId}. This form only submits transactions to chain {AVENOR_CHAIN_ID} (Robinhood Chain).
+                ⚠ Wallet is connected to chain {chainId}. This form only submits transactions to chain {nodeChainId}.
               </p>
             </div>
           ) : null}

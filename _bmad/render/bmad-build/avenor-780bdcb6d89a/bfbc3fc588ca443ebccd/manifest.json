@@ -1,0 +1,72 @@
+{
+  "generation_hash": "bfbc3fc588ca443ebccd",
+  "inputs": {
+    "jinja2_version": "3.1.6",
+    "project_root": "C:\\laragon\\www\\kevin-work\\wealthy-project\\avenor",
+    "renderer_sha256": "b866e2bbb649d93ea30ed0a3bf01d1fec030002c0a5a82f5bd958746b432a904",
+    "resolved_values": {
+      "config.core.output_folder": "C:/laragon/www/kevin-work/wealthy-project/avenor/_bmad-output",
+      "customization.workflow.activation_steps_append": [],
+      "customization.workflow.activation_steps_prepend": [],
+      "customization.workflow.on_complete": "",
+      "customization.workflow.open_plan": "",
+      "customization.workflow.persistent_facts": [],
+      "customization.workflow.review": "thorough",
+      "customization.workflow.route": "oneshot",
+      "customization.workflow.thorough_lenses": [
+        {
+          "id": "blind-hunter",
+          "instruction": "Launch a context-free subagent with this prompt:\n\nConduct a review of CONTENT.\nLook for what's missing, not only what's wrong.\nCompute your finding floor N from the diff file's size: N = min(floor(sqrt(kB) + 1), 10), where kB is the file's size in kilobytes. State the arithmetic in one line, then find at least N issues to fix or improve.\nOutput a Markdown list of findings only — no severity, priority, or ranking.\nIf the content is empty, stop and say so.\nIf you have zero findings, re-check and keep thinking; do not stop with an empty list.\n\nCONTENT: the unified diff at `{diff_file}`. Read that file — it is the content under review.\n\nReview by inspection only. Do not modify code, run builds or tests, or invoke quality gates. Do not invoke any skill, and do not spawn subagents of your own — you are the reviewer. Return your findings as text in your final message; do not route them through any findings-reporting tool the host may offer.\n\n",
+          "name": "Blind Hunter"
+        },
+        {
+          "id": "edge-case-hunter",
+          "instruction": "Launch a context-free subagent with this prompt:\n\nRead `{skill-root}/review-prompts/edge-case-hunter.md` completely and follow it as your review instructions.\n\nclaims_file (leave unread until your instructions call for it): {claims_file}\n\nReview content: the unified diff at `{diff_file}`. Read that file — it is the content under review.\n\nReview by inspection only. Do not modify code, run builds or tests, or invoke quality gates. Do not invoke any skill, and do not spawn subagents of your own — you are the reviewer. If the instruction file is unreadable, report that exact failure and stop. Return your findings as text in your final message; do not route them through any findings-reporting tool the host may offer.\n\n",
+          "name": "Edge Case Hunter"
+        },
+        {
+          "id": "verification-gap",
+          "instruction": "Launch a context-free subagent with this prompt:\n\nRead `{skill-root}/review-prompts/verification-gap.md` completely and follow it as your review instructions.\n\nReview content: the unified diff at `{diff_file}`. Read that file — it is the content under review.\n\nReview by inspection only. Do not modify code, run builds or tests, or invoke quality gates. Do not invoke any skill, and do not spawn subagents of your own — you are the reviewer. If the instruction file is unreadable, report that exact failure and stop. Return your findings as text in your final message; do not route them through any findings-reporting tool the host may offer.\n\n",
+          "name": "Verification Gap Reviewer"
+        },
+        {
+          "id": "intent-alignment",
+          "instruction": "Launch a subagent with this prompt:\n\nYou are an intent-alignment auditor. You have no other context about how this change was produced. Here is the verbatim intent this work started from:\n\n{verbatim_intent}\n\nThe diff is the unified diff at `{diff_file}`. Read that file — it is the change under review.\n\nYour task is strictly descriptive — do not prescribe additional work. Report: (1) the defensible readings of the intent, enumerated; (2) which reading this diff implements; (3) where the readings and the diff diverge — specifically, which surface the intent's expectations live at versus which surface the diff's changes and its tests exercise.\n\nReview by inspection only. Do not modify code, run builds or tests, or invoke quality gates. Do not invoke any skill, and do not spawn subagents of your own — you are the reviewer. Return your findings as text in your final message; do not route them through any findings-reporting tool the host may offer.\n\n",
+          "name": "Intent Alignment Auditor"
+        }
+      ],
+      "initiative_folder": "C:/laragon/www/kevin-work/wealthy-project/avenor/_bmad-output"
+    },
+    "skill_root": "C:\\Users\\KevinAdisuryaNugraha\\.agents\\skills\\bmad-build",
+    "source_sha256": {
+      "plan-template.md": "f27a97ac7e90b1d8c129e5836029dbef85263bce7d81399f3201970ef26b717c",
+      "references/claims-check.md": "6cb20a86d819b95272876bca0dffef59ca07ba6a373d804295066751043867c0",
+      "references/deletion-check.md": "0f1f124e4e957147e89164a272b10bedc694ad0d9ad2618c8610ac74ee9cb0da",
+      "review-prompts/edge-case-hunter.md": "b909fe0ec8e4daaf2550d0ec783618c5146261d0dbc0e054698ce00d0905a3d1",
+      "review-prompts/verification-gap.md": "45ab0b8c4c56c5c055c97a293a8591a67e256d0b1a2058ce1f093cd866be8d03",
+      "step-01-clarify-and-route.md": "55ba1c1bd4e144e8c765d2cbbc46308dcefc89f58441612ec2246076e476ca52",
+      "step-02-plan.md": "eb7abc40ee70a082165b4afcee7186d246960ae1ef677b92148d9d4737846c55",
+      "step-03-implement.md": "df1a0f8a8fdb524581d371505a12a33a25d5150ecb442a58a9d8145d2b284954",
+      "step-04-review.md": "6ced1bd56e56141860b32ad1c191616b281401706802a51f9fc464a09286262a",
+      "step-05-present.md": "8c3a4f5e627524b05c3f1db4850b6ab68ae6930d8046c340a3e1590dccc4ed61",
+      "step-oneshot.md": "1313ccda88e42fc813ed585bd2f3794480c33cb40dea674cb45ca860310dbf9e",
+      "workflow.md": "a4a1fed8a1d374b5ff8ac5613211a2e31d7e89743d1b153348ae6fe9ce36ec80"
+    }
+  },
+  "outputs": {
+    "plan-template.md": "f27a97ac7e90b1d8c129e5836029dbef85263bce7d81399f3201970ef26b717c",
+    "references/claims-check.md": "6cb20a86d819b95272876bca0dffef59ca07ba6a373d804295066751043867c0",
+    "references/deletion-check.md": "0f1f124e4e957147e89164a272b10bedc694ad0d9ad2618c8610ac74ee9cb0da",
+    "review-prompts/edge-case-hunter.md": "b909fe0ec8e4daaf2550d0ec783618c5146261d0dbc0e054698ce00d0905a3d1",
+    "review-prompts/verification-gap.md": "45ab0b8c4c56c5c055c97a293a8591a67e256d0b1a2058ce1f093cd866be8d03",
+    "step-01-clarify-and-route.md": "21594ade3f125bb3906c1cfbf25a400b62772ead3d3e3508eedd08ce3c972341",
+    "step-02-plan.md": "e86ec015df0d78e3c20d406c46abac0b7564ca257aac645aade1b38d0984cd9a",
+    "step-oneshot.md": "fb4eaf08758ca452d6d8825434495479a9a45591ac83bae2c33e9cea03c31caa",
+    "workflow.md": "463754c4e23678cdc58651282d370c676b7d095f2c610fab2193b57b5667d318"
+  },
+  "project_root": "C:\\laragon\\www\\kevin-work\\wealthy-project\\avenor",
+  "project_slug": "avenor",
+  "root_hash": "780bdcb6d89a",
+  "schema_version": 1,
+  "skill": "bmad-build"
+}

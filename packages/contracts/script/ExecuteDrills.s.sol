@@ -100,7 +100,6 @@ contract ExecuteDrills is Script {
 
         vm.prank(ctx.guardian);
         v.setPaused(true);
-        // forge-lint: disable-next-line(environment-read-across-mutation)
         rec.d1_pauseBlock = block.number;
         console2.log("D1: setPaused(true) at block:", rec.d1_pauseBlock);
 
@@ -117,7 +116,6 @@ contract ExecuteDrills is Script {
 
         vm.prank(ctx.guardian);
         v.setPaused(false);
-        // forge-lint: disable-next-line(environment-read-across-mutation)
         rec.d1_unpauseBlock = block.number;
         console2.log("D1: setPaused(false) at block:", rec.d1_unpauseBlock);
 
@@ -126,7 +124,6 @@ contract ExecuteDrills is Script {
 
         vm.prank(ctx.user);
         v.withdraw(1_000_000, ctx.user, ctx.user);
-        // forge-lint: disable-next-line(environment-read-across-mutation)
         rec.d1_withdrawBlock = block.number;
         console2.log("D1: Test withdrawal 1 USDG at block:", rec.d1_withdrawBlock);
     }
@@ -137,15 +134,12 @@ contract ExecuteDrills is Script {
     ) internal {
         console2.log("--- Executing Drill D3: Liquidity Monitoring ---");
         IVaultV3 v = IVaultV3(ctx.vault);
-        // forge-lint: disable-next-line(environment-read-across-mutation)
         rec.d3_blockA = block.number;
         console2.log("D3 Block A:", rec.d3_blockA);
         console2.log("idle A:", v.totalIdle());
         console2.log("maxWithdraw A:", v.maxWithdraw(ctx.user));
 
-        // forge-lint: disable-next-line(environment-read-across-mutation)
         vm.roll(block.number + 10);
-        // forge-lint: disable-next-line(environment-read-across-mutation)
         rec.d3_blockB = block.number;
         console2.log("D3 Block B:", rec.d3_blockB);
         console2.log("idle B:", v.totalIdle());
@@ -165,12 +159,10 @@ contract ExecuteDrills is Script {
 
         vm.prank(ctx.guardian);
         emergency.schedule(ctx.vault, 0, callData, bytes32(0), salt, 6 hours);
-        // forge-lint: disable-next-line(environment-read-across-mutation)
         rec.d2_scheduleBlock = block.number;
         console2.log("D2: Scheduled force_revoke at block:", rec.d2_scheduleBlock);
 
         vm.warp(block.timestamp + 6 hours + 1);
-        // forge-lint: disable-next-line(environment-read-across-mutation)
         vm.roll(block.number + 7200);
 
         rec.d2_debtBefore = v.strategies(ctx.strategy).current_debt;

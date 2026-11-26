@@ -4,7 +4,7 @@ export function HowItWorks() {
       step: "01",
       title: "Connect",
       description:
-        "Read the mandate, the fees and the pin block, then connect an EIP-1193 browser wallet. The app detects the injected provider, asks it to switch to Robinhood Chain (4663), and refuses to sign on any other chain.",
+        "Read the mandate, the fees and the block the figures came from, then connect an EIP-1193 browser wallet. The app reads the chain id from the node, asks the wallet to switch to that chain and no other, and refuses to sign anywhere else.",
     },
     {
       step: "02",

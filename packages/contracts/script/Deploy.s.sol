@@ -126,6 +126,7 @@ contract Deploy is Script {
     error ManagementFeeWithMaxFee(uint16 managementFee, uint16 maxFee);
     error AccountantNotWired(string what, address expected);
     error UnsupportedChain(uint256 chainId);
+    error InvalidConfig(string what);
 
     struct Config {
         Mode mode;

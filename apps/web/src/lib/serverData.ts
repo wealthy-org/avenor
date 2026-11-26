@@ -14,9 +14,12 @@
 // Uses TYPE-ONLY imports for the view shapes so no runtime dependency is pulled into a server chunk.
 
 import type { ContractEvidence } from "./evidence";
+import { readEvidence } from "./evidence";
+import { createPublicClient, http, type Address } from "viem";
 import type { VaultDetail } from "./vaultLoader";
 import type { Live, Roles, Allocation, StrategyRow, VaultRow } from "./vaultView";
 import {
+  CAPTURE_CHAIN_ID,
   STAGING_ACCOUNTANT,
   STAGING_TIMELOCK,
   STAGING_VAULT,
@@ -240,17 +243,32 @@ export async function getDirectVaultDetail(address: string): Promise<VaultDetail
 }
 
 /**
- * What the chain answers about the vault's code, at the captured block.
+ * What the chain answers about a vault's code, at a block read during this request.
  *
- * The address is an EIP-1167 minimal proxy: 45 bytes that delegate to the VaultV3 implementation. The
- * hash below is the hash of the *implementation* runtime code read at that block, which is the thing a
- * bytecode pin can actually be compared against; the 45-byte proxy body is not a useful fingerprint.
- * On mainnet this address holds no code at all, which is why the page labels the deployment a fork.
+ * The previous version answered only for the chain-4663 capture address and returned `null` for
+ * everything else, so a deployment on another chain could not evidence its own vault. Now the call is
+ * made against the node for whatever address is asked about; the committed capture is used only when
+ * the node cannot answer *and* the node is the chain that capture was recorded on.
  */
-export function getVaultEvidence(address = STAGING_VAULT): ContractEvidence | null {
-  // The committed capture describes one address. For any other vault there is nothing honest to print,
-  // so the section says it could not be read instead of showing another contract's fingerprint.
-  if (address.toLowerCase() !== STAGING_VAULT.toLowerCase()) return null;
+export async function getVaultEvidence(address: string): Promise<ContractEvidence | null> {
+  const normalized = address.toLowerCase();
+  const rpc = (process.env.NEXT_PUBLIC_RPC_URL ?? process.env.RPC_URL ?? "").trim();
+  if (rpc === "") return captureEvidence(normalized, "no RPC configured");
+
+  const client = createPublicClient({ transport: http(rpc, { timeout: 6_000, retryCount: 0 }) });
+  try {
+    const block = await client.getBlockNumber();
+    return await readEvidence(client, normalized as Address, block);
+  } catch (error) {
+    return captureEvidence(normalized, error instanceof Error ? error.message : String(error));
+  }
+}
+
+/** The capture describes one address on one chain. Anywhere else there is nothing honest to print. */
+async function captureEvidence(normalized: string, reason: string): Promise<ContractEvidence | null> {
+  if (normalized !== STAGING_VAULT.toLowerCase()) return null;
+  const chainId = await captureChainId();
+  if (chainId !== null && chainId !== CAPTURE_CHAIN_ID) return null;
   return {
     address: STAGING_VAULT,
     blockNumber: BigInt(CAPTURE.at.blockNumber),
@@ -260,10 +278,16 @@ export function getVaultEvidence(address = STAGING_VAULT): ContractEvidence | nu
     // The vault address is a 45-byte EIP-1167 proxy, so the size and hash describe the implementation
     // runtime code that actually answered. Both are read at the block above.
     codeSize: CAPTURE.evidence.implementationCodeSize ?? CAPTURE.evidence.codeSize,
-    codeError: null,
+    codeError: reason,
     implementation: CAPTURE.evidence.implementation,
     proxyCodeSize: CAPTURE.evidence.codeSize,
   };
+}
+
+/** `null` when the chain id itself could not be read: an unknown chain is not the capture's chain. */
+async function captureChainId(): Promise<number | null> {
+  const probe = await probeNode(process.env.NEXT_PUBLIC_RPC_URL ?? process.env.RPC_URL);
+  return probe.ok ? probe.chainId : null;
 }
 // The capture-derived names the UI already uses. `PIN_*` point at the block the values in
 // `forkSnapshot.json` were read at: a block the local anvil fork mined, not a canonical chain block,

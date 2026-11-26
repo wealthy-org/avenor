@@ -77,21 +77,13 @@ contract DeployTestnet is Deploy {
 
         // Create 2/3 Safe for Governance / Proposer if not provided
         if (proposer == address(0)) {
-            proposer = _deploySafe(actor, "governance.proposer", 1001);
+            proposer = _deploySafe(_governanceOwners(), 1001);
             console.log("Deployed Governance Safe (Proposer) at:", proposer);
         }
 
-        // Create 2/3 Safe for Guardian (must be distinct from proposer)
-        if (guardian == address(0)) {
-            guardian = _deploySafe(actor, "guardian", 1002);
-            console.log("Deployed Guardian Safe at:", guardian);
-        }
-
-        // Create 2/3 Safe for Treasury
-        if (treasury == address(0)) {
-            treasury = _deploySafe(actor, "treasury", 1003);
-            console.log("Deployed Treasury Safe at:", treasury);
-        }
+        // Guardian and treasury remain explicit configured role addresses. Do not silently
+        // manufacture signer identities for them; governance Safe owner identities are the
+        // only addresses this script derives from dedicated environment variables.
 
         // Keeper EOA for automated reporting
         if (keeper == address(0)) {
@@ -132,15 +124,30 @@ contract DeployTestnet is Deploy {
         console.log("Emergency Timelock (6h):", d.emergencyTimelock);
     }
 
+    function _governanceOwners() internal returns (address[] memory owners) {
+        owners = new address[](3);
+        owners[0] = vm.envOr("GOVERNANCE_OWNER_1", address(0));
+        owners[1] = vm.envOr("GOVERNANCE_OWNER_2", address(0));
+        owners[2] = vm.envOr("GOVERNANCE_OWNER_3", address(0));
+        if (owners[0] == address(0) || owners[1] == address(0) || owners[2] == address(0)) {
+            revert ZeroAddress("GOVERNANCE_OWNER_1/2/3");
+        }
+        if (owners[0] == owners[1] || owners[0] == owners[2] || owners[1] == owners[2]) {
+            revert InvalidConfig("governance owners must be unique");
+        }
+        address deployer = vm.envOr("DEPLOYER_ADDRESS", address(0));
+        if (
+            deployer != address(0)
+                && (owners[0] == deployer || owners[1] == deployer || owners[2] == deployer)
+        ) {
+            revert InvalidConfig("governance owner cannot be deployer");
+        }
+    }
+
     function _deploySafe(
-        address primaryOwner,
-        string memory seed,
+        address[] memory owners,
         uint256 nonce
     ) internal returns (address safeProxy) {
-        address[] memory owners = new address[](3);
-        owners[0] = primaryOwner;
-        owners[1] = makeAddr(string.concat("safe.owner2.", seed));
-        owners[2] = makeAddr(string.concat("safe.owner3.", seed));
         uint256 threshold = 2;
 
         bytes memory initializer = abi.encodeWithSelector(

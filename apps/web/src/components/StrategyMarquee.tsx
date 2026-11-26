@@ -1,16 +1,10 @@
-// Provenance ticker. Every entry is either an address recorded in `src/config/staging.ts` or a value
-// passed in from the server read of this request; nothing here is a strategy that does not exist.
-// The previous version advertised six products, one of which was deployed.
+// Provenance ticker. Every entry is either an address the vault named in this render (passed in by the
+// page) or a value from the same read; nothing here is a strategy that does not exist.
+//
+// The previous version imported a fixed table of chain-4663 capture addresses, so a deployment reading
+// another chain ticked past five contracts it had never touched.
 
 import { money, percentBps, shortAddress } from "@/lib/format";
-import {
-  STAGING_ACCOUNTANT,
-  STAGING_ASSET,
-  STAGING_IMPLEMENTATION,
-  STAGING_STRATEGY,
-  STAGING_TIMELOCK,
-  STAGING_VAULT,
-} from "@/config/staging";
 
 /** The fields this ticker prints, taken from the snapshot the page already read. */
 export interface MarqueeLive {
@@ -22,14 +16,24 @@ export interface MarqueeLive {
   managementFeeBps: number | null;
 }
 
-export function StrategyMarquee({ live }: { live: MarqueeLive }) {
+/** One address the vault itself named this render. */
+export interface MarqueeIdentity {
+  label: string;
+  address: string;
+}
+
+export function StrategyMarquee({
+  live,
+  chainLine,
+  identities = [],
+}: {
+  live: MarqueeLive;
+  chainLine: string;
+  identities?: MarqueeIdentity[];
+}) {
   const items = [
-    `Vault ${shortAddress(STAGING_VAULT)} · avUSDG`,
-    `Implementation ${shortAddress(STAGING_IMPLEMENTATION)} · VaultV3`,
-    `Asset USDG ${shortAddress(STAGING_ASSET)} · 6 decimals`,
-    `Strategy ${shortAddress(STAGING_STRATEGY)} · one allocation`,
-    `role_manager ${shortAddress(STAGING_TIMELOCK)} · 48h timelock`,
-    `accountant ${shortAddress(STAGING_ACCOUNTANT)}`,
+    chainLine,
+    ...identities.slice(0, 4).map((identity) => `${identity.label} ${shortAddress(identity.address)}`),
     `Total assets ${money(BigInt(live.totalAssets))} USDG`,
     `Idle cash ${money(BigInt(live.totalIdle))} USDG`,
     `Deposit limit ${money(BigInt(live.depositLimit))} USDG`,

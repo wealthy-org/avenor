@@ -9,6 +9,7 @@ import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
 import { ApiError } from "@/lib/api";
 import { loadVaultDetail } from "@/lib/vaultLoader";
 import { getDirectVaultDetail } from "@/lib/serverData";
+import { readChainFacts } from "@/lib/chainFacts";
 import type { VaultDetail } from "@/lib/vaultLoader";
 
 export const dynamic = "force-dynamic";
@@ -58,7 +59,9 @@ export default async function DepositPage({ params }: Params) {
           </div>
           <h2 className="text-xl font-display font-medium text-white">Not Open for Public Deposits</h2>
           <p className="max-w-md mx-auto text-sm text-[#a3abb8] leading-relaxed">
-            This vault is currently in the <strong>Research Phase</strong> on a rehearsal fork. Public deposit transactions are strictly disabled until testnet deployment and audit verification.
+            No deposit form is opened for a vault in the <strong>Research Phase</strong>. Capacity is enforced in the
+            contract itself: the vault rejects a deposit above its <code className="font-mono text-[11px]">deposit_limit()</code>,
+            which this app never overrides.
           </p>
           <div>
             <Link
@@ -133,6 +136,20 @@ export default async function DepositPage({ params }: Params) {
   const vaultSymbol = detail.vault.symbol;
   const assetAddress = detail.vault.assetAddress as `0x${string}`;
 
+  const facts = await readChainFacts(process.env.NEXT_PUBLIC_RPC_URL);
+  if (facts.chainId === null) {
+    return (
+      <div className="shell stack">
+        <ErrorState
+          code="chain_id_unreadable"
+          message={`The chain id could not be read, so no deposit can be addressed to the right network: ${
+            facts.error ?? "the node did not answer eth_chainId"
+          }`}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="shell stack">
       {/* Breadcrumb */}
@@ -153,7 +170,7 @@ export default async function DepositPage({ params }: Params) {
                 Deposit
               </span>
               <span className="font-mono text-[11px] uppercase tracking-widest text-[#8b929e] bg-white/[0.04] border border-white/[0.08] rounded-full px-2.5 py-0.5">
-                Robinhood Chain · chain ID 4663
+                {facts.label} · chain ID {facts.chainId}
               </span>
             </div>
             <h1 className="font-display text-xl sm:text-3xl font-medium text-[#f8f9fa]">
@@ -177,6 +194,7 @@ export default async function DepositPage({ params }: Params) {
         <DepositForm
           vault={config.address}
           asset={assetAddress}
+          chainId={facts.chainId}
           assetSymbol="USDG"
           shareDecimals={detail.vault === null ? 0 : detail.vault.shareDecimals}
           gate={{

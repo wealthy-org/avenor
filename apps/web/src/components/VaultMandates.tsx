@@ -8,12 +8,18 @@
 import Link from "next/link";
 import { useState } from "react";
 import { money, percentBps, shortAddress } from "@/lib/format";
-import {
-  STAGING_ASSET,
-  STAGING_STRATEGY,
-  STAGING_TIMELOCK,
-  STAGING_VAULT,
-} from "@/config/staging";
+
+/** One address the vault itself named this render; an absent address is printed as absent. */
+export interface MandateIdentity {
+  asset: string | null;
+  strategy: string | null;
+  roleManager: string | null;
+  vaultAddress: string;
+}
+
+function identityValue(address: string | null, suffix = ""): string {
+  return address === null ? "not read this render" : `${shortAddress(address)}${suffix}`;
+}
 
 interface Mandate {
   slug: string;
@@ -41,9 +47,11 @@ export interface MandateLive {
   performanceFeeBps: number | null;
   currentDebt: string | null;
   maxDebt: string | null;
+  /** Where the deployed entry was read: the chain this render talked to, never a hard-coded network. */
+  venueLine: string;
 }
 
-function deployedMandate(live: MandateLive): Mandate {
+function deployedMandate(live: MandateLive, identity: MandateIdentity): Mandate {
   const totalAssets = BigInt(live.totalAssets);
   const totalIdle = BigInt(live.totalIdle);
   const depositLimit = BigInt(live.depositLimit);
@@ -52,14 +60,14 @@ function deployedMandate(live: MandateLive): Mandate {
   return {
     slug: "usdg-managed-yield",
     name: "USDG Managed Yield",
-    status: "Deployed on the staging fork",
+    status: live.venueLine,
     offered: true,
     accentColor: "#6db89b",
     accentGlow: "rgba(109, 184, 155, 0.15)",
     description:
       "The only mandate with a contract. It routes USDG through a Yearn V3 allocator vault to one strategy. The strategy holds nothing at this block, so no venue is named: an unfunded target is not a position.",
     facts: [
-      { label: "Asset", value: `USDG ${shortAddress(STAGING_ASSET)}` },
+      { label: "Asset", value: identityValue(identity.asset) },
       { label: "Deposit limit", value: `${money(depositLimit)} USDG` },
       { label: "Total assets", value: `${money(totalAssets)} USDG` },
       { label: "Idle cash", value: `${money(totalIdle)} USDG · ${percentBps(idleBps)}` },
@@ -67,7 +75,7 @@ function deployedMandate(live: MandateLive): Mandate {
         label: "Performance fee",
         value: live.performanceFeeBps === null ? "not readable" : percentBps(live.performanceFeeBps),
       },
-      { label: "Strategy", value: shortAddress(STAGING_STRATEGY) },
+      { label: "Strategy", value: identityValue(identity.strategy) },
       {
         label: "Strategy debt",
         value:
@@ -77,7 +85,7 @@ function deployedMandate(live: MandateLive): Mandate {
                 live.maxDebt === null ? "not readable" : `${money(BigInt(live.maxDebt))} USDG`
               }`,
       },
-      { label: "role_manager", value: `${shortAddress(STAGING_TIMELOCK)} · 48h` },
+      { label: "role_manager", value: identityValue(identity.roleManager, " · 48h") },
     ],
     bounds: [
       "ERC-4626 shares; a share is a claim, not a balance",
@@ -85,7 +93,7 @@ function deployedMandate(live: MandateLive): Mandate {
       "Deposit cap enforced by deposit_limit() in the contract",
       "No rate is quoted: the vault reports assets, not a yield target",
     ],
-    vaultAddress: STAGING_VAULT,
+    vaultAddress: identity.vaultAddress,
   };
 }
 
@@ -202,8 +210,8 @@ const ROADMAP: Mandate[] = [
   },
 ];
 
-export function VaultMandates({ live }: { live: MandateLive }) {
-  const mandates = [deployedMandate(live), ...ROADMAP];
+export function VaultMandates({ live, identity }: { live: MandateLive; identity: MandateIdentity }) {
+  const mandates = [deployedMandate(live, identity), ...ROADMAP];
   const [selectedIndex, setSelectedIndex] = useState(0);
   const active = mandates[selectedIndex];
 
@@ -366,7 +374,7 @@ export function VaultMandates({ live }: { live: MandateLive }) {
             </div>
 
             <div className="mt-8 pt-6 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-4">
-              <div className="text-xs text-[#a3abb8] font-mono">Robinhood Chain · chain ID 4663 · ERC-4626</div>
+              <div className="text-xs text-[#a3abb8] font-mono">{live.venueLine} · ERC-4626</div>
 
               <div className="flex items-center gap-3">
                 {active.vaultAddress ? (

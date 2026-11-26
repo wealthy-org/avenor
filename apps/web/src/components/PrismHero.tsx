@@ -14,10 +14,12 @@ export interface HeroMetric {
 interface PrismHeroProps {
   blockNumber: string;
   rpcReachable: boolean;
+  /** The chain this render talked to, e.g. "Robinhood Chain testnet · chain ID 46630". */
+  chainLine: string;
   metrics: HeroMetric[];
 }
 
-export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps) {
+export function PrismHero({ blockNumber, rpcReachable, chainLine, metrics }: PrismHeroProps) {
   const imageRef = useRef<HTMLImageElement>(null);
   const pointerRef = useRef({ x: 0, y: 0 });
   const smoothedRef = useRef({ x: 0, y: 0 });
@@ -150,10 +152,12 @@ export function PrismHero({ blockNumber, rpcReachable, metrics }: PrismHeroProps
         <div className="flex items-center justify-between px-1">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#a3abb8] flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${rpcReachable ? "bg-[#6db89b]" : "bg-[#e8c468]"}`} />
-            {rpcReachable ? "Live On-Chain State" : "Rehearsal Fork State (Pin Block " + blockNumber + ")"}
+            {rpcReachable
+              ? "Live On-Chain State"
+              : `State retained from a capture at block ${blockNumber}: the node did not answer`}
           </span>
           <span className="text-[11px] font-mono text-[#6b7280]">
-            Chain ID 4663 · Block {blockNumber}
+            {chainLine} · Block {blockNumber}
           </span>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

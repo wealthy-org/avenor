@@ -23,19 +23,21 @@ import {
 } from "@/lib/withdraw";
 import { DepositError, parseAssetInput } from "@/lib/deposit";
 import {
-  AVENOR_CHAIN_ID,
   WalletError,
+  chainConfig,
   connectWallet,
   findInjectedProvider,
   mapWalletError,
   readChainId,
-  switchToAvenorChain,
+  switchToChain,
 } from "@/lib/wallet";
 import { Amount, AddressText } from "@/components/primitives";
 import { blockTime, percentBps } from "@/lib/format";
 
 export interface WithdrawFormProps {
   vault: Address;
+  /** `eth_chainId` of the node this page read, so the wallet is asked for that chain and no other. */
+  chainId: number;
   assetSymbol: string;
   /** `decimals()` of the share token, read from the vault: VaultV3 uses the asset's decimals (6). */
   shareDecimals: number;
@@ -52,13 +54,6 @@ interface Problem {
 }
 
 const PRESETS = [0, 10, 50, 100] as const;
-
-const CHAIN = {
-  id: AVENOR_CHAIN_ID,
-  name: "Robinhood Chain",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: ["https://placeholder.invalid"] } },
-} as const;
 
 function rpcUrl(): string {
   const value = process.env.NEXT_PUBLIC_RPC_URL;
@@ -78,7 +73,8 @@ function describe(error: unknown): Problem {
   return { code: "unknown", message: error instanceof Error ? error.message : String(error), detail: null };
 }
 
-export function WithdrawForm({ vault, assetSymbol, live, shareDecimals }: WithdrawFormProps) {
+export function WithdrawForm({ vault, chainId: nodeChainId, assetSymbol, live, shareDecimals }: WithdrawFormProps) {
+  const CHAIN = chainConfig(nodeChainId);
   const [phase, setPhase] = useState<Phase>("idle");
   const [mode, setMode] = useState<WithdrawMode>("assets");
   const [account, setAccount] = useState<Address | null>(null);
@@ -96,7 +92,8 @@ export function WithdrawForm({ vault, assetSymbol, live, shareDecimals }: Withdr
     } catch {
       return null;
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- CHAIN is rebuilt from nodeChainId, which is in the dep list
+  }, [nodeChainId]);
 
   const blocked = useMemo(() => {
     if (quote === null) return [];
@@ -120,15 +117,15 @@ export function WithdrawForm({ vault, assetSymbol, live, shareDecimals }: Withdr
       const connected = await connectWallet(findInjectedProvider({ ethereum: bag }));
       setAccount(connected.account);
       setChainId(connected.chainId);
-      if (connected.chainId !== AVENOR_CHAIN_ID) {
-        const result = await switchToAvenorChain(connected.provider);
+      if (connected.chainId !== nodeChainId) {
+        const result = await switchToChain(connected.provider, nodeChainId);
         if (result.switched) setChainId(await readChainId(connected.provider));
         else setProblem({ code: "wrong_network", message: result.reason ?? "Wallet refused chain switch.", detail: null });
       }
     } catch (error) {
       setProblem(describe(error));
     }
-  }, []);
+  }, [nodeChainId]);
 
   const reprice = useCallback(async () => {
     if (account === null || client === null) {
@@ -166,8 +163,8 @@ export function WithdrawForm({ vault, assetSymbol, live, shareDecimals }: Withdr
     setProblem(null);
     setPhase("signing");
     try {
-      if ((await readChainId(provider)) !== AVENOR_CHAIN_ID) {
-        setProblem({ code: "wrong_network", message: `Wallet is not on chain ${AVENOR_CHAIN_ID}.`, detail: null });
+      if ((await readChainId(provider)) !== nodeChainId) {
+        setProblem({ code: "wrong_network", message: `Wallet is not on chain ${nodeChainId}.`, detail: null });
         setPhase("error");
         return;
       }
@@ -250,7 +247,7 @@ export function WithdrawForm({ vault, assetSymbol, live, shareDecimals }: Withdr
             </span>
           </div>
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs text-[#a3abb8]">Loss Tolerance</span>
+            <span className="text-xs text-[#a3abb8]">Loss Tolerance (selected)</span>
             <span className="font-mono text-sm tabular-nums text-[#f8f9fa]">
               {quote === null ? `${lossBps} bps` : `${quote.maxLossBps} bps = ${maxLossAssets(quote).toString()} asset units`}
             </span>
@@ -391,10 +388,10 @@ export function WithdrawForm({ vault, assetSymbol, live, shareDecimals }: Withdr
       </fieldset>
 
       {/* Chain Warning */}
-      {chainId !== null && chainId !== AVENOR_CHAIN_ID ? (
+      {chainId !== null && chainId !== nodeChainId ? (
         <div className="rounded-xl bg-[#1a1200] border border-[#e8c468]/20 p-3.5" role="alert">
           <p className="text-sm text-[#e8c468]">
-            ⚠ Wallet is on chain {chainId}. This form only submits transactions to chain {AVENOR_CHAIN_ID} (Robinhood Chain).
+            ⚠ Wallet is on chain {chainId}. This form only submits transactions to chain {nodeChainId}.
           </p>
         </div>
       ) : null}
@@ -478,8 +475,11 @@ export function WithdrawForm({ vault, assetSymbol, live, shareDecimals }: Withdr
       </button>
 
       <p className="provenance">
-        Estimates are from block {quote === null ? "—" : quote.blockNumber.toString()}. Final amounts are sourced exclusively from the on-chain{" "}
-        <code className="font-mono text-[11px]">Withdraw</code> event.
+        {quote === null
+          ? "No estimate has been computed yet: enter an amount and press Calculate, and this line will name the block it was read at."
+          : `Estimate read at block ${quote.blockNumber.toString()}. Final amounts are sourced exclusively from the on-chain `}
+        {quote === null ? null : <code className="font-mono text-[11px]">Withdraw</code>}
+        {quote === null ? null : " event."}
       </p>
 
       {/* Error */}
