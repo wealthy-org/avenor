@@ -12,7 +12,7 @@ import { createPublicClient, erc20Abi, decodeEventLog, parseUnits, type Address,
 
 /** Exactly what `createPublicClient` returns, so tests and the app pass the same type. */
 export type ChainClient = ReturnType<typeof createPublicClient>;
-import { prepareApprove, prepareDeposit, previewDeposit, vaultV3Abi } from "@avenor/sdk";
+import { prepareApprove, prepareDeposit, previewDeposit, SlippageExceededError, vaultV3Abi } from "@avenor/sdk";
 
 /**
  * `@avenor/sdk` resolves its own `viem` install (`file:` dependency), so its `PublicClient` type is a
@@ -32,6 +32,8 @@ export type DepositErrorCode =
   | "exceeds_cap"
   | "reverted"
   | "no_event"
+  | "quote_expired"
+  | "slippage_exceeded"
   | "rpc";
 
 export class DepositError extends Error {
@@ -136,6 +138,10 @@ export interface DepositQuote {
   blockNumber: bigint;
   assets: bigint;
   shares: bigint;
+  /** Minimum shares expected with 50 bps (0.5%) default slippage protection (Brief §9). */
+  minShares: bigint;
+  /** Milliseconds timestamp when the quote was computed. */
+  quoteTimestamp: number;
   maxAssets: bigint;
   allowance: bigint;
   balance: bigint;
@@ -145,9 +151,10 @@ export interface DepositQuote {
 /** One block for every number in the form: a quote that mixes blocks is a quote for nothing. */
 export async function quoteDeposit(
   client: ChainClient,
-  params: { vault: Address; asset: Address; account: Address; assets: bigint; blockNumber?: bigint },
+  params: { vault: Address; asset: Address; account: Address; assets: bigint; blockNumber?: bigint; slippageBps?: number },
 ): Promise<DepositQuote> {
   const blockNumber = params.blockNumber ?? (await client.getBlockNumber());
+  const slippageBps = BigInt(params.slippageBps ?? 50); // 0.50% default slippage
   try {
     const [preview, allowance, balance, depositLimit, isPaused, isShutdown] = await Promise.all([
       previewDeposit(asSdkClient(client), params.vault, params.assets, params.account, blockNumber),
@@ -169,10 +176,13 @@ export async function quoteDeposit(
       client.readContract({ address: params.vault, abi: vaultV3Abi, functionName: "isPaused", blockNumber }),
       client.readContract({ address: params.vault, abi: vaultV3Abi, functionName: "isShutdown", blockNumber }),
     ]);
+    const minShares = (preview.shares * (10_000n - slippageBps)) / 10_000n;
     return {
       blockNumber,
       assets: params.assets,
       shares: preview.shares,
+      minShares,
+      quoteTimestamp: Date.now(),
       maxAssets: preview.maxAssets,
       allowance,
       balance,
@@ -211,6 +221,7 @@ export interface SubmitParams {
   assets: bigint;
   receiver: Address;
   quote: DepositQuote;
+  maxQuoteAgeMs?: number;
 }
 
 /**
@@ -218,6 +229,14 @@ export interface SubmitParams {
  * the receipt is decoded: a receipt without a `Deposit` event is an error, not a zero.
  */
 export async function submitDeposit(params: SubmitParams): Promise<DepositReceipt> {
+  const maxAge = params.maxQuoteAgeMs ?? 60_000;
+  if (params.quote.quoteTimestamp && Date.now() - params.quote.quoteTimestamp > maxAge) {
+    throw new DepositError(
+      "quote_expired",
+      "The deposit quote has expired (older than 60s). Please recalculate shares to ensure accurate execution.",
+    );
+  }
+
   const blockers = depositBlockers({
     assets: params.assets,
     maxAssets: params.quote.maxAssets,
@@ -243,12 +262,21 @@ export async function submitDeposit(params: SubmitParams): Promise<DepositReceip
     }
   }
 
-  const prepared = await prepareDeposit(asSdkClient(params.client), {
-    vault: params.vault,
-    account: params.signer.account,
-    assets: params.assets,
-    receiver: params.receiver,
-  });
+  let prepared;
+  try {
+    prepared = await prepareDeposit(asSdkClient(params.client), {
+      vault: params.vault,
+      account: params.signer.account,
+      assets: params.assets,
+      receiver: params.receiver,
+      minShares: params.quote.minShares,
+    });
+  } catch (error) {
+    if (error instanceof SlippageExceededError) {
+      throw new DepositError("slippage_exceeded", error.message);
+    }
+    throw error;
+  }
   const depositTx = await params.signer.sendTransaction(prepared.request);
   const receipt = await params.client.waitForTransactionReceipt({ hash: depositTx });
   if (receipt.status !== "success") {
@@ -263,6 +291,15 @@ export async function submitDeposit(params: SubmitParams): Promise<DepositReceip
       depositTx,
     );
   }
+
+  if (params.quote.minShares !== undefined && event.shares < params.quote.minShares) {
+    throw new DepositError(
+      "slippage_exceeded",
+      `Received ${event.shares} shares, below minimum threshold ${params.quote.minShares}.`,
+      depositTx,
+    );
+  }
+
   return {
     approveTx,
     depositTx,

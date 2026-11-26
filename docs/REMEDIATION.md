@@ -157,16 +157,34 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
 
 ---
 
-## 3. Verifikasi Penuh Suite Pengujian
+---
 
-Seluruh perbaikan di atas divalidasi menggunakan gerbang otomatis terpadu:
-```bash
-python scripts/verify-all.py
-```
-Hasil eksekusi:
-- **Foundry Unit Tests:** 112+ tests passed (0 failed, 0 skipped).
-- **Invariant Tests:** 10.000 runs passed (0 violations).
-- **Web App Tests:** 117 tests passed (0 failed).
-- **Bytecode Verification:** 14/14 checks passed (100% bit-for-bit cocok).
+## 4. Remediasi Sprint 2 (Hardening Layanan, Proteksi Alur, & Kelengkapan Deliverables)
 
-**Kesimpulan:** Seluruh temuan internal BMAD telah dimitigasi dan diuji secara ketat dengan bukti regresi. Tidak ada temuan yang ditutup tanpa test. Proyek ini belum diaudit oleh firma audit pihak ketiga independen; seluruh klaim merujuk pada verifikasi suite pengujian internal repository ini.
+Berdasarkan audit komprehensif GAP Analysis (`GAP_ANALYSIS_Avenor.md`), seluruh temuan Sprint 2 telah dimitigasi dan diuji:
+
+### 4.1 [P0 / K-2 & D-1] Sanitasi Kunci DeployTestnet & Pola Fail-Closed
+- **Masalah:** Penggunaan `makeAddr("avenor.testnet.keeper")` dan teks publik serupa menghasilkan private key deterministik yang dapat dihitung pihak mana pun.
+- **Remediasi:** `DeployTestnet.s.sol` mewajibkan alamat pemilik Safe dan Keeper nyata melalui environment variables (`SAFE_GOVERNANCE_OWNERS`, `SAFE_GUARDIAN_OWNERS`, `SAFE_TREASURY_OWNERS`, `KEEPER_ADDRESS`, `GUARDIAN_ADDRESS`, `TREASURY_ADDRESS`) ketika dijalankan pada rantai selain Anvil lokal (`chainId != 31337`). Skrip langsung revert jika dijalankan pada rantai publik tanpa variabel lingkungan ini.
+- **Bukti Regresi:** `packages/contracts/test/unit/DeployTestnet.t.sol::test_testnetRejectsMissingKeysOnChain46630` (PASS).
+
+### 4.2 [P0 / S-1, S-3, S-10] Hardening Konfirmasi Receipt & In-Flight Guard Keeper
+- **Masalah:** Keeper menganggap pekerjaan selesai setelah menerima hash transaksi tanpa konfirmasi receipt blok, berisiko tabrakan nonce atau duplikasi pengiriman.
+- **Remediasi:** Antarmuka `KeeperSender` dan implementasi `ViemSender` dilengkapi `waitForReceipt(txHash)`. `keeper.ts` memverifikasi receipt status (`reverted` memicu alert failure) dan memperbarui `blockNumber` aktual sebelum memanggil callback `job.onSent()`. In-flight guard mencegah perencanaan alokasi baru saat transaksi sebelumnya masih pending.
+- **Bukti Regresi:** `services/keeper/test/keeper.test.ts` (test kegagalan revert on-chain dan integrasi `waitForReceipt`, 24/24 PASS).
+
+### 4.3 [P1 / K-8] Deposit Slippage Protection (minShares) & Quote Expiry (TTL 60s)
+- **Masalah:** `prepareDeposit` pada SDK dan antarmuka web belum memiliki batas minimum shares (slippage tolerance) dan kuotasi tidak memiliki TTL.
+- **Remediasi:** SDK menambahkan `minShares` pada `DepositParams` dan melempar `SlippageExceededError` jika kuotasi dilanggar. `apps/web/src/lib/deposit.ts` menghitung `minShares` (default 50 bps slippage), menetapkan `quoteTimestamp`, dan melempar `DepositError("quote_expired")` jika kuotasi berumur > 60 detik. `DepositForm.tsx` menampilkan baris visual batas minimum shares.
+- **Bukti Regresi:** `apps/web/test/deposit.test.ts` (2 test regresi quote expired dan slippage breach, 119/119 PASS).
+
+### 4.4 [P1 / S-11 & S-14] Skema Database role_events & Catatan Rekonsiliasi Indexer
+- **Masalah:** Tabel `role_events` memiliki PK hanya pada `(chain_id, tx_hash, log_index)`, sehingga jika satu log `RoleSet` mengubah multi-bit, bit berikutnya terabaikan karena `ON CONFLICT DO NOTHING`. Rumus rekonsiliasi juga perlu penegasan perlakuan arus kas deposit.
+- **Remediasi:** Migrasi `0002_role_events_role_bit_pk.sql` memperketat `role_bit NOT NULL` dan memperluas PK menjadi `(chain_id, tx_hash, log_index, role_bit)`. `ingest.ts` memperbarui klausa `ON CONFLICT`. `reconcile.ts` menambahkan dokumentasi arsitektural bahwa deposit/withdraw telah tercakup dalam pergerakan `totalAssets` snapshot on-chain dan tidak boleh diduplikasi.
+- **Bukti Regresi:** `services/indexer/test/migrations.test.ts` (test multi-bit pada satu log logis, PASS) dan `services/indexer/test/reconcile.test.ts` (S-11 anchor snapshot test, PASS).
+
+### 4.5 [P1 / W-7 & D-22] Route Web /docs & Kelengkapan Dokumen Operasional
+- **Masalah:** Rute `/docs` belum ada (404), dan 3 dokumen operasional mandatory brief §17 belum lengkap.
+- **Remediasi:** Membangun rute `/docs` pada `apps/web/app/docs/page.tsx` (server-rendered statis) yang merangkum Arsitektur, Konfigurasi Fee, Matriks Wewenang Role, Limitasi, dan Referensi Operasional. Menyusun 3 dokumen formal: `docs/SIGNER_POLICY.md`, `docs/BACKUP_RECOVERY.md`, dan `docs/KNOWN_LIMITATIONS.md`.
+- **Bukti Regresi:** `apps/web/test/docs.test.ts` (memverifikasi seluruh section dokumen ter-render dengan sempurna, PASS).
+

@@ -317,6 +317,7 @@ export function DepositForm({ vault, asset, chainId: nodeChainId, assetSymbol, g
               <h3 className="text-xs font-mono uppercase tracking-wider text-[#a3abb8] mb-3">Quote Preview</h3>
               {[
                 { label: "Estimated Shares", value: <Amount value={quote.shares} kind="shares" decimals={shareDecimals} /> },
+                { label: "Minimum Shares (0.5% Slippage)", value: <Amount value={quote.minShares} kind="shares" decimals={shareDecimals} /> },
                 { label: "Current Deposit Capacity", value: <Amount value={quote.maxAssets} kind="usdg" /> },
                 { label: "USDG Balance", value: <Amount value={quote.balance} kind="usdg" /> },
                 { label: "Current Allowance", value: <Amount value={quote.allowance} kind="usdg" /> },

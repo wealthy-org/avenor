@@ -47,6 +47,15 @@ export interface BaseWriteParams {
 export interface DepositParams extends BaseWriteParams {
   assets: bigint;
   receiver: Address;
+  /** Minimum shares expected (slippage protection). Throws if simulation returns fewer shares. */
+  minShares?: bigint;
+}
+
+export class SlippageExceededError extends Error {
+  constructor(actual: bigint, minShares: bigint) {
+    super(`simulated shares ${actual} is below minimum shares threshold ${minShares}`);
+    this.name = "SlippageExceededError";
+  }
 }
 
 export interface WithdrawParams extends BaseWriteParams {
@@ -93,6 +102,9 @@ export async function prepareDeposit(client: PublicClient, params: DepositParams
     args: [params.assets, params.receiver],
     account: params.account,
   });
+  if (params.minShares !== undefined && result < params.minShares) {
+    throw new SlippageExceededError(result, params.minShares);
+  }
   return { request, assets: params.assets, shares: result };
 }
 

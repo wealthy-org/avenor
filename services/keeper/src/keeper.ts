@@ -115,6 +115,37 @@ export class Keeper {
       try {
         const txHash = await this.sender.send(planned.action, nonce);
         this.nonce = nonce + 1;
+
+        if (this.sender.waitForReceipt) {
+          try {
+            const receipt = await this.sender.waitForReceipt(txHash);
+            if (receipt.status === "reverted") {
+              return this.emit({
+                ...base,
+                level: "error",
+                status: "failed",
+                txHash,
+                reason: `transaction reverted on-chain in block ${receipt.blockNumber}`,
+                nonce,
+                calldata: planned.action.data,
+                detail: planned.detail,
+              });
+            }
+            base.blockNumber = receipt.blockNumber.toString();
+          } catch (error) {
+            return this.emit({
+              ...base,
+              level: "error",
+              status: "failed",
+              txHash,
+              reason: `receipt confirmation failed: ${message(error)}`,
+              nonce,
+              calldata: planned.action.data,
+              detail: planned.detail,
+            });
+          }
+        }
+
         await job.onSent?.(planned, txHash);
         return this.emit({
           ...base,

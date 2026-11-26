@@ -263,12 +263,11 @@ async function applyLog(client: PoolClient, cfg: StreamConfig, log: RpcLog, bloc
         `INSERT INTO role_events
            (chain_id, vault_address, account, role_bit, granted, block_number, block_hash, block_time, tx_hash, log_index)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         ON CONFLICT (chain_id, tx_hash, log_index) DO NOTHING`,
+         ON CONFLICT (chain_id, tx_hash, log_index, role_bit) DO NOTHING`,
         [chainId, vault, roleSet.account, bit, granted, blockNumber, log.blockHash.toLowerCase(), blockTime, txHash, log.logIndex],
       );
     }
-    // One log can change several bits, and the primary key is per log. Store the bitmap itself so
-    // the diff is reproducible; the per-bit rows above are for querying, not for reconstruction.
+    // Store the bitmap itself so the diff is reproducible; the per-bit rows above are for querying.
     await client.query(
       `INSERT INTO role_state (chain_id, vault_address, account, bitmap, updated_block)
        VALUES ($1, $2, $3, $4, $5)

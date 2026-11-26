@@ -15,12 +15,20 @@ export interface Simulation {
   reason?: string;
 }
 
+export interface KeeperReceipt {
+  status: "success" | "reverted";
+  blockNumber: bigint;
+  transactionHash: Hex;
+}
+
 export interface KeeperSender {
   address: `0x${string}`;
   nonce(): Promise<number>;
   /** eth_call with the sender as `from`: a transaction that would revert must never be broadcast. */
   simulate(tx: KeeperTx): Promise<Simulation>;
   send(tx: KeeperTx, nonce: number): Promise<Hex>;
+  /** Awaits transaction receipt from RPC to verify inclusion and success status. */
+  waitForReceipt?(txHash: Hex): Promise<KeeperReceipt>;
 }
 
 /** Errors that only mean "the nonce moved", not "the job is wrong". */

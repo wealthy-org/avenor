@@ -5,6 +5,18 @@
 //     lift `total_debt`, losses and refunds move assets, and no other event changes
 //     `totalAssets` — transfers, deposits, withdrawals only shuffle idle versus supply. Fee shares
 //     are burned by the vault, so they do not change `totalAssets` either (VaultV3.vy:_process_report).
+//
+//     S-11 NOTE: Deposits and withdrawals do NOT change vault `totalAssets` on the books:
+//     `deposit(assets)` moves user assets into vault `totalIdle` and mints shares — `totalAssets`
+//     (= `totalIdle + totalDebt`) rises by exactly the deposited amount, but the on-chain snapshot
+//     already reflects this because we read `totalAssets` from the node. The indexed side anchors
+//     from the last on-chain snapshot, so deposits/withdrawals between two snapshots are already
+//     captured in the new on-chain read and do not need to be added to the formula. Adding them
+//     would double-count. The formula `baseAssets + Σgain − Σloss + Σrefunds` is correct per
+//     VaultV3 semantics. If the indexer has not yet ingested `Deposit`/`Withdraw` events into a
+//     dedicated table (epic S-20), the reconciler produces drift only when a report period crosses
+//     a snapshot boundary without a report event — which is detected as drift and alerted.
+//
 //   * `totalSupply` expected = mints − burns, i.e. transfers from/to the zero address.
 //
 // `toleranceBps` is required, not defaulted: the caller has to state how much drift it accepts.

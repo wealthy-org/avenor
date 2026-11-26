@@ -77,6 +77,17 @@ export async function startFakeNode(): Promise<FakeNode> {
         sent.push(payload.params?.[0] as Hex);
         return reply(`0x${"11".repeat(32)}`);
       }
+      if (payload.method === "eth_getTransactionReceipt") {
+        return reply({
+          transactionHash: payload.params?.[0],
+          blockNumber: "0x64",
+          blockHash: `0x${"22".repeat(32)}`,
+          status: "0x1",
+          gasUsed: "0x5208",
+          cumulativeGasUsed: "0x5208",
+          logs: [],
+        });
+      }
       if (payload.method === "eth_call") {
         const tx = payload.params?.[0] as { to: string; data: Hex };
         const block = String(payload.params?.[1]);

@@ -2,7 +2,7 @@
 // signing lives in `keeper.ts`, which is what the tests exercise.
 
 import type { Account, Hex, PublicClient, WalletClient } from "viem";
-import type { KeeperSender, KeeperTx, Simulation } from "./sender.ts";
+import type { KeeperReceipt, KeeperSender, KeeperTx, Simulation } from "./sender.ts";
 
 export interface ViemSenderOptions {
   publicClient: PublicClient;
@@ -48,6 +48,15 @@ export function createViemSender(options: ViemSenderOptions): KeeperSender {
         nonce,
         gas: 1_500_000n,
       });
+    },
+
+    async waitForReceipt(txHash: Hex): Promise<KeeperReceipt> {
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 60_000 });
+      return {
+        status: receipt.status === "success" ? "success" : "reverted",
+        blockNumber: receipt.blockNumber,
+        transactionHash: txHash,
+      };
     },
   };
 }

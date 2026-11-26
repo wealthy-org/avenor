@@ -284,9 +284,35 @@ test("the production sender simulates before signing and surfaces a revert reaso
     assert.equal(hash, `0x${"11".repeat(32)}`);
     assert.equal(node.sent.length, 1);
     assert.ok(node.sent[0]!.toLowerCase().includes(SELECTOR.updateDebt.slice(2).toLowerCase()));
+
+    const receipt = await sender.waitForReceipt!(hash);
+    assert.equal(receipt.status, "success");
+    assert.equal(receipt.blockNumber, 100n);
   } finally {
     await node.stop();
   }
+});
+
+test("keeper waits for receipt and reports failed when transaction reverts on-chain (S-1)", async () => {
+  const sender: KeeperSender = {
+    address: "0xaaaa00000000000000000000000000000000aaaa",
+    nonce: async () => 10,
+    simulate: async () => ({ ok: true }),
+    send: async () => "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    waitForReceipt: async (txHash) => ({
+      status: "reverted",
+      blockNumber: 105n,
+      transactionHash: txHash,
+    }),
+  };
+
+  const job = snapshotJob({ to: VAULT, data: "0x1234" });
+  const { keeper, logger } = keeperFor(job, sender as any);
+
+  const entries = await keeper.runOnce();
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0]!.status, "failed");
+  assert.match(entries[0]!.reason ?? "", /transaction reverted on-chain in block 105/);
 });
 
 function transport(url: string) {

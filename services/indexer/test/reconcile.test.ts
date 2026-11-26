@@ -241,3 +241,27 @@ test("recordSnapshot is a refresh at the same block, not a constraint error", as
   );
   assert.equal(row.rows[0]?.total_assets, "1001");
 });
+
+test("reconcile correctly anchors to base snapshot and reflects net gains/losses/refunds (S-11)", async () => {
+  const chain = fakeChain();
+  mine(chain, 30);
+  const node = await startServer(chain);
+  // Base snapshot at block 10 has 10,000 assets.
+  // At block 15, strategy reports 500 gain.
+  // At block 20, strategy reports 100 loss.
+  // At block 25, 50 refund.
+  // Net expected assets = 10,000 + 500 - 100 + 50 = 10,450.
+  setViews(node, { totalAssets: 10_450n, totalSupply: 10_000n, pricePerShare: 1_045_000_000_000_000_000n });
+  await seedBaseSnapshot(10, 10_000n, 10_000n);
+  await seedReport(15, 500n, 0n, 0n);
+  await seedReport(20, 0n, 100n, 0n);
+  await seedReport(25, 0n, 0n, 50n);
+  await seedTransfers(10_000n);
+
+  const report = await reconcile(pool, httpRpc(node.url), config(), 28n);
+  assert.equal(report.status, "ok");
+  assert.equal(report.indexed.totalAssets, 10_450n);
+  assert.equal(report.onchain.totalAssets, 10_450n);
+  assert.equal(report.deltas.totalAssets, 0n);
+  assert.deepEqual(report.alerts, []);
+});

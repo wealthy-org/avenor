@@ -75,20 +75,27 @@ contract DeployTestnet is Deploy {
         address treasury = vm.envOr("TREASURY_ADDRESS", address(0));
         address proposer = vm.envOr("PROPOSER_ADDRESS", address(0));
 
-        // Create 2/3 Safe for Governance / Proposer if not provided
-        if (proposer == address(0)) {
-            proposer = _deploySafe(_governanceOwners(), 1001);
-            console.log("Deployed Governance Safe (Proposer) at:", proposer);
-        }
-
-        // Guardian and treasury remain explicit configured role addresses. Do not silently
-        // manufacture signer identities for them; governance Safe owner identities are the
-        // only addresses this script derives from dedicated environment variables.
-
-        // Keeper EOA for automated reporting
-        if (keeper == address(0)) {
-            keeper = makeAddr("avenor.testnet.keeper");
-            console.log("Assigned Keeper address:", keeper);
+        if (chainId != 31337) {
+            // Hardening (K-2 / D-1): Never use predictable makeAddr keys on public testnets!
+            if (guardian == address(0)) revert ZeroAddress("GUARDIAN_ADDRESS");
+            if (keeper == address(0)) revert ZeroAddress("KEEPER_ADDRESS");
+            if (treasury == address(0)) revert ZeroAddress("TREASURY_ADDRESS");
+            if (proposer == address(0)) {
+                proposer = _deploySafe(_governanceOwners(), 1001);
+                console.log("Deployed Governance Safe (Proposer) at:", proposer);
+            }
+        } else {
+            // Local Anvil (31337) simulation only
+            if (proposer == address(0)) {
+                address[] memory localOwners = new address[](3);
+                localOwners[0] = makeAddr("local.owner1");
+                localOwners[1] = makeAddr("local.owner2");
+                localOwners[2] = makeAddr("local.owner3");
+                proposer = _deploySafe(localOwners, 1001);
+            }
+            if (guardian == address(0)) guardian = makeAddr("local.guardian");
+            if (keeper == address(0)) keeper = makeAddr("local.keeper");
+            if (treasury == address(0)) treasury = makeAddr("local.treasury");
         }
 
         vm.stopBroadcast();
@@ -124,7 +131,7 @@ contract DeployTestnet is Deploy {
         console.log("Emergency Timelock (6h):", d.emergencyTimelock);
     }
 
-    function _governanceOwners() internal returns (address[] memory owners) {
+    function _governanceOwners() internal view returns (address[] memory owners) {
         owners = new address[](3);
         owners[0] = vm.envOr("GOVERNANCE_OWNER_1", address(0));
         owners[1] = vm.envOr("GOVERNANCE_OWNER_2", address(0));

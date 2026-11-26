@@ -236,3 +236,40 @@ test("wallet error mapping keeps 4001 and -32002 apart", () => {
   assert.equal(mapWalletError(Object.assign(new Error("x"), { code: -32002 }))?.code, "pending_request");
   assert.equal(mapWalletError(new Error("x")), null);
 });
+
+test("deposit rejects expired quote older than 60s (K-8)", async () => {
+  const { client, chain } = createFakeChain(defaultHandlers());
+  const quote = await quoteDeposit(client, { vault: VAULT, asset: ASSET, account: USER, assets: 100_000_000n });
+  // Simulate stale quote (older than 60s)
+  quote.quoteTimestamp = Date.now() - 65_000;
+  await assert.rejects(
+    submitDeposit({
+      client,
+      signer: scriptedSigner(chain),
+      vault: VAULT,
+      asset: ASSET,
+      assets: 100_000_000n,
+      receiver: USER,
+      quote,
+    }),
+    (error: unknown) => error instanceof DepositError && error.code === "quote_expired",
+  );
+});
+
+test("deposit rejects when received shares breach minimum shares threshold (K-8)", async () => {
+  const { client, chain } = createFakeChain(defaultHandlers({ deposit: () => 50_000_000n })); // returns only 50m shares
+  const quote = await quoteDeposit(client, { vault: VAULT, asset: ASSET, account: USER, assets: 100_000_000n });
+  // quote.shares is ~99.7m, minShares is ~99.2m, but event yields 50m
+  await assert.rejects(
+    submitDeposit({
+      client,
+      signer: scriptedSigner(chain),
+      vault: VAULT,
+      asset: ASSET,
+      assets: 100_000_000n,
+      receiver: USER,
+      quote,
+    }),
+    (error: unknown) => error instanceof DepositError && error.code === "slippage_exceeded",
+  );
+});

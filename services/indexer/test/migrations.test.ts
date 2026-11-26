@@ -57,8 +57,9 @@ after(async () => {
 
 test("migrations apply from an empty database and applying again is a no-op", async () => {
   const first = await migrate(pool, MIGRATIONS);
-  assert.equal(first.length, 1, "one migration applied");
+  assert.equal(first.length, 2, "two migrations applied");
   assert.match(first[0]!.name, /^0001_/);
+  assert.match(first[1]!.name, /^0002_/);
 
   const tables = await pool.query<{ table_name: string }>(
     `SELECT table_name FROM information_schema.tables
@@ -72,7 +73,7 @@ test("migrations apply from an empty database and applying again is a no-op", as
 
   const second = await migrate(pool, MIGRATIONS);
   assert.equal(second.length, 0, "second run applies nothing");
-  assert.equal((await appliedMigrations(pool)).length, 1);
+  assert.equal((await appliedMigrations(pool)).length, 2);
 });
 
 test("a duplicate event is refused by the primary key, not silently overwritten", async () => {
@@ -121,6 +122,30 @@ test("an unknown fee kind is refused", async () => {
          VALUES (4663, '0xvault', 1, '0xabc', to_timestamp(1), '0xfeetx', 0, 'made_up', 1)`,
       ),
     (error: { code?: string }) => error.code === "23514",
+  );
+});
+
+test("role_events allows multiple entries for distinct role bits on the same log (S-14)", async () => {
+  const insertBit1 = `INSERT INTO role_events
+      (chain_id, vault_address, account, role_bit, granted, block_number, block_hash, block_time, tx_hash, log_index)
+    VALUES (4663, '0xvault', '0xuser', 1, true, 100, '0xhash', to_timestamp(1), '0xtx', 0)`;
+  const insertBit2 = `INSERT INTO role_events
+      (chain_id, vault_address, account, role_bit, granted, block_number, block_hash, block_time, tx_hash, log_index)
+    VALUES (4663, '0xvault', '0xuser', 2, true, 100, '0xhash', to_timestamp(1), '0xtx', 0)`;
+
+  await pool.query(insertBit1);
+  await pool.query(insertBit2);
+
+  const count = await pool.query<{ count: string }>(
+    "SELECT count(*)::text AS count FROM role_events WHERE tx_hash = '0xtx' AND log_index = 0",
+  );
+  assert.equal(count.rows[0]?.count, "2", "both role bits are stored for the same log");
+
+  // Duplicate with same bit is rejected by PK (chain_id, tx_hash, log_index, role_bit)
+  await assert.rejects(
+    () => pool.query(insertBit1),
+    (error: { code?: string }) => error.code === "23505",
+    "exact same (chain_id, tx_hash, log_index, role_bit) must violate PK",
   );
 });
 
