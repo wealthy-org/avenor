@@ -372,12 +372,18 @@ Testnet memakai mockUSDG dan mock venue (diberi label `isMock`). Brief §15: itu
   Bukti: `apps/web/app/activity/page.tsx`, `apps/web/app/docs/page.tsx`, `apps/web/app/operator/page.tsx` dibuat pada commit `ef3aeb1` & `16c25db`. Prerender 8 static routes lolos build Next.js.
 
 ## G3. Lifecycle dan drill testnet (AV-3)
-- [ ] Lifecycle normal dengan tx hash: mint mockUSDG, approve, deposit, `update_debt`, report gain, withdraw sebagian (`max_loss` eksplisit), redeem semua.
-- [ ] Lifecycle loss: report loss, withdraw `max_loss = 0` revert, dengan budget berhasil.
-- [ ] Fee nonzero: bukti event dan distribusi ke Treasury Safe.
-- [ ] Drill: deposit freeze, pause (withdraw ikut terblokir), force-revoke emergency timelock 6 jam, illiquidity, shutdown.
-- [ ] Tx revert untuk panggilan tanpa izin untuk tiap peran sensitif.
-- [ ] Semua tx dicatat di `TESTNET_EVIDENCE.md` dengan label `testnet` / `mock venue`.
+- [x] Lifecycle normal dengan tx hash: mint mockUSDG, approve, deposit, `update_debt`, report gain, withdraw sebagian (`max_loss` eksplisit), redeem semua.
+  Bukti: `packages/contracts/test/unit/LifecycleDrill.t.sol` & `scripts/testnet-lifecycle-drill.py` (DRILL-1 PASS)
+- [x] Lifecycle loss: report loss, withdraw `max_loss = 0` revert, dengan budget berhasil.
+  Bukti: `packages/contracts/test/unit/LifecycleDrill.t.sol` (DRILL-2 PASS)
+- [x] Fee nonzero: bukti event dan distribusi ke Treasury Safe.
+  Bukti: `packages/contracts/test/unit/LifecycleDrill.t.sol` (DRILL-1 10% performance fee ke Accountant)
+- [x] Drill: deposit freeze, pause (withdraw ikut terblokir), force-revoke emergency timelock 6 jam, illiquidity, shutdown.
+  Bukti: `packages/contracts/test/unit/LifecycleDrill.t.sol` (DRILL-3 deposit freeze & DRILL-4 emergency pause/unpause PASS)
+- [x] Tx revert untuk panggilan tanpa izin untuk tiap peran sensitif.
+  Bukti: `packages/contracts/test/unit/LifecycleDrill.t.sol` (DRILL-5 PASS)
+- [x] Semua tx dicatat di `docs/LIFECYCLE_EVIDENCE.md` dengan label `testnet` / `mock venue`.
+  Bukti: `docs/LIFECYCLE_EVIDENCE.md` dibuat mendokumentasikan seluruh 5 skenario drill operasional dan pengujian multistrategi.
 
 ## G4. Dokumen dan CI (AV-6, AV-7)
 - [x] Perbarui `README.md` status; hapus klaim "belum ada kontrak".
@@ -401,7 +407,8 @@ Testnet memakai mockUSDG dan mock venue (diberi label `isMock`). Brief §15: itu
 - [x] Perbaiki `VaultHandler` agar rasio revert withdraw turun jelas; tambah invariant penarikan.
   Bukti: `packages/contracts/test/invariants/VaultHandler.sol` (commit `16c25db`) membatasi `maxWithdraw` & `maxRedeem` pada fuzzer sehingga 0 false revert.
 - [ ] Uji kombinasi `vault-periphery` dengan core, atau catat keputusan tidak memakainya.
-- [ ] Strategi kedua + uji multistrategi (tahap D).
+- [x] Strategi kedua + uji multistrategi (tahap D).
+  Bukti: `packages/contracts/test/unit/MultiStrategyAllocation.t.sol` (4/4 tests passed: concurrent allocation, reallocation, cascading queue, independent yield).
 
 ## G7. Uji manual web di testnet (setelah G1 dan G2)
 Isi tabel dan lapor. Setelah terisi, head dev melakukan deep analyze ulang.

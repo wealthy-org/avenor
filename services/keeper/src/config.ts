@@ -3,6 +3,7 @@
 
 export interface KeeperConfig {
   rpcUrl: string;
+  fallbackRpcUrls?: string[];
   vault: `0x${string}`;
   strategy: `0x${string}`;
   privateKey: `0x${string}`;
@@ -44,9 +45,14 @@ export function parseKeeperConfig(env: Record<string, string | undefined>): Keep
 
   const maxGainRaw = env.MAX_GAIN_BPS;
   const alertWebhookUrl = env.ALERT_WEBHOOK_URL;
+  const fallbackRaw = env.FALLBACK_RPC_URLS;
+  const fallbackRpcUrls = fallbackRaw
+    ? fallbackRaw.split(",").map((u) => u.trim()).filter(Boolean)
+    : undefined;
 
   return {
     rpcUrl: required(env, "RPC_URL"),
+    fallbackRpcUrls: fallbackRpcUrls && fallbackRpcUrls.length > 0 ? fallbackRpcUrls : undefined,
     vault: address(env, "VAULT_ADDRESS"),
     strategy: address(env, "STRATEGY_ADDRESS"),
     privateKey: privateKey as `0x${string}`,

@@ -50,6 +50,7 @@ bracket_spacing = true
 int_types = "long"
 quote_style = "double"
 multiline_func_header = "params_first"
+ignore = ["lib/**"]
 
 [fuzz]
 runs = 1024

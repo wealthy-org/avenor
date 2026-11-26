@@ -1,9 +1,8 @@
-// Minimal JSON-RPC client for ingestion.
+// Minimal JSON-RPC client for ingestion with resilient multi-endpoint fallback.
 //
-// Only the four methods the indexer needs are wrapped. Retries are deliberate and narrow:
-// a rate limit or a transport failure is retried with backoff, a JSON-RPC *error* is not — the
-// node answering "block range too large" or "unknown block" will answer the same way again, and
-// retrying it only delays the report of a real problem.
+// Wraps the core methods the indexer needs. Supports automatic fallback across multiple
+// RPC endpoints, chain ID validation, transport retries with exponential backoff, and
+// WAF-compatible headers to prevent Cloudflare 403 rate-limiting.
 
 export interface JsonRpcError extends Error {
   code?: number;
@@ -35,50 +34,64 @@ export interface RpcClient {
   getLogs(params: { address: string; fromBlock: bigint; toBlock: bigint }): Promise<RpcLog[]>;
   /** `eth_call` at an explicit block. Reconciliation must not read "latest". */
   call(to: string, data: string, block: bigint | "latest"): Promise<string>;
+  /** Verify chainId matches expectation */
+  chainId?(): Promise<bigint>;
 }
 
 export interface HttpRpcOptions {
   attempts?: number;
   baseDelayMs?: number;
   timeoutMs?: number;
+  expectedChainId?: number | bigint;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-export function httpRpc(url: string, options: HttpRpcOptions = {}): RpcClient {
-  const attempts = options.attempts ?? 5;
+export function httpRpc(urls: string | string[], options: HttpRpcOptions = {}): RpcClient {
+  const urlList = Array.isArray(urls) ? urls.filter(Boolean) : [urls];
+  if (urlList.length === 0) {
+    throw new Error("httpRpc requires at least one RPC URL");
+  }
+
+  const attemptsPerEndpoint = options.attempts ?? 3;
   const baseDelayMs = options.baseDelayMs ?? 250;
   const timeoutMs = options.timeoutMs ?? 30_000;
+  const expectedChainId = options.expectedChainId != null ? BigInt(options.expectedChainId) : null;
   const doFetch = options.fetchImpl ?? fetch;
   const sleep = options.sleep ?? defaultSleep;
 
   let id = 0;
+  let activeUrlIndex = 0;
+  let chainIdValidated = false;
 
-  async function call<T>(method: string, params: unknown[]): Promise<T> {
+  async function rawCall<T>(targetUrl: string, method: string, params: unknown[]): Promise<T> {
     let lastError: unknown;
-    for (let attempt = 0; attempt < attempts; attempt += 1) {
+    for (let attempt = 0; attempt < attemptsPerEndpoint; attempt += 1) {
       if (attempt > 0) await sleep(baseDelayMs * 2 ** (attempt - 1));
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const response = await doFetch(url, {
+        const response = await doFetch(targetUrl, {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
           body: JSON.stringify({ jsonrpc: "2.0", id: ++id, method, params }),
           signal: controller.signal,
         });
 
-        // 429 and 5xx are transport-level: the request may succeed later.
-        if (response.status === 429 || response.status >= 500) {
+        if (response.status === 403 || response.status === 429 || response.status >= 500) {
           const retryAfter = Number(response.headers.get("retry-after"));
-          lastError = new Error(`${method}: HTTP ${response.status}`);
+          lastError = new Error(`${method}: HTTP ${response.status} from ${targetUrl}`);
           if (Number.isFinite(retryAfter) && retryAfter > 0) {
             await sleep(Math.min(retryAfter * 1000, 30_000));
           }
           continue;
         }
+
         if (!response.ok) {
           throw new Error(`${method}: HTTP ${response.status} ${await response.text()}`);
         }
@@ -92,7 +105,6 @@ export function httpRpc(url: string, options: HttpRpcOptions = {}): RpcClient {
         }
         return body.result as T;
       } catch (error) {
-        // A JSON-RPC error was already normalised; rethrow it instead of retrying.
         if (error instanceof Error && "code" in error && typeof (error as JsonRpcError).code === "number") {
           throw error;
         }
@@ -101,19 +113,56 @@ export function httpRpc(url: string, options: HttpRpcOptions = {}): RpcClient {
         clearTimeout(timer);
       }
     }
-    throw new Error(`${method}: gave up after ${attempts} attempts (${String(lastError)})`);
+    throw new Error(`${method} failed against ${targetUrl} after ${attemptsPerEndpoint} attempts: ${String(lastError)}`);
+  }
+
+  async function callWithFailover<T>(method: string, params: unknown[]): Promise<T> {
+    const totalEndpoints = urlList.length;
+    let endpointErrors: string[] = [];
+
+    for (let offset = 0; offset < totalEndpoints; offset += 1) {
+      const currentIndex = (activeUrlIndex + offset) % totalEndpoints;
+      const targetUrl = urlList[currentIndex]!;
+      try {
+        const result = await rawCall<T>(targetUrl, method, params);
+        if (offset > 0) {
+          activeUrlIndex = currentIndex; // stick to working fallback
+        }
+        return result;
+      } catch (err) {
+        endpointErrors.push(`[${targetUrl}]: ${String(err)}`);
+        // if this was an explicit JSON-RPC protocol error, rethrow immediately
+        if (err instanceof Error && "code" in err && typeof (err as JsonRpcError).code === "number") {
+          throw err;
+        }
+      }
+    }
+
+    throw new Error(`All ${totalEndpoints} RPC endpoints failed for ${method}: ${endpointErrors.join(" | ")}`);
+  }
+
+  async function checkChainId(): Promise<void> {
+    if (!expectedChainId || chainIdValidated) return;
+    const hex = await callWithFailover<string>("eth_chainId", []);
+    const actual = BigInt(hex);
+    if (actual !== expectedChainId) {
+      throw new Error(`RPC Chain ID mismatch: expected ${expectedChainId}, got ${actual}`);
+    }
+    chainIdValidated = true;
   }
 
   return {
     async blockNumber() {
-      return BigInt(await call<string>("eth_blockNumber", []));
+      await checkChainId();
+      return BigInt(await callWithFailover<string>("eth_blockNumber", []));
     },
     async blockByNumber(block) {
-      const result = await call<RpcBlock | null>("eth_getBlockByNumber", [`0x${block.toString(16)}`, false]);
-      return result;
+      await checkChainId();
+      return await callWithFailover<RpcBlock | null>("eth_getBlockByNumber", [`0x${block.toString(16)}`, false]);
     },
     async getLogs({ address, fromBlock, toBlock }) {
-      const raw = await call<Array<Omit<RpcLog, "blockNumber" | "logIndex" | "transactionIndex"> & {
+      await checkChainId();
+      const raw = await callWithFailover<Array<Omit<RpcLog, "blockNumber" | "logIndex" | "transactionIndex"> & {
         blockNumber: string;
         logIndex: string;
         transactionIndex: string;
@@ -132,7 +181,12 @@ export function httpRpc(url: string, options: HttpRpcOptions = {}): RpcClient {
       }));
     },
     async call(to, data, block) {
-      return call<string>("eth_call", [{ to, data }, block === "latest" ? "latest" : `0x${block.toString(16)}`]);
+      await checkChainId();
+      return callWithFailover<string>("eth_call", [{ to, data }, block === "latest" ? "latest" : `0x${block.toString(16)}`]);
+    },
+    async chainId() {
+      const hex = await callWithFailover<string>("eth_chainId", []);
+      return BigInt(hex);
     },
   };
 }

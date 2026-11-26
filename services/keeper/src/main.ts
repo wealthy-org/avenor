@@ -7,7 +7,7 @@
 //     delivery failure is logged as an error entry and retried on the next tick.
 
 import { existsSync } from "node:fs";
-import { createPublicClient, createWalletClient, http } from "viem";
+import { createPublicClient, createWalletClient, fallback, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { parseKeeperConfig } from "./config.ts";
 import { allocationJob, reportJob } from "./jobs.ts";
@@ -43,8 +43,12 @@ if (!Number.isInteger(MAX_ASSETS_DELTA_BPS) || MAX_ASSETS_DELTA_BPS < 0) {
 if (RUNBOOK_BASE_URL === "") fail("RUNBOOK_BASE_URL is required so every alert links to a procedure");
 
 const account = privateKeyToAccount(cfg.privateKey);
-const publicClient = createPublicClient({ transport: http(cfg.rpcUrl) });
-const walletClient = createWalletClient({ account, transport: http(cfg.rpcUrl) });
+const transport = cfg.fallbackRpcUrls && cfg.fallbackRpcUrls.length > 0
+  ? fallback([http(cfg.rpcUrl), ...cfg.fallbackRpcUrls.map((url) => http(url))])
+  : http(cfg.rpcUrl);
+
+const publicClient = createPublicClient({ transport });
+const walletClient = createWalletClient({ account, transport });
 const logger = jsonLogger();
 
 const vaultReader = createVaultReader(publicClient as never, { vault: cfg.vault, strategy: cfg.strategy });

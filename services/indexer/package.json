@@ -9,7 +9,7 @@
   },
   "scripts": {
     "migrate": "node src/migrate.ts",
-    "test": "node --test test/"
+    "test": "node --test \"test/*.test.ts\""
   },
   "dependencies": {
     "pg": "8.13.1"
