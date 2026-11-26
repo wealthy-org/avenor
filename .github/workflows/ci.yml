@@ -37,9 +37,9 @@ jobs:
           submodules: recursive
 
       - name: Set up Foundry
-        uses: foundry-rs/foundry-toolset@v1
+        uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: "nightly-5b7e400291410ef4f85e54d6fc48b6f5cf21fb95"
+          version: "v1.9.0"
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
@@ -51,9 +51,12 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Install web dependencies
+      - name: Install dependencies
         run: |
           npm ci --prefix apps/web
+          npm ci --prefix services/indexer
+          npm ci --prefix services/keeper
+          npm ci --prefix packages/sdk
 
       - name: Verify All Gates
         env:

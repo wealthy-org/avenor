@@ -4,9 +4,9 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
-  title: "AVENOR — Institutional On-Chain Investment Strategies",
+  title: "AVENOR — Systematically Managed On-Chain Yield Strategies",
   description:
-    "Access systematically managed on-chain investment strategies through institutional-grade ERC-4626 vaults engineered for Robinhood Chain.",
+    "Access systematically managed on-chain investment strategies through transparent, risk-bounded ERC-4626 vaults engineered for Robinhood Chain.",
   keywords: [
     "Avenor",
     "ERC-4626",
@@ -14,12 +14,12 @@ export const metadata: Metadata = {
     "USDG",
     "DeFi",
     "Yield",
-    "Institutional Vaults",
+    "Managed Vaults",
   ],
   openGraph: {
-    title: "AVENOR — Capital, Working Smarter.",
+    title: "AVENOR — Systematically Managed On-Chain Yield",
     description:
-      "Access systematically managed on-chain investment strategies through institutional-grade ERC-4626 vaults engineered for Robinhood Chain.",
+      "Access systematically managed on-chain investment strategies through transparent, risk-bounded ERC-4626 vaults engineered for Robinhood Chain.",
     type: "website",
     url: "https://avenor-kappa.vercel.app/",
   },

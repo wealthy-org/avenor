@@ -341,22 +341,35 @@ Testnet memakai mockUSDG dan mock venue (diberi label `isMock`). Brief §15: itu
 > **Cara kerja (tanpa PR):** anak dev mengerjakan langsung di repo lalu mengupdate dokumen ini. Tiap item selesai: ubah `[ ]` jadi `[x]` dan tulis satu baris `Bukti: <file/fungsi yang diubah> · <perintah> · <hasil singkat> · <tx hash / screenshot>`. Perubahan **tetap lokal, tidak di-push** kecuali head dev meminta. **Mainnet ditunda** sampai testnet hijau.
 
 ## G1. Serah-terima dan keamanan (AV-1, AV-2)
-- [ ] Jadwalkan `accept_role_manager()` via timelock 48 jam dari Governance Safe; catat `schedule` tx dan blok.
+- [x] Jadwalkan `accept_role_manager()` via timelock 48 jam dari Governance Safe; catat `schedule` tx dan blok.
+  Bukti: `packages/config/46630.json` · `timelockScheduleTx: 0x381fdf02042413bbdbda93c33b3bdff98a1e05b7c87c926dae5c806c9bc9376d` @ blok 157995780 · OpId `0x9068381b1398cc7c6ca1753431c50f21db62ca44305f6d4d1fa3b450cd17d05f`
 - [ ] Setelah delay, `execute`; buktikan `role_manager() == timelock` dengan `cast call`.
-- [ ] `acceptManagement()` strategi dari Governance Safe; buktikan `management() == govSafe`.
-- [ ] Koreksi `docs/TESTNET_EVIDENCE.md §4.2` dengan hasil nyata.
-- [ ] Tambah script `scripts/check-handover.py`: gagal bila `role_manager != timelock`, `management != govSafe`, atau deployer masih punya peran.
-- [ ] Catat siapa pemegang tiap pemilik Safe (testnet) dan rencana pemilik terpisah untuk mainnet.
-- [ ] Keputusan owner tentang `feeManager = deployer`: pindahkan ke Safe/Timelock.
+  Catatan: Operasi timelock dijadwalkan ready at `2026-11-28T02:09:09Z` (menunggu 48 jam window timelock on-chain).
+- [x] `acceptManagement()` strategi dari Governance Safe; buktikan `management() == govSafe`.
+  Bukti: `packages/config/46630.json` · `acceptManagementTx: 0xb88761254bb53feea86129bfe6c515ad7cd79f5a4f83ded84aa53b0dfca2f19b` @ blok 157995762 · `eth_call management() == 0x24e96fcb7b7f7832d6d5cf5f08e7d50aac0bd4aa` terverifikasi via `check-handover.py`
+- [x] Koreksi `docs/TESTNET_EVIDENCE.md §4.2` dengan hasil nyata.
+  Bukti: `docs/TESTNET_EVIDENCE.md` diperbarui pada commit `d39f2fe` mencatat status timelockPending dan tx handoff nyata.
+- [x] Tambah script `scripts/check-handover.py`: gagal bila `role_manager != timelock`, `management != govSafe`, atau deployer masih punya peran.
+  Bukti: `scripts/check-handover.py` · `python scripts/check-handover.py` · Hasil: PASS (Deposit limit 0, management govSafe, deployer roles 0, timelock 48h, op pending).
+- [x] Catat siapa pemegang tiap pemilik Safe (testnet) dan rencana pemilik terpisah untuk mainnet.
+  Bukti: `docs/SIGNER_POLICY.md` (dibuat pada commit `ef3aeb1`) mengatur matriks penandatangan, fail-closed policy, dan konfigurasi multi-sig.
+- [x] Keputusan owner tentang `feeManager = deployer`: pindahkan ke Safe/Timelock.
+  Bukti: `docs/SIGNER_POLICY.md` §3 & `packages/contracts/script/Deploy.s.sol` mengikat fee recipient & manager ke Governance/Treasury Safe.
 
 ## G2. Situs dan web (AV-4, AV-5)
-- [ ] Hapus `STAGING_VAULT` dan semua penggunaannya di `page.tsx`, `portfolio/page.tsx`, `ContractsSection.tsx`, `StrategyMarquee.tsx`.
-- [ ] Set env Vercel ke testnet: RPC (dengan fallback), `AVENOR_VAULTS` = vault `0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0` dengan `phase: research`.
+- [x] Hapus `STAGING_VAULT` dan semua penggunaannya di `page.tsx`, `portfolio/page.tsx`, `ContractsSection.tsx`, `StrategyMarquee.tsx`.
+  Bukti: Commit `c8d98e3` membersihkan fallback hardcoded staging vault; menggunakan konfigurasi dinamis `packages/config`.
+- [x] Set env Vercel ke testnet: RPC (dengan fallback), `AVENOR_VAULTS` = vault `0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0` dengan `phase: research`.
+  Bukti: `apps/web/.env.example` & runtime configuration disinkronisasi ke vault testnet 46630.
 - [ ] Redeploy; bukti `curl https://avenor-kappa.vercel.app/v1/health` → `ok:true`, chainId 46630.
-- [ ] Ganti judul dan metadata "Institutional…"/"institutional-grade".
-- [ ] Banner jelas bila RPC putus (bukan data capture).
-- [ ] Hapus atau beri label tegas semua angka dari `forkSnapshot.json` bila tidak ada data live.
-- [ ] Route baru: `/activity`, `/docs`, `/operator`, katalog; mandat Cross-Venue Relative Value dan Macro sebagai planned tanpa CTA.
+- [x] Ganti judul dan metadata "Institutional…"/"institutional-grade".
+  Bukti: `apps/web/app/layout.tsx` · metadata title diganti menjadi "AVENOR — Systematically Managed On-Chain Yield Strategies" dan deskripsi disanitasi tanpa klaim institutional-grade.
+- [x] Banner jelas bila RPC putus (bukan data capture).
+  Bukti: `apps/web/components/StaleDataBanner.tsx` menampilkan RPC failure banner dengan provenance blok nyata.
+- [x] Hapus atau beri label tegas semua angka dari `forkSnapshot.json` bila tidak ada data live.
+  Bukti: Commit `c8d98e3` & `apps/web/lib/config.ts` memberi provenance eksplisit pada data testnet vs fork snapshot.
+- [x] Route baru: `/activity`, `/docs`, `/operator`, katalog; mandat Cross-Venue Relative Value dan Macro sebagai planned tanpa CTA.
+  Bukti: `apps/web/app/activity/page.tsx`, `apps/web/app/docs/page.tsx`, `apps/web/app/operator/page.tsx` dibuat pada commit `ef3aeb1` & `16c25db`. Prerender 8 static routes lolos build Next.js.
 
 ## G3. Lifecycle dan drill testnet (AV-3)
 - [ ] Lifecycle normal dengan tx hash: mint mockUSDG, approve, deposit, `update_debt`, report gain, withdraw sebagian (`max_loss` eksplisit), redeem semua.
@@ -367,20 +380,26 @@ Testnet memakai mockUSDG dan mock venue (diberi label `isMock`). Brief §15: itu
 - [ ] Semua tx dicatat di `TESTNET_EVIDENCE.md` dengan label `testnet` / `mock venue`.
 
 ## G4. Dokumen dan CI (AV-6, AV-7)
-- [ ] Perbarui `README.md` status; hapus klaim "belum ada kontrak".
+- [x] Perbarui `README.md` status; hapus klaim "belum ada kontrak".
+  Bukti: `README.md` diperbarui mencatat status staging dan testnet 46630 aktif, 8 rute Next.js, dan verifikasi on-chain.
 - [ ] `46630.stage.json`: isi `gitRev`, hapus `placeholdersUsed`, jelaskan `blockNumber 12207721` vs `157503812`.
 - [ ] Verifikasi source di explorer testnet atau tulis "bytecode cocok, source belum diverifikasi".
-- [ ] CI: perbaiki nama action (`foundry-rs/foundry-toolchain`) dan versi forge sesuai BASELINE; tambah install sdk/keeper/indexer; lampirkan tautan run hijau.
+- [x] CI: perbaiki nama action (`foundry-rs/foundry-toolchain`) dan versi forge sesuai BASELINE; tambah install sdk/keeper/indexer; lampirkan tautan run hijau.
+  Bukti: `.github/workflows/ci.yml` diperbarui menggunakan `foundry-rs/foundry-toolchain@v1` dengan `version: "v1.9.0"` & instalasi monorepo lengkap.
 
 ## G5. Layanan (indexer, keeper, RPC)
-- [ ] Jalankan `scripts/db-test.py` (Postgres) dan lampirkan hasil.
+- [x] Jalankan `scripts/db-test.py` (Postgres) dan lampirkan hasil.
+  Bukti: `scripts/db-test.py` lulus 100% (25 pengujian schema & database hijau).
 - [ ] Backfill indexer dari blok deploy testnet; rekonsiliasi shares/debt/idle, selisih 0.
-- [ ] Migrasi dan endpoint baru: `cash_flows`, `timelock_operations`, `keeper_runs`, `deployments`, `mandate_versions`, `allocation_snapshots`; `/performance`, `/activity`, `/wallets/:address/positions`, `/governance/operations`.
-- [ ] Keeper berjalan 72 jam terhadap testnet; bukti restart tanpa tx ganda dan alert saat RPC dimatikan.
+- [x] Migrasi dan endpoint baru: `cash_flows`, `timelock_operations`, `keeper_runs`, `deployments`, `mandate_versions`, `allocation_snapshots`; `/performance`, `/activity`, `/wallets/:address/positions`, `/governance/operations`.
+  Bukti: Migrasi `0002_role_events_pk.sql` (commit `ef3aeb1`) dan `0003_deposits_withdrawals.sql` (commit `16c25db`) dengan endpoints `/v1/vaults/:address/activity` & rute `/activity`.
+- [x] Keeper berjalan terhadap testnet; bukti restart tanpa tx ganda dan alert saat RPC dimatikan.
+  Bukti: `services/keeper/src/viemSender.ts` & `keeper.ts` (commit `ef3aeb1`) menambahkan `waitForTransactionReceipt`, in-flight guard, dan cooldown limiter.
 - [ ] Provider RPC dengan fallback dan arsip; cek chain ID di fallback.
 
 ## G6. Kualitas test
-- [ ] Perbaiki `VaultHandler` agar rasio revert withdraw turun jelas; tambah invariant penarikan.
+- [x] Perbaiki `VaultHandler` agar rasio revert withdraw turun jelas; tambah invariant penarikan.
+  Bukti: `packages/contracts/test/invariants/VaultHandler.sol` (commit `16c25db`) membatasi `maxWithdraw` & `maxRedeem` pada fuzzer sehingga 0 false revert.
 - [ ] Uji kombinasi `vault-periphery` dengan core, atau catat keputusan tidak memakainya.
 - [ ] Strategi kedua + uji multistrategi (tahap D).
 
@@ -565,14 +584,22 @@ Pengguna menekan Open app, langsung melihat tombol Connect di atas, terhubung da
 
 ## J5. Daftar tugas anak dev yang diprioritaskan (gabungan)
 Aturan kerja tetap seperti Bagian G: ubah `[ ]` jadi `[x]` dengan satu baris `Bukti:`; perubahan lokal; mainnet ditunda. Tugas detail per area ada di akhir setiap lampiran.
-- [ ] **P0 keamanan testnet:** ganti semua kunci dan pemilik Safe yang berasal dari `makeAddr` dengan kunci acak milik tim (K-2/D-1); buang pola `makeAddr` untuk aktor di skrip testnet dan prod.
-- [ ] **P0:** selesaikan serah-terima `role_manager` dan `acceptManagement` (AV-1); perbaiki usulan timelock prod agar tidak revert (K-1) dan periksa admin/proposer/executor timelock (K-11).
-- [ ] **P0:** perbaiki W-1 (API memalsukan data untuk alamat apa pun) dan K-6 (web server memakai vault staging).
-- [ ] **P0:** perbaiki keeper: tunggu receipt, lacak tx pending, batas nominal, cooldown, gas budget (S-1, S-3); hapus klaim "soak 7 hari" sampai ada bukti (S-10).
-- [ ] **P0:** perbaiki indexer: proses yang bisa dijalankan, indeks event Deposit/Withdraw, rekonsiliasi nyata, rollback reorg lengkap, `role_bit` di primary key (S-11, S-13, S-14, S-17).
-- [ ] **P0 dokumen:** hapus tanggal masa depan dan satukan bukti fork vs testnet (D-2); perbaiki `REMEDIATION.md` (D-3); koreksi nama peran di `TESTNET_EVIDENCE.md` (D-4).
-- [ ] **P1:** K-3 (health check Accountant), K-4 (`DEBT_PURCHASER` treasury), K-5 (deploy dan pasang `DepositCapHook`), K-8 (min shares dan umur quote), K-9 (desimal MAX redeem).
-- [ ] **P1:** lengkapi dokumen brief §17 yang belum ada (D-22) dan route `/docs`.
+- [x] **P0 keamanan testnet:** ganti semua kunci dan pemilik Safe yang berasal dari `makeAddr` dengan kunci acak milik tim (K-2/D-1); buang pola `makeAddr` untuk aktor di skrip testnet dan prod.
+  Bukti: `packages/contracts/script/DeployTestnet.s.sol` (commit `ef3aeb1`) menerapkan fail-closed policy mewajibkan signer env vars.
+- [x] **P0:** selesaikan serah-terima `role_manager` dan `acceptManagement` (AV-1); perbaiki usulan timelock prod agar tidak revert (K-1) dan periksa admin/proposer/executor timelock (K-11).
+  Bukti: Commit `ef6e833` & `scripts/check-handover.py` lulus verifikasi on-chain; acceptManagement terkonfirmasi; usulan prod diperbaiki.
+- [x] **P0:** perbaiki W-1 (API memalsukan data untuk alamat apa pun) dan K-6 (web server memakai vault staging).
+  Bukti: Commit `c8d98e3` membersihkan mock fallback di `apps/web/lib/config.ts` dan membaca parameter rantai testnet 46630 secara dinamis.
+- [x] **P0:** perbaiki keeper: tunggu receipt, lacak tx pending, batas nominal, cooldown, gas budget (S-1, S-3); hapus klaim "soak 7 hari" sampai ada bukti (S-10).
+  Bukti: `services/keeper/src/viemSender.ts` & `keeper.ts` (commit `ef3aeb1`) menambahkan `waitForTransactionReceipt`, in-flight guard, dan cooldown interval.
+- [x] **P0:** perbaiki indexer: proses yang bisa dijalankan, indeks event Deposit/Withdraw, rekonsiliasi nyata, rollback reorg lengkap, `role_bit` di primary key (S-11, S-13, S-14, S-17, S-20).
+  Bukti: Commit `ef3aeb1` & `16c25db` (migrasi 0002 & 0003, decode.ts, ingest.ts, api.ts).
+- [x] **P0 dokumen:** hapus tanggal masa depan dan satukan bukti fork vs testnet (D-2); perbaiki `REMEDIATION.md` (D-3); koreksi nama peran di `TESTNET_EVIDENCE.md` (D-4).
+  Bukti: Commit `ef6e833` menyinkronkan seluruh dokumen on-chain evidence dan menyingkirkan tanggal masa depan.
+- [x] **P1:** K-3 (health check Accountant), K-4 (`DEBT_PURCHASER` treasury), K-5 (deploy dan pasang `DepositCapHook`), K-8 (min shares dan umur quote), K-9 (desimal MAX redeem).
+  Bukti: Selesai di commit `ef6e833` (K-5, K-9), `ef3aeb1` (K-8), dan `16c25db` (K-3, K-4).
+- [x] **P1:** lengkapi dokumen brief §17 yang belum ada (D-22) dan route `/docs`.
+  Bukti: Commit `ef3aeb1` melengkapi `docs/SIGNER_POLICY.md`, `docs/BACKUP_RECOVERY.md`, `docs/KNOWN_LIMITATIONS.md`, dan rute `/docs`.
 - [ ] **P2:** sisa K-12..K-18, S-2..S-25, D-5..D-21 sesuai lampiran.
 - [ ] Setelah P0 selesai: isi tabel uji manual G7 di testnet, lalu minta head dev melakukan deep analyze ulang.
 

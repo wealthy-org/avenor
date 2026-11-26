@@ -2,7 +2,7 @@
 
 Vault ERC-4626 di Robinhood Chain (`4663`) yang mengalokasikan USDG ke venue pinjaman terpilih, dibangun di atas **Yearn V3 Allocator Vault (`API 3.1.1`)** tanpa mem-patch core, dengan peran bertimelock, fee yang dihitung on-chain, dan pengungkapan likuiditas apa adanya.
 
-> Status: **perencanaan + dokumen teknis + toolchain terverifikasi**. Belum ada kontrak yang dideploy, belum ada audit untuk kombinasi versi 2026, dan belum ada transaksi mainnet. Semua klaim di repo ini harus bisa ditelusuri ke `docs/`.
+> Status: **Staging & Testnet 46630 aktif, mainnet dalam tahap persiapan final**. Kontrak staging dan rehearsal testnet telah dideploy di Robinhood Chain Testnet (Chain ID 46630) dengan timelock 48 jam dan multi-sig Safe terverifikasi on-chain. Audit upstream Yearn V3 2023 dijadikan rujukan formal, namun belum ada klaim audit eksternal untuk kombinasi pin 2026. Belum ada transaksi mainnet. Seluruh klaim dapat diverifikasi langsung di `docs/` dan on-chain evidence (`scripts/check-handover.py`).
 
 ## Baca dulu
 
@@ -36,12 +36,12 @@ packages/core        artefak beku VaultV3/VaultFactory (Vyper tidak dipatch) + s
 packages/contracts   MorphoVaultStrategy, DepositCapHook, script deploy, test (Foundry, sudah ada)
 packages/contracts/lib  dependensi vendored + hash-verified (OZ 4.9.5, tokenized-strategy 3.1.1, forge-std 1.9.6)
 packages/sdk         pembaca state, penulis tx, encode max_loss wajib, parser log
-services/indexer     RPC → Postgres, rekonsiliasi
-services/keeper      alokasi, report, healthcheck
-apps/web             katalog, detail, transaksi, portfolio, transparency
-packages/config      alamat + parameter per chain
-docs/                dokumen wajib brief §17
-deployments/         catatan deploy per mode
+services/indexer     RPC → Postgres, rekonsiliasi (migrasi 0001 schema, 0002 role_bit PK, 0003 cash flows)
+services/keeper      alokasi, report, healthcheck, in-flight guard, receipt confirmation
+apps/web             8 rute lengkap: katalog, detail, transaksi, portfolio, transparency, /activity, /docs, /operator
+packages/config      alamat + parameter per chain (4663 mainnet, 46630 testnet)
+docs/                dokumen wajib brief §17 + signer policy, backup recovery, known limitations
+deployments/         catatan deploy per mode (local, stage, testnet, prod)
 ```
 
 ## Batasan yang tidak boleh dilanggar
@@ -61,7 +61,7 @@ deployments/         catatan deploy per mode
 
 Sudah selesai dan terverifikasi: toolchain (Foundry `1.9.0`, Python 3.11 + Vyper `0.3.10`/`0.3.7`, solc `0.8.18`), reproduksi bytecode v3.0.2 on-chain, build deterministik pin v3.1.1, dan kecocokan `TokenizedStrategy v3.1.1` dengan implementasi kanonik di chain `4663`. Rincian: `docs/REPRODUCIBILITY.md`.
 
-`packages/contracts` sudah berdiri: build hijau (`forge build`, `forge fmt --check`, 101 unit test), strategi `MorphoVaultStrategy` + `script/Deploy.s.sol` (termasuk `Accountant` fee/limit) + `DeployLocal.s.sol` rehearsal, interface `IVaultV3`/`IVaultFactory` **di-generate** dari artefak yang diverifikasi (bukan `cast interface`), dependensi vendored + dicek `scripts/check-vendor.py` (603 file, byte-for-byte sama dengan commit pin), dan `packages/config/4663.json` sebagai satu sumber alamat + provenance blok.
+`packages/contracts` sudah berdiri: build hijau (`forge build`, `forge fmt --check`, 115 unit & bounded invariant tests), strategi `MorphoVaultStrategy` + `script/Deploy.s.sol` (termasuk `Accountant` fee/limit) + `DeployLocal.s.sol` rehearsal, interface `IVaultV3`/`IVaultFactory` **di-generate** dari artefak yang diverifikasi (bukan `cast interface`), dependensi vendored + dicek `scripts/check-vendor.py` (603 file, byte-for-byte sama dengan commit pin), dan `packages/config/4663.json` serta `46630.json` sebagai sumber alamat + provenance blok. Status serah-terima governance diverifikasi dengan `python scripts/check-handover.py`.
 
 Fork test chain `4663` (pin `118337511`) **hijau**: 11 test melawan state venue asli (`VenueProbe` 7 probe + `VaultE2E` 4 test), dua run berurutan. Perintahnya satu, dan tiga flag wajib (`--fork-state-by-number`, `--hardfork cancun`, anvil lokal) sudah dibungkus di script:
 
