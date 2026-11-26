@@ -43,6 +43,24 @@ export function Footer({ chainLine }: { chainLine?: string }) {
               Portfolio
             </Link>
             <Link
+              href="/activity"
+              className="hover:text-[#f8f9fa] transition-colors cursor-pointer"
+            >
+              Activity
+            </Link>
+            <Link
+              href="/operator"
+              className="hover:text-[#f8f9fa] transition-colors cursor-pointer"
+            >
+              Operator
+            </Link>
+            <Link
+              href="/docs"
+              className="hover:text-[#f8f9fa] transition-colors cursor-pointer"
+            >
+              Docs
+            </Link>
+            <Link
               href="/transparency"
               className="hover:text-[#f8f9fa] transition-colors cursor-pointer"
             >

@@ -15,10 +15,12 @@ import { withTransaction } from "./db.ts";
 import {
   roleBitDiff,
   topic0,
+  tryDecodeDeposit,
   tryDecodeReport,
   tryDecodeRoleSet,
   tryDecodeStrategyChange,
   tryDecodeTransfer,
+  tryDecodeWithdraw,
   word,
   TOPIC,
 } from "./decode.ts";
@@ -165,6 +167,30 @@ async function applyLog(client: PoolClient, cfg: StreamConfig, log: RpcLog, bloc
         [chainId, vault, account, balance.rows[0]?.shares ?? "0", blockNumber],
       );
     }
+    return;
+  }
+
+  const deposit = tryDecodeDeposit(log);
+  if (deposit) {
+    await client.query(
+      `INSERT INTO deposits
+         (chain_id, vault_address, block_number, block_hash, block_time, tx_hash, log_index, sender, owner, assets, shares)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       ON CONFLICT (chain_id, tx_hash, log_index) DO NOTHING`,
+      [chainId, vault, blockNumber, log.blockHash.toLowerCase(), blockTime, txHash, log.logIndex, deposit.sender, deposit.owner, deposit.assets.toString(), deposit.shares.toString()],
+    );
+    return;
+  }
+
+  const withdraw = tryDecodeWithdraw(log);
+  if (withdraw) {
+    await client.query(
+      `INSERT INTO withdrawals
+         (chain_id, vault_address, block_number, block_hash, block_time, tx_hash, log_index, sender, receiver, owner, assets, shares)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       ON CONFLICT (chain_id, tx_hash, log_index) DO NOTHING`,
+      [chainId, vault, blockNumber, log.blockHash.toLowerCase(), blockTime, txHash, log.logIndex, withdraw.sender, withdraw.receiver, withdraw.owner, withdraw.assets.toString(), withdraw.shares.toString()],
+    );
     return;
   }
 
@@ -328,6 +354,8 @@ async function rollback(
     const chain = [cfg.chainId];
     const del = (sql: string) => client.query(sql, [chain[0], cfg.address.toLowerCase(), block]);
     await del("DELETE FROM share_transfers WHERE chain_id = $1 AND vault_address = $2 AND block_number > $3");
+    await del("DELETE FROM deposits WHERE chain_id = $1 AND vault_address = $2 AND block_number > $3");
+    await del("DELETE FROM withdrawals WHERE chain_id = $1 AND vault_address = $2 AND block_number > $3");
     await del("DELETE FROM reports WHERE chain_id = $1 AND vault_address = $2 AND block_number > $3");
     await del("DELETE FROM fees WHERE chain_id = $1 AND vault_address = $2 AND block_number > $3");
     await del("DELETE FROM role_events WHERE chain_id = $1 AND vault_address = $2 AND block_number > $3");

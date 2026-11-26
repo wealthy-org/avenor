@@ -68,6 +68,24 @@ export function Navbar() {
             >
               Contracts
             </button>
+            <a
+              href="/activity"
+              className="hover:text-[#f8f9fa] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Activity
+            </a>
+            <a
+              href="/operator"
+              className="hover:text-[#f8f9fa] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Operator
+            </a>
+            <a
+              href="/docs"
+              className="hover:text-[#f8f9fa] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            >
+              Docs
+            </a>
           </nav>
 
           {/* Right Action Cluster */}

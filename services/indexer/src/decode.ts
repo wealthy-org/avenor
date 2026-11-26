@@ -11,6 +11,8 @@ import type { RpcLog } from "./rpc.ts";
 
 export const TOPIC = {
   Transfer: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+  Deposit: "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
+  Withdraw: "0xfbde797d201c681b91056529119e0b02407c7bb96a4a2c75c01fc9667232c8db",
   StrategyReported: "0x7f2ad1d3ba35276f35ef140f83e3e0f17b23064fd710113d3f7a5ab30d267811",
   StrategyChanged: "0xde8ff765a5c5dad48d27bc9faa99836fb81f3b07c9dc62cfe005475d6b83a2ca",
   RoleSet: "0x78557646b1d8efa2cd49740d66df5aca39eb610ca8ca0e1ccac08979b6b2c46e",
@@ -23,6 +25,21 @@ export const TOPIC = {
 export interface DecodedTransfer {
   from: string;
   to: string;
+  shares: bigint;
+}
+
+export interface DecodedDeposit {
+  sender: string;
+  owner: string;
+  assets: bigint;
+  shares: bigint;
+}
+
+export interface DecodedWithdraw {
+  sender: string;
+  receiver: string;
+  owner: string;
+  assets: bigint;
   shares: bigint;
 }
 
@@ -70,6 +87,29 @@ export function tryDecodeTransfer(log: RpcLog): DecodedTransfer | null {
     from: addressFromTopic(log.topics[1]!),
     to: addressFromTopic(log.topics[2]!),
     shares: word(log.data, 0),
+  };
+}
+
+export function tryDecodeDeposit(log: RpcLog): DecodedDeposit | null {
+  if (topic0(log) !== TOPIC.Deposit) return null;
+  if (log.topics.length !== 3) return null;
+  return {
+    sender: addressFromTopic(log.topics[1]!),
+    owner: addressFromTopic(log.topics[2]!),
+    assets: word(log.data, 0),
+    shares: word(log.data, 1),
+  };
+}
+
+export function tryDecodeWithdraw(log: RpcLog): DecodedWithdraw | null {
+  if (topic0(log) !== TOPIC.Withdraw) return null;
+  if (log.topics.length !== 4) return null;
+  return {
+    sender: addressFromTopic(log.topics[1]!),
+    receiver: addressFromTopic(log.topics[2]!),
+    owner: addressFromTopic(log.topics[3]!),
+    assets: word(log.data, 0),
+    shares: word(log.data, 1),
   };
 }
 

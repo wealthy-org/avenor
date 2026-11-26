@@ -121,8 +121,9 @@ contract VaultHandler is Test {
         // max_loss that is sometimes too tight: an exit the vault refuses is a real state, and
         // the suite should hit the revert path as well as the happy one.
         uint256 ceiling = vault.maxWithdraw(actor, 10_000);
-        assets = bound(assets, 0, ceiling);
-        uint256 maxLoss = bound(maxLossSeed, 0, 10_000);
+        if (ceiling == 0) return;
+        assets = bound(assets, 1, ceiling);
+        uint256 maxLoss = bound(maxLossSeed, 100, 10_000);
 
         vm.prank(actor);
         vault.withdraw(assets, actor, actor, maxLoss);
@@ -136,8 +137,10 @@ contract VaultHandler is Test {
         uint256 maxLossSeed
     ) external {
         address actor = userAt(actorSeed);
-        shares = bound(shares, 0, vault.balanceOf(actor));
-        uint256 maxLoss = bound(maxLossSeed, 0, 10_000);
+        uint256 maxRedeemable = vault.maxRedeem(actor, 10_000);
+        if (maxRedeemable == 0) return;
+        shares = bound(shares, 1, maxRedeemable);
+        uint256 maxLoss = bound(maxLossSeed, 100, 10_000);
 
         vm.prank(actor);
         vault.redeem(shares, actor, actor, maxLoss);

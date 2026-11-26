@@ -211,6 +211,51 @@ async function route(pool: Pool, rpc: RpcClient | null, cfg: ApiConfig, request:
     };
   }
 
+  if (resource === "deposits") {
+    const limit = limitParam(url.searchParams.get("limit"));
+    const result = await pool.query(
+      `SELECT block_number::text, block_hash, block_time, tx_hash, sender, owner,
+              assets::text, shares::text
+         FROM deposits WHERE chain_id = $1 AND vault_address = $2
+        ORDER BY block_number DESC, log_index DESC LIMIT $3`,
+      [cfg.chainId, vault, limit],
+    );
+    return result.rows.map((row) => ({
+      blockNumber: row.block_number,
+      blockHash: row.block_hash,
+      blockTimestamp: new Date(row.block_time).toISOString(),
+      txHash: row.tx_hash,
+      sender: row.sender,
+      owner: row.owner,
+      assets: row.assets,
+      shares: row.shares,
+      source: "indexed" as const,
+    }));
+  }
+
+  if (resource === "withdrawals") {
+    const limit = limitParam(url.searchParams.get("limit"));
+    const result = await pool.query(
+      `SELECT block_number::text, block_hash, block_time, tx_hash, sender, receiver, owner,
+              assets::text, shares::text
+         FROM withdrawals WHERE chain_id = $1 AND vault_address = $2
+        ORDER BY block_number DESC, log_index DESC LIMIT $3`,
+      [cfg.chainId, vault, limit],
+    );
+    return result.rows.map((row) => ({
+      blockNumber: row.block_number,
+      blockHash: row.block_hash,
+      blockTimestamp: new Date(row.block_time).toISOString(),
+      txHash: row.tx_hash,
+      sender: row.sender,
+      receiver: row.receiver,
+      owner: row.owner,
+      assets: row.assets,
+      shares: row.shares,
+      source: "indexed" as const,
+    }));
+  }
+
   if (resource === "reports") {
     const limit = limitParam(url.searchParams.get("limit"));
     const result = await pool.query(

@@ -33,6 +33,7 @@ Catatan yang sering salah:
 - `role_manager` bisa `set_role`/`remove_role` untuk siapa pun **tanpa timelock internal**. Jadi timelock hanya nyata bila `role_manager` itu sendiri adalah kontrak timelock.
 - `transfer_role_manager` dua langkah (`future_role_manager` lalu `accept_role_manager`); tidak ada batas waktu paksa.
 - `buy_debt` = jalur "menyerap bad debt dengan asset treasury" agar loss tidak dilaporkan. Memerlukan dana tunai treasury dan `DEBT_PURCHASER`.
+  - **Klausul Pengaman DEBT_PURCHASER (K-4):** Wewenang `DEBT_PURCHASER` dialokasikan kepada Treasury Safe secara strictly restricted. Hak ini dilarang keras digunakan dalam kondisi operasional normal untuk membeli utang strategi yang memiliki akumulasi profit belum dilaporkan (mencegah arbitrase nilai buku atau perampasan laba depositor). `buy_debt` hanya sah dieksekusi saat insiden de-risking darurat di mana venue mengalami bad-debt dan treasury secara eksplisit mensubsidi kerugian tersebut dengan kas nyata.
 
 ## 2. Penugasan Avenor (di-encode dan di-assert oleh `script/Deploy.s.sol`)
 

@@ -21,6 +21,7 @@ const MIGRATIONS = path.join(ROOT, "migrations");
 let pool: Pool;
 
 const EXPECTED_TABLES = [
+  "deposits",
   "fees",
   "ingested_blocks",
   "ingestion_checkpoints",
@@ -35,6 +36,7 @@ const EXPECTED_TABLES = [
   "strategies",
   "vaults",
   "venue_snapshots",
+  "withdrawals",
 ];
 
 before(async () => {
@@ -57,9 +59,10 @@ after(async () => {
 
 test("migrations apply from an empty database and applying again is a no-op", async () => {
   const first = await migrate(pool, MIGRATIONS);
-  assert.equal(first.length, 2, "two migrations applied");
+  assert.equal(first.length, 3, "three migrations applied");
   assert.match(first[0]!.name, /^0001_/);
   assert.match(first[1]!.name, /^0002_/);
+  assert.match(first[2]!.name, /^0003_/);
 
   const tables = await pool.query<{ table_name: string }>(
     `SELECT table_name FROM information_schema.tables
@@ -73,7 +76,7 @@ test("migrations apply from an empty database and applying again is a no-op", as
 
   const second = await migrate(pool, MIGRATIONS);
   assert.equal(second.length, 0, "second run applies nothing");
-  assert.equal((await appliedMigrations(pool)).length, 2);
+  assert.equal((await appliedMigrations(pool)).length, 3);
 });
 
 test("a duplicate event is refused by the primary key, not silently overwritten", async () => {
@@ -195,5 +198,29 @@ test("editing an applied migration is refused instead of skipped", async () => {
     () => migrate(pool, dir),
     /changed after being applied/,
     "a checksum mismatch must fail loudly, not silently skip or re-run",
+  );
+});
+
+test("deposits and withdrawals tables accept valid records and refuse PK duplicates (S-20)", async () => {
+  const insertDeposit = `INSERT INTO deposits
+      (chain_id, vault_address, block_number, block_hash, block_time, tx_hash, log_index, sender, owner, assets, shares)
+    VALUES (4663, '0xvault', 100, '0xhash', to_timestamp(1), '0xdtxtx', 0, '0xalice', '0xalice', 50000, 50000)`;
+
+  await pool.query(insertDeposit);
+  await assert.rejects(
+    () => pool.query(insertDeposit),
+    (error: { code?: string }) => error.code === "23505",
+    "duplicate deposit (chain_id, tx_hash, log_index) must violate PK",
+  );
+
+  const insertWithdraw = `INSERT INTO withdrawals
+      (chain_id, vault_address, block_number, block_hash, block_time, tx_hash, log_index, sender, receiver, owner, assets, shares)
+    VALUES (4663, '0xvault', 101, '0xhash', to_timestamp(2), '0xwtxtx', 0, '0xalice', '0xalice', '0xalice', 15000, 15000)`;
+
+  await pool.query(insertWithdraw);
+  await assert.rejects(
+    () => pool.query(insertWithdraw),
+    (error: { code?: string }) => error.code === "23505",
+    "duplicate withdrawal (chain_id, tx_hash, log_index) must violate PK",
   );
 });

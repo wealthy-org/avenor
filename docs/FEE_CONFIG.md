@@ -80,6 +80,12 @@ Aturan UI: **jangan** menampilkan "APY" gabungan tanpa menyebut sumber. Format: 
 
 Alasan `maxLoss` ketat: `Accountant` revert adalah pertahanan terhadap keeper jahat/bug. Konsekuensi: strategi yang loss besar tidak bisa di-report normal; jalurnya `force_revoke_strategy` (`FORCE_REVOKE_MANAGER`) yang menanggung loss eksplisit. Ini perilaku yang benar dan harus ada di runbook, bukan kegagalan.
 
+### 5.1 Catatan Operasional Accountant Healthcheck (K-3)
+
+- **Perilaku Teramati (K-3):** Jika strategi menerima donasi mendadak > 5% (`maxGain = 500 bps`) atau mengalami drawdown > 2% (`maxLoss = 200 bps`), pemanggilan `process_report()` akan me-revert dengan `"too much gain"` atau `"too much loss"`.
+- **Bukan Cacat, Melainkan Perlindungan:** Revert ini adalah mekanisme pertahanan intentionally designed pada `Accountant.sol` untuk mencegah manipulasi flash donation (inflasi instan) dan membatasi volatilitas unrealized loss yang diakui dalam satu siklus report.
+- **Prosedur Eskalasi:** Bila terjadi pergerakan laba/rugi legitimate melebihi ambang batas ini, Governance Safe 2/3 harus menjadwalkan penyesuaian `setVaultConfig` melalui TimelockController 48 jam untuk menaikkan batas `maxGain` atau `maxLoss` sementara sebelum report dieksekusi, atau menggunakan opsi `force_revoke_strategy` pada jalur darurat timelock 6 jam.
+
 ## 6. Contoh perhitungan (dipakai juga di test)
 
 Asumsi: `current_debt = 1.000.000 USDG`, `duration = 30 hari`, `gain = 3.000 USDG`, `performanceFee = 1.000`, `managementFee = 0`, `maxFee = 0`, protocol `bps = 0`.
