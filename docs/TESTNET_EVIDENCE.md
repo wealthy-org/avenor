@@ -241,8 +241,9 @@ from owner1 `0x56d845a35EDe1436B8053f705b4b189c412A8648` and owner2
 
 ### Next: Timelock Execute (after 48h)
 
-Execute available after Unix timestamp 1795831749 (chain timestamp was 1795660668
-at audit time, so roughly 47,400s of delay remained then).
+Execute available after Unix timestamp 1795831749 (`2026-11-28T02:09:09Z`). The chain
+timestamp was 1795660668 when the delay was first measured, so 171,081s (47.5 h) remained
+then; re-measured at chain timestamp 1795663264 it was 168,485s (46.8 h).
 Run `python scripts/governance_execute_46630.py` after that timestamp; it refuses
 to run early, verifies the operation ID, and re-checks the post-handoff state.
 Operation ID: 0x9068381b1398cc7c6ca1753431c50f21db62ca44305f6d4d1fa3b450cd17d05f
