@@ -22,6 +22,7 @@ import {
   STAGING_VAULT,
 } from "../config/staging.ts";
 import { capturedSnapshot, probeNode, readPosition, readVaultSnapshot, type VaultSnapshot } from "./vaultRead";
+import { metadataFromSnapshot } from "./vaultSource";
 
 export {
   CANONICAL_HEADER_AT_CAPTURE_HEIGHT,
@@ -47,24 +48,18 @@ export const SNAPSHOT_TIMESTAMP = new Date(CAPTURE.at.blockTimestamp * 1000).toI
 const iso = (seconds: number) => new Date(seconds * 1000).toISOString();
 const big = (value: string | null) => (value === null ? null : BigInt(value));
 
-export function getVaultMetadata(address: string) {
+/**
+ * The catalogue row for the vault that was asked about.
+ *
+ * Every field comes from the snapshot that answered this request, so the row names the vault at that
+ * address and carries that block. A row is never assembled from the capture plus constants: a request
+ * for a chain-46630 vault once printed chain-4663 capture numbers under its address, and the vault page
+ * then threw `"" is not an address` because the capture has no code for it.
+ */
+export async function getVaultMetadata(address: string) {
   const normalized = address.toLowerCase();
-  return {
-    address: normalized,
-    name: CAPTURE.vault.name.value ?? "",
-    symbol: CAPTURE.vault.symbol.value ?? "",
-    asset_address: (CAPTURE.vault.asset.value ?? "").toLowerCase(),
-    asset_decimals: 6,
-    // `VaultV3.decimals` is `asset.decimals()`, read below rather than assumed.
-    share_decimals: CAPTURE.vault.decimals.value ?? 0,
-    role_manager: STAGING_TIMELOCK,
-    accountant: STAGING_ACCOUNTANT,
-    deposit_limit: CAPTURE.vault.depositLimit.value ?? "0",
-    // The block this row was read at, not the block the vault was deployed at: a capture only holds
-    // one block, and the deployment block is not recoverable from it.
-    recorded_block: SNAPSHOT_BLOCK,
-    source: CAPTURE.source,
-  };
+  const snapshot = await readVaultSnapshot(normalized);
+  return metadataFromSnapshot(normalized, snapshot);
 }
 
 /** Snapshot → `Live`. A field that failed to read becomes `null` and the page says so. */
@@ -98,7 +93,7 @@ function toLive(snapshot: VaultSnapshot): Live | null {
 }
 
 export async function getVaultLive(address: string) {
-  const snapshot = await readVaultSnapshot();
+  const snapshot = await readVaultSnapshot(address);
   const live = toLive(snapshot);
   if (live === null) throw new Error(snapshot.liveError ?? "the vault read did not return assets, idle or debt");
   return {
@@ -122,7 +117,7 @@ export async function getVaultLive(address: string) {
 }
 
 export async function getVaultRoles(address: string) {
-  const snapshot = await readVaultSnapshot();
+  const snapshot = await readVaultSnapshot(address);
   return {
     blockNumber: String(snapshot.at.blockNumber),
     blockHash: snapshot.at.blockHash,
@@ -142,7 +137,7 @@ export async function getVaultRoles(address: string) {
 }
 
 export async function getVaultAllocation(address: string) {
-  const snapshot = await readVaultSnapshot();
+  const snapshot = await readVaultSnapshot(address);
   return {
     blockNumber: String(snapshot.at.blockNumber),
     blockHash: snapshot.at.blockHash,
@@ -174,8 +169,8 @@ export async function getVaultAllocation(address: string) {
 }
 
 export async function getDirectVaultDetail(address: string): Promise<VaultDetail> {
-  const snapshot = await readVaultSnapshot();
-  const meta = getVaultMetadata(address);
+  const snapshot = await readVaultSnapshot(address);
+  const meta = metadataFromSnapshot(address.toLowerCase(), snapshot);
   const live = toLive(snapshot);
 
   const vault: VaultRow = {
@@ -252,7 +247,10 @@ export async function getDirectVaultDetail(address: string): Promise<VaultDetail
  * bytecode pin can actually be compared against; the 45-byte proxy body is not a useful fingerprint.
  * On mainnet this address holds no code at all, which is why the page labels the deployment a fork.
  */
-export function getVaultEvidence(): ContractEvidence {
+export function getVaultEvidence(address = STAGING_VAULT): ContractEvidence | null {
+  // The committed capture describes one address. For any other vault there is nothing honest to print,
+  // so the section says it could not be read instead of showing another contract's fingerprint.
+  if (address.toLowerCase() !== STAGING_VAULT.toLowerCase()) return null;
   return {
     address: STAGING_VAULT,
     blockNumber: BigInt(CAPTURE.at.blockNumber),
@@ -300,7 +298,7 @@ export async function getHealth() {
  * position, and a zero here would be the difference between "holds nothing" and "we did not look".
  */
 export async function getPosition(address: string, account: string) {
-  const reading = await readPosition(process.env.NEXT_PUBLIC_RPC_URL ?? process.env.RPC_URL, account);
+  const reading = await readPosition(process.env.NEXT_PUBLIC_RPC_URL ?? process.env.RPC_URL, account, address);
   return {
     account: reading.account,
     vault: address.toLowerCase(),

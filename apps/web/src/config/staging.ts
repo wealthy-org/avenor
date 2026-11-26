@@ -32,6 +32,12 @@ export const CANONICAL_HEADER_AT_CAPTURE_HEIGHT = {
   note: "an anvil fork mines its own block at this height, so the capture's hash is not this one",
 } as const;
 
+/**
+ * The chain the committed capture was taken on. A capture is only valid on the chain it was read from:
+ * the node's `eth_chainId` must equal this before `forkSnapshot.json` may answer a request.
+ */
+export const CAPTURE_CHAIN_ID = 4663;
+
 /** ERC-4626 allocator vault. 45-byte EIP-1167 proxy (`eth_getCode` = 90 hex chars). */
 export const STAGING_VAULT = "0x5aebce3956fed4542edbe75d420497378e3b18ca";
 /** VaultV3 implementation the proxy delegates to: 23,462 bytes, apiVersion() = "3.1.1". */

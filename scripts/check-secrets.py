@@ -12,10 +12,14 @@ Yang diperiksa (hanya file yang akan/ sudah masuk git):
 
   1. Nama file terlarang: `.env`, `*.pem`, `*.key`, `id_rsa*`, `*.p12`, `*.keystore`.
   2. Nilai berbentuk kunci privat (64 hex) atau mnemonic (12-24 kata) yang
-     di-assign ke nama variabel sensitif (PRIVATE_KEY, SECRET, MNEMONIC, API_KEY, ...).
+     di-assign ke nama variabel sensitif (PRIVATE_KEY, PK1, SIGNER_KEY, SECRET,
+     MNEMONIC, API_KEY, ...).
   3. Kredensial di dalam URL: `?apikey=`, `?api_key=`, `?token=`, `user:pass@host`.
   4. Hex 64 yang bukan hash: hanya dilaporkan bila nama variabelnya sensitif, jadi
      blockHash/keccak/bytecode hash tidak ikut jadi temuan palsu.
+
+`--self-test` membuktikan pola masih menangkap bentuk-bentuk itu (termasuk
+regresi `PK2 = "0x..."` yang lolos pada 2026-11-25).
 
 Kunci anvil yang memang publik (dokumentasi Foundry, dipakai rehearsal lokal)
 masuk allowlist: nilainya sudah ada di buku manual Foundry dan bukan rahasia.
@@ -48,7 +52,10 @@ BANNED_NAMES = (
     re.compile(r"(^|/)id_(rsa|ecdsa|ed25519)$"),
 )
 
-SENSITIVE_VAR = r"(PRIVATE_?KEY|PRIVKEY|SECRET|MNEMONIC|SEED_?PHRASE|API_?KEY|ACCESS_?TOKEN|AUTH_?TOKEN|BEARER)"
+SENSITIVE_VAR = (
+    r"(PRIVATE_?KEY|PRIVKEY|SECRET|MNEMONIC|SEED_?PHRASE|API_?KEY|ACCESS_?TOKEN|AUTH_?TOKEN|BEARER"
+    r"|PK\d*|SK\d*|SIGNER_?KEY|DEPLOYER_?KEY)"
+)
 
 PATTERNS = (
     # PRIVATE_KEY=0x<64 hex>
@@ -128,10 +135,42 @@ def scan(path: Path) -> list[tuple[int, str, str]]:
     return findings
 
 
+def self_test() -> int:
+    """Prove the patterns still catch the shapes they exist for.
+
+    Sample key is assembled at run time so this file never contains a literal
+    64-hex string that would match its own scanner.
+    """
+    import tempfile
+
+    hexkey = "0x" + "ab" * 32
+    cases = [
+        ("PRIVATE_KEY assign", f"PRIVATE_KEY = {hexkey}"),
+        ("PK2 assign (regression 2026-11-25)", f'PK2 = "{hexkey}"'),
+        ("SIGNER_KEY assign", f"SIGNER_KEY={hexkey}"),
+    ]
+    failures = 0
+    with tempfile.TemporaryDirectory() as tmp:
+        for label, body in cases:
+            path = Path(tmp) / "sample.py"
+            path.write_text(body + "\n", encoding="utf-8")
+            found = scan(path)
+            if not found:
+                print(f"[FAIL] self-test: pola tidak menangkap {label}")
+                failures += 1
+    if failures:
+        return 1
+    print("self-test: pola rahasia menangkap semua bentuk uji")
+    return 0
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--all-files", action="store_true", help="pindai working tree, bukan hanya file ter-track")
+    ap.add_argument("--self-test", action="store_true", help="uji pola terhadap contoh yang dibangun saat runtime")
     args = ap.parse_args()
+
+    if args.self_test:
+        return self_test()
 
     files = (
         [p for p in ROOT.rglob("*") if p.is_file()]

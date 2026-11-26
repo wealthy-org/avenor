@@ -175,14 +175,24 @@ dengan deposit.
 1. Withdraw dan portfolio sudah ada tetapi belum pernah dijalankan terhadap vault terdeploy; test
    memakai node JSON-RPC skrip.
 2. Wallet hanya lewat EIP-1193 injected (`window.ethereum`); belum ada connector WalletConnect/Coinbase.
-3. `AVENOR_VAULTS` belum diset di deployment mana pun: app berjalan pada keadaan "belum ada vault".
+3. Deployment produksi Vercel (`https://avenor-kappa.vercel.app`) sudah menyetel `NEXT_PUBLIC_RPC_URL`
+   dan `AVENOR_VAULTS` (Production + Preview). Vault testnet `0xDa4D…7DA0` tampil dengan angka dari
+   rantai 46630, bukan dari capture. Nilai env dibuktikan lewat `vercel env pull`, bukan dari
+   tampilan panel: entri `--sensitive` diredaksi menjadi string kosong oleh CLI, dan entri kosong
+   pernah lolos ke produksi tanpa terdeteksi (`deposit_limit` capture `50000000000` tampil di
+   halaman vault ber-alamat testnet).
 4. `next build` ada di gate sebagai langkah 12, tetapi **opt-in**: `python scripts/verify-all.py
    --with-web-build` (atau `AVENOR_WITH_WEB_BUILD=1`). Tanpanya gate hanya menjalankan `tsc --noEmit`
    + 90 test, dan ringkasan gate menyebut `web build (next build)` sebagai gate yang tidak jalan
    (bukan sebagai lulus). `node_modules` yang hilang menggagalkan langkah itu, tidak melewatinya.
-5. Halaman detail belum dijalankan terhadap API + vault nyata: belum ada vault hasil
-   `Deploy.s.sol` di chain 4663. Yang terbukti adalah parsing, perhitungan `bigint`, dan perilaku
-   error terhadap body API yang dibentuk test.
+5. Halaman detail sudah dijalankan terhadap vault testnet nyata di chain 46630 (blok `158010963`),
+   tetapi belum terhadap vault hasil `Deploy.s.sol` di chain 4663 staging. Setiap angka yang gagal
+   dibaca tetap tampil sebagai error per-seksi; `getVaultMetadata` menolak baris katalog yang
+   `asset()`/`name()`/`deposit_limit()`-nya tidak menjawab, karena baris kosong pernah sampai ke
+   `format.ts` dan muncul sebagai `"" is not an address`.
+   Capture `forkSnapshot.json` hanya boleh menjawab bila dua syarat berlaku sekaligus: alamat yang
+   diminta = `STAGING_VAULT` **dan** `eth_chainId` node = `CAPTURE_CHAIN_ID` (4663). Guard itu
+   diuji di `test/vaultSource.test.ts` (9 test).
 6. "Dapat ditarik sekarang" hanya ditampilkan dari `maxWithdraw`/`maxRedeem` vault pada blok yang
    dibaca. `maxWithdraw` venue balas `0` pada pin `118337511`; angka venue tidak pernah dipakai
    sebagai sinyal likuiditas, dan estimasi waktu tunggu tidak dikarang.

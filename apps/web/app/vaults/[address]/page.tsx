@@ -75,7 +75,7 @@ export default async function VaultPage({ params }: Params) {
   const config = vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase());
   if (config === undefined) notFound();
 
-  let detail: VaultDetail;
+  let detail: VaultDetail | null = null;
   let base = "";
   try {
     base = apiUrl("");
@@ -83,14 +83,30 @@ export default async function VaultPage({ params }: Params) {
     base = "";
   }
 
-  if (base !== "") {
-    try {
-      detail = await loadVaultDetail(base, config.address);
-    } catch {
+  let detailError: unknown = null;
+  try {
+    if (base !== "") {
+      try {
+        detail = await loadVaultDetail(base, config.address);
+      } catch {
+        detail = await getDirectVaultDetail(config.address);
+      }
+    } else {
       detail = await getDirectVaultDetail(config.address);
     }
-  } else {
-    detail = await getDirectVaultDetail(config.address);
+  } catch (error) {
+    // A vault the node cannot read has no numbers to print. The failure carries the node's reason and
+    // the block, and this page shows it, because an empty page reads like an empty vault.
+    detailError = error;
+    detail = null;
+  }
+
+  if (detail === null) {
+    return (
+      <div className="shell stack">
+        <SectionError error={detailError} what="This vault could not be read" />
+      </div>
+    );
   }
 
   const { vault, live, liveError, allocation, allocationError, reports, reportsError, roles, rolesError } = detail;
@@ -99,11 +115,11 @@ export default async function VaultPage({ params }: Params) {
   // Read straight from the chain: the artifact in this repo describes what we built, not what the
   // address runs. Without a reachable node the captured answer is shown instead, together with the
   // query that produced it, so the section never prints a stack trace or a made-up fingerprint.
-  let evidence: ContractEvidence;
+  let evidence: ContractEvidence | null;
   let evidenceSource: "live" | "captured";
   const rpc = process.env.NEXT_PUBLIC_RPC_URL;
   if (typeof rpc !== "string" || rpc.trim() === "") {
-    evidence = getVaultEvidence();
+    evidence = getVaultEvidence(vault.address);
     evidenceSource = "captured";
   } else {
     try {
@@ -111,7 +127,7 @@ export default async function VaultPage({ params }: Params) {
       evidence = await readEvidence(client, vault.address as `0x${string}`, live === null ? undefined : live.blockNumber);
       evidenceSource = "live";
     } catch {
-      evidence = getVaultEvidence();
+      evidence = getVaultEvidence(vault.address);
       evidenceSource = "captured";
     }
   }
@@ -588,11 +604,19 @@ export default async function VaultPage({ params }: Params) {
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2>Contract evidence</h2>
           <span className="text-xs text-[#a3abb8]">
-            {evidenceSource === "live"
-              ? "read live from the configured RPC"
-              : `captured at block ${evidence.blockNumber.toString()}; the node did not answer this render`}
+            {evidence === null
+              ? "not read"
+              : evidenceSource === "live"
+                ? "read live from the configured RPC"
+                : `captured at block ${evidence.blockNumber.toString()}; the node did not answer this render`}
           </span>
         </div>
+        {evidence === null ? (
+          <ErrorState
+            code="evidence_unavailable"
+            message="No code evidence was read for this vault at this render: the node did not answer, and no capture describes this address."
+          />
+        ) : (
         <dl className="facts">
           <dt>Vault address</dt>
           <dd>
@@ -627,11 +651,12 @@ export default async function VaultPage({ params }: Params) {
           <dt>Read at block</dt>
           <dd className="money">{evidence.blockNumber.toString()}</dd>
         </dl>
-        {evidence.codeError === null ? null : (
+        )}
+        {evidence === null || evidence.codeError === null ? null : (
           <p className="text-sm leading-relaxed text-[#e8c468] max-w-3xl">{evidence.codeError}</p>
         )}
         <p className="provenance">
-          That hash was not computed by this page: it comes from eth_getCode at the captured block, never from a local build artifact. Matching it
+          That hash was not computed by this page: it comes from eth_getCode at the block named above, never from a local build artifact. Matching it
           to an artifact may only be claimed after scripts/verify-bytecode.py has run on the same commit.
         </p>
       </section>

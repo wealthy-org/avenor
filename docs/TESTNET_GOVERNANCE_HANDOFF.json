@@ -1,0 +1,17 @@
+{
+  "network": "Robinhood Chain Testnet (46630)",
+  "step1_acceptManagement": {
+    "tx": "0xb88761254bb53feea86129bfe6c515ad7cd79f5a4f83ded84aa53b0dfca2f19b",
+    "strategy": "0x8f151132f80277b7D42Ad9615172E6De1B26Cf93",
+    "newManagement": "0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA"
+  },
+  "step2_timelockSchedule": {
+    "tx": "0x381fdf02042413bbdbda93c33b3bdff98a1e05b7c87c926dae5c806c9bc9376d",
+    "operationId": "0x9068381b1398cc7c6ca1753431c50f21db62ca44305f6d4d1fa3b450cd17d05f",
+    "executeAfterTimestamp": 1795831749,
+    "target": "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+    "data": "0xf776bf1f",
+    "salt": "0x0000000000000000000000000000000000000000000000000000000000000001",
+    "delay": 172800
+  }
+}

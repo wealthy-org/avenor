@@ -14,6 +14,7 @@
 import { createPublicClient, http, keccak256, toFunctionSelector, type Hex } from "viem";
 import { STAGING_VAULT } from "../config/staging.ts";
 import captured from "./forkSnapshot.json";
+import { captureFallbackAllowed } from "./vaultSource.ts";
 
 export type ReadSource = "onchain" | "captured";
 
@@ -90,7 +91,8 @@ export interface VaultSnapshot {
   };
 }
 
-const VAULT = STAGING_VAULT;
+/** Default target for every read: the one vault the committed capture describes. */
+const CAPTURED_VAULT = STAGING_VAULT;
 
 /** The recorded capture, already typed. Used verbatim when the node is down. */
 export function capturedSnapshot(error: string | null): VaultSnapshot {
@@ -187,7 +189,7 @@ function stringOf(raw: string): string {
 }
 
 /** Read the whole snapshot from one block. Throws only when the block itself is unreadable. */
-export async function liveSnapshot(rpcUrl: string, timeoutMs = 6_000): Promise<VaultSnapshot> {
+export async function liveSnapshot(rpcUrl: string, vaultAddress = CAPTURED_VAULT, timeoutMs = 6_000): Promise<VaultSnapshot> {
   const client = createPublicClient({ transport: http(rpcUrl, { timeout: timeoutMs, retryCount: 0 }) });
   const block = await client.getBlock({ blockTag: "latest" });
   const at: BlockRef = {
@@ -215,27 +217,27 @@ export async function liveSnapshot(rpcUrl: string, timeoutMs = 6_000): Promise<V
   };
 
   const vault = {
-    apiVersion: await read(VAULT, "apiVersion()", stringOf),
-    name: await read(VAULT, "name()", stringOf),
-    symbol: await read(VAULT, "symbol()", stringOf),
-    asset: await read(VAULT, "asset()", addressOf),
-    decimals: await read(VAULT, "decimals()", (raw) => Number(BigInt(raw))),
-    totalAssets: await read(VAULT, "totalAssets()", integer),
-    totalSupply: await read(VAULT, "totalSupply()", integer),
-    pricePerShare: await read(VAULT, "pricePerShare()", integer),
-    totalIdle: await read(VAULT, "totalIdle()", integer),
-    totalDebt: await read(VAULT, "totalDebt()", integer),
-    depositLimit: await read(VAULT, "deposit_limit()", integer),
-    isShutdown: await read(VAULT, "isShutdown()", (raw) => BigInt(raw) !== 0n),
-    profitMaxUnlockTime: await read(VAULT, "profitMaxUnlockTime()", integer),
+    apiVersion: await read(vaultAddress, "apiVersion()", stringOf),
+    name: await read(vaultAddress, "name()", stringOf),
+    symbol: await read(vaultAddress, "symbol()", stringOf),
+    asset: await read(vaultAddress, "asset()", addressOf),
+    decimals: await read(vaultAddress, "decimals()", (raw) => Number(BigInt(raw))),
+    totalAssets: await read(vaultAddress, "totalAssets()", integer),
+    totalSupply: await read(vaultAddress, "totalSupply()", integer),
+    pricePerShare: await read(vaultAddress, "pricePerShare()", integer),
+    totalIdle: await read(vaultAddress, "totalIdle()", integer),
+    totalDebt: await read(vaultAddress, "totalDebt()", integer),
+    depositLimit: await read(vaultAddress, "deposit_limit()", integer),
+    isShutdown: await read(vaultAddress, "isShutdown()", (raw) => BigInt(raw) !== 0n),
+    profitMaxUnlockTime: await read(vaultAddress, "profitMaxUnlockTime()", integer),
   };
 
-  const roleManager = await read(VAULT, "role_manager()", addressOf);
-  const accountant = await read(VAULT, "accountant()", addressOf);
+  const roleManager = await read(vaultAddress, "role_manager()", addressOf);
+  const accountant = await read(vaultAddress, "accountant()", addressOf);
 
   const roles: VaultSnapshot["roles"] = {
     roleManager,
-    futureRoleManager: await read(VAULT, "future_role_manager()", addressOf),
+    futureRoleManager: await read(vaultAddress, "future_role_manager()", addressOf),
     accountant,
     feeManager: accountant.value === null ? fail<string>("no accountant") : await read(accountant.value, "feeManager()", addressOf),
     vaultConfig: fail("not read"),
@@ -247,7 +249,7 @@ export async function liveSnapshot(rpcUrl: string, timeoutMs = 6_000): Promise<V
 
   if (accountant.value !== null) {
     try {
-      const raw = await call(accountant.value, "getVaultConfig(address)", [VAULT]);
+      const raw = await call(accountant.value, "getVaultConfig(address)", [vaultAddress]);
       const words = raw.slice(2).match(/.{64}/g) ?? [];
       const n = (index: number) => Number(BigInt(`0x${words[index]}`));
       roles.vaultConfig = ok({
@@ -264,7 +266,7 @@ export async function liveSnapshot(rpcUrl: string, timeoutMs = 6_000): Promise<V
     }
   }
 
-  const queue = await read(VAULT, "get_default_queue()", (raw) => {
+  const queue = await read(vaultAddress, "get_default_queue()", (raw) => {
     const body = raw.slice(2);
     const length = Number(BigInt(`0x${body.slice(64, 128)}`));
     const addresses: string[] = [];
@@ -276,7 +278,7 @@ export async function liveSnapshot(rpcUrl: string, timeoutMs = 6_000): Promise<V
 
   const strategies: VaultSnapshot["allocation"]["strategies"] = [];
   for (const strategy of queue.value ?? []) {
-    const info = await read(VAULT, "strategies(address)", (raw) => {
+    const info = await read(vaultAddress, "strategies(address)", (raw) => {
       const words = raw.slice(2).match(/.{64}/g) ?? [];
       return {
         activation: BigInt(`0x${words[0]}`).toString(),
@@ -301,7 +303,7 @@ export async function liveSnapshot(rpcUrl: string, timeoutMs = 6_000): Promise<V
     });
   }
 
-  const vaultCode = await client.getCode({ address: VAULT, blockNumber: block.number });
+  const vaultCode = await client.getCode({ address: vaultAddress as Hex, blockNumber: block.number });
   const proxy = /363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3/i.exec(vaultCode ?? "");
   let implementation: string | null = proxy ? `0x${proxy[1]}`.toLowerCase() : null;
   let implementationCodeSize: number | null = null;
@@ -377,7 +379,12 @@ export interface PositionReading {
  * There is no first-seen or last-activity block here: a balance getter does not know either, and no
  * indexer is running, so those fields are reported as absent rather than guessed.
  */
-export async function readPosition(rpcUrl: string | undefined, account: string, timeoutMs = 6_000): Promise<PositionReading> {
+export async function readPosition(
+  rpcUrl: string | undefined,
+  account: string,
+  vaultAddress = CAPTURED_VAULT,
+  timeoutMs = 6_000
+): Promise<PositionReading> {
   const empty: PositionReading = {
     account: account.toLowerCase(),
     blockNumber: null,
@@ -398,7 +405,7 @@ export async function readPosition(rpcUrl: string | undefined, account: string, 
       const data =
         toFunctionSelector(signature) +
         args.map((a) => a.replace(/^0x/, "").toLowerCase().padStart(64, "0")).join("");
-      const raw = await client.request({ method: "eth_call", params: [{ to: STAGING_VAULT, data }, height] as never });
+      const raw = await client.request({ method: "eth_call", params: [{ to: vaultAddress as Hex, data }, height] as never });
       if (raw === "0x") throw new Error(`${signature} returned no data at block ${Number(block.number)}`);
       return raw as string;
     };
@@ -419,13 +426,30 @@ export async function readPosition(rpcUrl: string | undefined, account: string, 
   }
 }
 
-/** Live read first; the recorded capture only when the node cannot answer. Never throws. */
-export async function readVaultSnapshot(): Promise<VaultSnapshot> {
+/**
+ * Read the vault that was asked about: live from the configured node first, the recorded capture only
+ * when the capture actually describes this address on this chain (see `captureFallbackAllowed`).
+ *
+ * A vault the node cannot read is a failure with the node's reason, not another vault's numbers. There
+ * is no `VaultSnapshot` for that case because a snapshot would have to carry a block, and inventing one
+ * is the failure this guard exists to prevent.
+ */
+export async function readVaultSnapshot(address = CAPTURED_VAULT): Promise<VaultSnapshot> {
   const rpc = process.env.NEXT_PUBLIC_RPC_URL ?? process.env.RPC_URL ?? "";
-  if (typeof rpc !== "string" || rpc.trim() === "") return capturedSnapshot("no RPC configured");
+  const normalized = address.toLowerCase();
+  if (typeof rpc !== "string" || rpc.trim() === "") {
+    if (captureFallbackAllowed(normalized, null)) return capturedSnapshot("no RPC configured");
+    throw new Error("no RPC configured: only the captured vault can be served without a node");
+  }
   try {
-    return await liveSnapshot(rpc.trim());
+    return await liveSnapshot(rpc.trim(), normalized);
   } catch (error) {
-    return capturedSnapshot(brief(error));
+    // The guard needs the chain the node reports, not the chain the capture was read on.
+    const probe = await probeNode(rpc.trim());
+    if (captureFallbackAllowed(normalized, probe.chainId)) return capturedSnapshot(brief(error));
+    throw new Error(
+      `${brief(error)}\nno captured snapshot exists for ${normalized}` +
+        (probe.chainId === null ? " (the node did not report a chain id)" : ` on chain ${probe.chainId}`)
+    );
   }
 }

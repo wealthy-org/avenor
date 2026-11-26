@@ -132,6 +132,7 @@ def main() -> int:
     # Not run is not passed: every gate that is skipped is named in the final summary.
     not_run: list[str] = []
 
+    run("secret scanner self-test", [python(), "scripts/check-secrets.py", "--self-test"], ROOT, args.quiet)
     run("no secrets tracked", [python(), "scripts/check-secrets.py"], ROOT, args.quiet)
     run("vendored dependencies", [python(), "scripts/check-vendor.py"], ROOT, args.quiet)
     run(

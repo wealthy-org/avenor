@@ -9,6 +9,7 @@ import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
 import { ApiError } from "@/lib/api";
 import { loadVaultDetail } from "@/lib/vaultLoader";
 import { getDirectVaultDetail } from "@/lib/serverData";
+import type { VaultDetail } from "@/lib/vaultLoader";
 
 export const dynamic = "force-dynamic";
 
@@ -72,7 +73,7 @@ export default async function DepositPage({ params }: Params) {
     );
   }
 
-  let detail;
+  let detail: VaultDetail | null = null;
   let base = "";
   try {
     base = apiUrl("");
@@ -80,14 +81,31 @@ export default async function DepositPage({ params }: Params) {
     base = "";
   }
 
-  if (base !== "") {
-    try {
-      detail = await loadVaultDetail(base, config.address);
-    } catch {
+  let detailError: unknown = null;
+  try {
+    if (base !== "") {
+      try {
+        detail = await loadVaultDetail(base, config.address);
+      } catch {
+        detail = await getDirectVaultDetail(config.address);
+      }
+    } else {
       detail = await getDirectVaultDetail(config.address);
     }
-  } else {
-    detail = await getDirectVaultDetail(config.address);
+  } catch (error) {
+    detailError = error;
+    detail = null;
+  }
+
+  if (detail === null) {
+    return (
+      <div className="shell stack">
+        <ErrorState
+          code="vault_unreadable"
+          message={`The vault could not be read, so no form is shown: ${detailError instanceof Error ? detailError.message : String(detailError)}`}
+        />
+      </div>
+    );
   }
 
   const live = detail.live;

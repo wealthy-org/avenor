@@ -95,7 +95,7 @@ Verified directly from on-chain storage on Vault `0xDa4D625B2e14A3C07D21d6eFfe66
 
 ### 4.3. Strategy Parameters & Ownership Handoff
 Verified on MorphoVaultStrategy `0x8f151132f80277b7D42Ad9615172E6De1B26Cf93`:
-- `pendingManagement`: `0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA` (Governance Safe)
+- `management`: `0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA` (Governance Safe, accepted in tx `0xb8876125…`, block `157995762`)
 - `performanceFeeRecipient`: `0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58` (Treasury Safe)
 - `performanceFee`: `0` (Zero strategy-level fee; no double-dipping)
 - `profitMaxUnlockTime`: `0` (Zero strategy-level lock)
@@ -109,7 +109,7 @@ Verified on MorphoVaultStrategy `0x8f151132f80277b7D42Ad9615172E6De1B26Cf93`:
 - Total Gas Used: **20,640,165 gas**
 - Average Gas Price: **0.020000001 gwei**
 - Total Gas Cost Paid: **0.0004128 ETH** (~$1.40 equivalent)
-- Remaining Deployer Balance: **0.0095468 ETH** (plenty for subsequent operations)
+- Remaining Deployer Balance: **0.0095468 ETH at deploy time**; `0.0097845 ETH` read live at audit block `158001847`
 
 
 ---
@@ -150,7 +150,9 @@ forge script packages/contracts/script/ExecuteTestnet46630Governance.s.sol:Execu
 
 ## 7. Frontend Staging Connection Guide
 
-To connect the deployed web frontend to this live testnet stack, update the environment variables in Cloudflare Pages / Vercel (or `.env.local` for local development):
+The web frontend is deployed and connected. Production alias `https://avenor-kappa.vercel.app`
+(deployment `avenor-hp9kreds3-hanscoprojects.vercel.app`, `dpl_EbvTLRzUcTw1nB5Ly21y3ySzaJGq`).
+Environment variables set in Vercel for Production and Preview:
 
 ```env
 # 1. Official Robinhood Chain Testnet RPC
@@ -160,7 +162,137 @@ NEXT_PUBLIC_RPC_URL=https://rpc.testnet.chain.robinhood.com
 AVENOR_VAULTS=[{"address":"0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0","label":"Avenor USDG Managed Vault (Testnet)","phase":"research","mandate":"Testnet Stage Rehearsal"}]
 ```
 
-When connected:
-- The dashboard reads on-chain figures directly from `0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0`.
-- The vault will clearly display `phase: "research"` with deposits blocked (`deposit_limit == 0`).
-- The block provenance tag will reflect the current live testnet block from `https://rpc.testnet.chain.robinhood.com`.
+Verified behaviour (2026-11-26):
+- `GET /v1/vaults/0xDa4D…7DA0` returns the live row: `asset_address 0xf32ffafd…db6c`,
+  `role_manager 0x56d8…8648`, `accountant 0xa499…8e32`, `deposit_limit "0"`,
+  `source "onchain"`, `recorded_block 158010952`.
+- `GET /v1/vaults/…/live` returns `totalAssets "0"`, `totalSupply "0"`, `pricePerShare "1000000"`,
+  `depositLimit "0"`, `source "onchain"` at block `158010963`
+  (`0x4906a848…e7bfa`, `2026-11-26T03:12:25Z`).
+- Deposits are blocked by `deposit_limit == 0` (not by `setPaused`), and the page states the
+  research phase.
+- `GET /v1/vaults/0x5aeb…18ca/live` (the chain-4663 staging vault) returns HTTP 502 with
+  `the vault read did not return assets, idle or debt`: the committed capture is not allowed to
+  answer for another chain.
+
+Env values were confirmed with `vercel env pull --environment production`, because `vercel env ls`
+only prints "Encrypted": `AVENOR_VAULTS` (161 chars) and `NEXT_PUBLIC_RPC_URL` (41 chars). An
+earlier entry stored as `--sensitive` pulled back as empty and shipped that way, which is how a
+capture `deposit_limit` of `50000000000` appeared under the testnet address.
+
+
+---
+
+## S8 - Governance Handoff Execution (2026-11-26)
+
+### Executed via: scripts/governance_handoff_46630.py
+Receipt blocks: tx1 `157995762`, tx2 `157995780` | RPC: https://rpc.testnet.chain.robinhood.com
+Safe nonce after both transactions: `2` (nonce 0 and 1 consumed, both `status 1`).
+
+### Step 1: strategy.acceptManagement() via Governance Safe
+
+| Field | Value |
+|---|---|
+| TX Hash | 0xb88761254bb53feea86129bfe6c515ad7cd79f5a4f83ded84aa53b0dfca2f19b |
+| Block | 157995762 (status 1) |
+| Safe | 0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA (2/3 Governance) |
+| Target | 0x8f151132f80277b7D42Ad9615172E6De1B26Cf93 (MorphoVaultStrategy) |
+| Calldata | 0xc8c2fe6c (acceptManagement()) |
+| Status | SUCCESS (status 1) |
+| Result | strategy.management() = Governance Safe |
+| Signers | Owner1 (deployer 0x56d845a3...) + Owner2 (0x445be78A...) |
+
+### Step 2: timelock.schedule(vault.accept_role_manager()) via Governance Safe
+
+| Field | Value |
+|---|---|
+| TX Hash | 0x381fdf02042413bbdbda93c33b3bdff98a1e05b7c87c926dae5c806c9bc9376d |
+| Block | 157995780 (status 1) |
+| Safe | 0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA (2/3 Governance) |
+| Target | Timelock 0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc |
+| Timelock Target | Vault 0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0 |
+| Timelock Data | 0xf776bf1f (accept_role_manager()) |
+| Salt | bytes32(1) |
+| Delay | 172800 seconds (48 hours) |
+| Status | SUCCESS (status 1) |
+| Signers | Owner1 (deployer 0x56d845a3...) + Owner2 (0x445be78A...) |
+
+### Step 3: Verification (read at block 158001847)
+
+| Check | Result |
+|---|---|
+| strategy.management() | 0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA OK |
+| strategy.pendingManagement() | 0x0000000000000000000000000000000000000000 (cleared) OK |
+| timelock.isOperationPending(opId) | true OK |
+| timelock.getTimestamp(opId) | 1795831749 OK |
+| timelock.getMinDelay() | 172800 OK |
+| timelock.hasRole(PROPOSER/EXECUTOR/CANCELLER, Safe) | true / true / true OK |
+| timelock.hasRole(any role, deployer EOA) | false OK |
+| vault.role_manager() | 0x56d845a35EDe1436B8053f705b4b189c412A8648 (until execute) |
+| vault.future_role_manager() | 0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc OK |
+| Safe threshold / owners | 2/3: 0x56d8..., 0x445b..., 0xAaB2... OK |
+| Operation ID | 0x9068381b1398cc7c6ca1753431c50f21db62ca44305f6d4d1fa3b450cd17d05f |
+
+Signatures were recovered from the raw `execTransaction` calldata and checked
+against `getTransactionHash`: both transactions carry exactly two signatures
+from owner1 `0x56d845a35EDe1436B8053f705b4b189c412A8648` and owner2
+`0x445be78AbB762884459FB0EC54FE78A5c9a573E1`, matching the Safe tx hashes
+`0x428eb974…` (tx1) and `0xa6b6688c…` (tx2) emitted in `ExecutionSuccess`.
+
+### Next: Timelock Execute (after 48h)
+
+Execute available after Unix timestamp 1795831749 (chain timestamp was 1795660668
+at audit time, so roughly 47,400s of delay remained then).
+Run `python scripts/governance_execute_46630.py` after that timestamp; it refuses
+to run early, verifies the operation ID, and re-checks the post-handoff state.
+Operation ID: 0x9068381b1398cc7c6ca1753431c50f21db62ca44305f6d4d1fa3b450cd17d05f
+### S9 - Web Deployment Against Testnet Vault (2026-11-26)
+
+Block used for the UI evidence: `158010963`
+(hash `0x4906a8480ab041a2d5aaf7a2326dc7863bb2892650baff79762a720e793e7bfa`,
+timestamp `2026-11-26T03:12:25Z`). Reads with
+`cast call <vault> <sig> --block 158010963 --rpc-url https://rpc.testnet.chain.robinhood.com`:
+
+| Getter | Value |
+| --- | --- |
+| `totalAssets()` | `0` |
+| `totalSupply()` | `0` |
+| `pricePerShare()` | `1000000` |
+| `totalIdle()` | `0` |
+| `totalDebt()` | `0` |
+| `deposit_limit()` | `0` |
+| `role_manager()` | `0x56d845a35EDe1436B8053f705b4b189c412A8648` |
+| `future_role_manager()` | `0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc` |
+
+These match the deployed page exactly: `https://avenor-kappa.vercel.app/vaults/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0`,
+screenshot `docs/evidence/testnet-web/vault-page-testnet-158010963.png` (1262x624, 69.3 KiB),
+allocation row `0x8f15...cf93` with debt `0.00 USDG` and "no venue reported".
+
+Bug found and fixed in this session (the earlier claim that the web env was applied was true for
+`NEXT_PUBLIC_RPC_URL` and false for `AVENOR_VAULTS`, and the app could not serve a testnet vault at
+all):
+
+1. Production `/vaults/0xDa4D...7DA0` returned HTTP 500. Server log
+   (`vercel logs <deployment> --json`): `Error: "" is not an address`, digest `1391027834`.
+   Cause: `getVaultMetadata` assembled the row from `forkSnapshot.json` plus constants and ignored
+   the requested address, so `asset()` was `""` for a vault the capture does not describe.
+2. `GET /v1/vaults/0xDa4D...7DA0` answered `source "captured"` with `deposit_limit "50000000000"`,
+   `asset_address 0x5fc5...d168`, `role_manager 0x2c32...6782`, `recorded_block 118337663`: chain-4663
+   capture numbers printed under a chain-46630 address.
+3. `readPosition` read `STAGING_VAULT` regardless of the `address` path segment, so
+   `/v1/vaults/<addr>/positions/<account>` answered 502 `balanceOf(address) returned no data`.
+
+Fix: reads are address-parameterised (`liveSnapshot(rpcUrl, vaultAddress)`,
+`readPosition(rpcUrl, account, vaultAddress)`, `readVaultSnapshot(address)`); `getVaultMetadata`
+builds the row from the snapshot that answered (`metadataFromSnapshot`), and fails with the getter
+name, block and reason when a required getter is missing; the capture may only answer when
+`address == STAGING_VAULT` and `eth_chainId == CAPTURE_CHAIN_ID (4663)`
+(`captureFallbackAllowed`); `/v1/vaults/<addr>/live` answers 502 with the reason instead of a 500
+page; vault/deposit/withdraw/home pages render an `ErrorState` instead of crashing.
+Regression tests: `apps/web/test/vaultSource.test.ts` (9 tests, red proof captured by forcing
+`captureFallbackAllowed` to `true`), web suite now 104/104.
+
+Gate: `python scripts/verify-all.py --with-web-build --with-fork` -> `ALL CHECKS PASSED`
+(secrets + self-test, vendor 603/603, interfaces, SDK ABI, forge build/fmt, 112 unit tests,
+SDK/indexer/keeper, web typecheck, 104 web tests, `next build`, fork pin `118337511`, bytecode 14/14).
+

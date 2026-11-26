@@ -110,7 +110,24 @@ export default async function Page() {
 
   // One snapshot per request. The hero tiles, the ticker, the mandate facts and the block chip all come
   // from the same read, so no figure on this page can disagree with the block printed next to it.
-  const detail = await getDirectVaultDetail(vaults[0].address);
+  let detail: VaultDetail;
+  try {
+    detail = await getDirectVaultDetail(vaults[0].address);
+  } catch (error) {
+    // A vault the node cannot answer for has no numbers; the page says which read failed and at which
+    // block, instead of rendering a stack trace or a zero.
+    return (
+      <div className="shell">
+        <div className="rounded-xl bg-[#14221c] border border-red-500/30 p-6 text-red-300">
+          <h2 className="text-xl font-medium text-white mb-2">The vault could not be read</h2>
+          <p>{error instanceof Error ? error.message : String(error)}</p>
+          <p className="mt-2 text-sm text-[#b0b7c3]">
+            No figure is shown instead of the missing one: an empty read is not zero.
+          </p>
+        </div>
+      </div>
+    );
+  }
   const live = detail.live;
   if (live === null) {
     return (
