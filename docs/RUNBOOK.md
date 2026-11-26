@@ -100,16 +100,18 @@ Ingat: `maxWithdraw` **venue** tidak dipakai sebagai sinyal (bisa 0 walau likuid
 
 ---
 
-## Drill (HITL) — status: DIEKSEKUSI & TERVERIFIKASI
+## Drill (HITL) — status: DIEKSEKUSI & TERVERIFIKASI (FORK LOKAL ANVIL)
+
+> **Status provenance:** Drill di bawah ini dijalankan di **fork lokal anvil** dari state chain `4663` (bukan transaksi di chain `4663` atau testnet `46630`). Tinggi blok yang dipakai milik run chain lokal. Prosedur dan hasil drill tetap berlaku sebagai latihan runbook operasional yang valid; bukan bukti deploy testnet/mainnet.
 
 Empat drill di bawah adalah bagian dari tiket epik 6 T4 dan **telah dieksekusi** pada staging fork pin `118337511` menggunakan `packages/contracts/script/ExecuteDrills.s.sol`. Bukti on-chain lengkap tercatat di [`docs/DRILL_EVIDENCE.md`](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/DRILL_EVIDENCE.md).
 
 | Drill | Prosedur | Target waktu | Bukti tercatat | Status |
 | --- | --- | --- | --- | --- |
-| D1 pause/unpause | A | diagnosis ≤ 15 mnt, unpause ≤ 60 mnt | Blok 26450185, `maxWithdraw` 0 saat pause, withdraw uji 1 USDG sukses pasca unpause | LULUS |
-| D2 force revoke lewat fast lane | D langkah 3 | ≤ 6 jam | Blok 26450195 (schedule) & 26457395 (execute 6h emergency timelock), `current_debt` = 0 | LULUS |
-| D3 penurunan likuiditas venue | D | komunikasi ≤ 30 mnt | Pengukuran 3 angka terpisah (idle, maxWithdraw, maxRedeem) pada blok 26450185 & 26450195 | LULUS |
-| D4 shutdown + migrasi | B | dana idle ≤ 2 jam | Blok 26457395 (`shutdown_vault` oleh guardian), 100% aset ditarik ke kas idle (`1099000000`) | LULUS |
+| D1 pause/unpause | A | diagnosis ≤ 15 mnt, unpause ≤ 60 mnt | Blok 26450185, `maxWithdraw` 0 saat pause, withdraw uji 1 USDG sukses pasca unpause | LULUS (fork lokal; testnet belum) |
+| D2 force revoke lewat fast lane | D langkah 3 | ≤ 6 jam | Blok 26450195 (schedule) & 26457395 (execute 6h emergency timelock), `current_debt` = 0 | LULUS (fork lokal; testnet belum) |
+| D3 penurunan likuiditas venue | D | komunikasi ≤ 30 mnt | Pengukuran 3 angka terpisah (idle, maxWithdraw, maxRedeem) pada blok 26450185 & 26450195 | LULUS (fork lokal; testnet belum) |
+| D4 shutdown + migrasi | B | dana idle ≤ 2 jam | Blok 26457395 (`shutdown_vault` oleh guardian), 100% aset ditarik ke kas idle (`1099000000`) | LULUS (fork lokal; testnet belum) |
 
 Prasyarat drill: vault hasil `Deploy.s.sol` pada fork pin `118337511` (bukan mainnet), akun uji,
 keeper dalam mode sekali-jalan, dan satu manusia yang menandatangani hasilnya. Drill D2 juga

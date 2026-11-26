@@ -4,7 +4,7 @@ Dokumen ini mencatat bukti eksekusi empat drill insiden (D1–D4) yang disyaratk
 
 Semua transaksi dieksekusi secara nyata terhadap bytecode kanonik Yearn V3 `VaultV3.vy (3.1.1)` dan `MorphoVaultStrategy.sol`.
 
-> **Status provenance (koreksi 2026-11-29).** Drill di dokumen ini dijalankan di **fork lokal anvil** dari state chain `4663`, bukan di chain `4663`. Tinggi blok yang dipakai (`26450185`, `26450195`, `26457395`) bukan tinggi fork yang dipin di `118337511`: header kanonik `26450185` adalah `0xd407d24921d5a58a28d280b42cc27524f8c2e8e09868acd8e1904ad4b3a816c2` dengan timestamp `1785728805` = `2026-08-03T03:46:45Z`, jadi tinggi itu milik run chain lokal yang lain. `eth_getCode` vault, factory, emergency timelock, dan akun uji mengembalikan `0x` di chain `4663`. Prosedur dan hasil drill tetap berlaku sebagai latihan runbook; bukan bukti deploy.
+> **Status provenance (koreksi 2026-11-24).** Drill di dokumen ini dijalankan di **fork lokal anvil** dari state chain `4663`, bukan di chain `4663`. Tinggi blok yang dipakai (`26450185`, `26450195`, `26457395`) bukan tinggi fork yang dipin di `118337511`: header kanonik `26450185` adalah `0xd407d24921d5a58a28d280b42cc27524f8c2e8e09868acd8e1904ad4b3a816c2` dengan timestamp `1785728805` = `2026-08-03T03:46:45Z`, jadi tinggi itu milik run chain lokal yang lain. `eth_getCode` vault, factory, emergency timelock, dan akun uji mengembalikan `0x` di chain `4663`. Prosedur dan hasil drill tetap berlaku sebagai latihan runbook; bukan bukti deploy.
 
 ---
 

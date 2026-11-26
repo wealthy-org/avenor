@@ -135,7 +135,7 @@ Konsekuensinya, di kode:
 - Tabel kontrak (`src/components/ContractsSection.tsx`) mencetak kedua hash: fork dan kanonik.
 - `test/components.test.ts` menolak string `recorded at block` dan mewajibkan `rehearsal fork` di tabel itu.
 
-Perintah reproduksi (keduanya dijalankan `2026-11-29`):
+Perintah reproduksi (keduanya dijalankan `2026-11-24`):
 
 ```bash
 curl -s -X POST https://rpc.solidrpc.io/public/evm/4663 -H 'Content-Type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"eth_getBlockByNumber","params":["0x70db07f",false]}'

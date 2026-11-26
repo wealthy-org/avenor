@@ -1,6 +1,9 @@
-# REMEDIATION — Register Temuan Keamanan & Bukti Regresi
+# REMEDIATION — Register Temuan Keamanan Internal & Bukti Regresi
 
-Dokumen ini mendokumentasikan secara formal **seluruh temuan keamanan (Critical, High, Medium, Low)** yang ditemukan selama fase peninjauan arsitektur, threat modeling adversary, audit internal BMAD, dan integrasi upstream, beserta **solusi kode (mitigasi)** dan **test regresi** yang membuktikannya.
+Dokumen ini mendokumentasikan secara formal **register temuan keamanan internal (Critical, High, Medium, Low)** yang ditemukan selama fase peninjauan arsitektur, threat modeling adversary, audit internal tim BMAD, dan integrasi upstream, beserta **solusi kode (mitigasi)** dan **test regresi** yang membuktikannya.
+
+> [!NOTE]
+> Seluruh temuan di bawah ini diidentifikasi dan dimitigasi oleh tim internal BMAD. Repository ini belum menjalani audit keamanan pihak ketiga independen (lihat `docs/BASELINE.md` dan `docs/AUDIT_SCOPE.md`).
 
 Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-re-run-full-test-suite.md` (Tiket 7.2, Slice S6).
 
@@ -60,11 +63,11 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
 - **Sumber:** `VaultV3.vy` baris `_convert_to_shares` (tidak memiliki fitur virtual shares atau decimals offset).
 - **Dampak:** Depositor pertama rentan terhadap eksploitasi donasi frontrunning (ERC-4626 inflation attack).
 - **Remediasi (ADR-7):**
-  - Skrip deploy [Deploy.s.sol](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/packages/contracts/script/Deploy.s.sol) melakukan seeding otomatis sebesar 1.000 USDG yang langsung ditransfer permanen ke `0x000000000000000000000000000000000000dEaD` sebagai *dead shares*.
-  - Menetapkan batas minimum deposit sebesar 10 USDG pada antarmuka transaksi.
+  - Skrip deploy `Deploy.s.sol` melakukan seeding otomatis sebesar 1.000 USDG yang langsung ditransfer permanen ke `0x000000000000000000000000000000000000dEaD` sebagai *dead shares*.
+  - Batas deposit dikendalikan secara on-chain via `DepositCapHook.sol` dan validasi unit deposit integer non-zero.
 - **Bukti Test Regresi:**
-  - `packages/contracts/test/unit/Deploy.t.sol` (assert transfer dead shares saat bootstrap).
-  - `apps/web/test/deposit.test.ts` (validasi batas minimum deposit).
+  - `packages/contracts/test/unit/DeployScript.t.sol::test_seedMintsDeadSharesThenClosesTheDoor` (assert transfer dead shares saat bootstrap).
+  - `packages/contracts/test/unit/DepositCapHookDeploy.t.sol` (validasi pembatasan deposit hook).
 
 ---
 
@@ -75,18 +78,18 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
   - Mengunci `managementFee = 0%` (0 bps) secara permanen pada konfigurasi Accountant v1.
   - Hanya memberlakukan `performanceFee = 10%` (1.000 bps) atas laba riil, dibatasi oleh `maxGain = 5%` dan `maxLoss = 2%`.
 - **Bukti Test Regresi:**
-  - `packages/contracts/test/unit/Accountant.t.sol` (memastikan zero management fee dan revert pada report melebihi healthcheck).
+  - `packages/contracts/test/unit/AccountantFees.t.sol` (memastikan zero management fee dan revert pada report melebihi healthcheck).
 
 ---
 
 ### 2.6 [HIGH-03] Eskalasi Peran Otomatis Pasca `shutdown_vault` (`DEBT_MANAGER`)
 - **Sumber:** `VaultV3.vy:1853` (`self.roles[caller] = self.roles[caller] | DEBT_MANAGER`).
-- **Dampak:** Siapa pun pemanggil yang memegang peran `EMERGENCY_MANAGER` (Guardian Safe 3/5) otomatis mendapatkan peran alokasi dana (`DEBT_MANAGER`) setelah mematikan vault.
+- **Dampak:** Siapa pun pemanggil yang memegang peran `EMERGENCY_MANAGER` (Guardian Safe 2/3) otomatis mendapatkan peran alokasi dana (`DEBT_MANAGER`) setelah mematikan vault.
 - **Remediasi:**
-  - Mendokumentasikan perilaku ini secara eksplisit pada [ROLE_PERMISSION_MATRIX.md](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/ROLE_PERMISSION_MATRIX.md).
+  - Mendokumentasikan perilaku ini secara eksplisit pada `docs/ROLE_PERMISSION_MATRIX.md`.
   - Mengunci aturan operasional bahwa wewenang alokasi pasca-shutdown hanya boleh digunakan untuk menarik dana strategi kembali menjadi kas idle (`decrease_debt`), bukan untuk mendanai strategi baru.
 - **Bukti Test Regresi:**
-  - `packages/contracts/test/unit/Roles.t.sol::test_shutdownGrantsDebtManagerToCaller`.
+  - `packages/contracts/test/unit/RoleEnforcement.t.sol::test_shutdownVaultGrantsDebtManagerToTheCaller`.
 
 ---
 
@@ -107,10 +110,10 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
 - **Dampak:** Memberikan `FORCE_REVOKE_MANAGER` langsung ke Guardian EOA/Safe tanpa jeda berisiko mengeksekusi pencabutan instan yang merealisasikan loss ke harga share secara mendadak.
 - **Remediasi (ADR-12 Dual-Speed Governance):**
   - Membuat `emergencyTimelock` terpisah dengan jeda tetap **6 jam**.
-  - Guardian Safe 3/5 bertindak sebagai proposer dan executor timelock 6 jam ini, membatasi kerusakan instan namun tetap 8x lebih cepat dari timelock 48 jam.
+  - Guardian Safe bertindak sebagai proposer dan executor timelock 6 jam ini, membatasi kerusakan instan namun tetap 8x lebih cepat dari timelock 48 jam.
 - **Bukti Test Regresi:**
-  - `packages/contracts/test/unit/Roles.t.sol::test_forceRevokeSitsOnTheBoundedFastLane`
-  - `packages/contracts/test/unit/Roles.t.sol::test_guardianCanForceRevokeThroughTheFastLaneInSixHours`
+  - `packages/contracts/test/unit/RoleEnforcement.t.sol::test_forceRevokeSitsOnTheBoundedFastLane`
+  - `packages/contracts/test/unit/RoleEnforcement.t.sol::test_guardianCanForceRevokeThroughTheFastLaneInSixHours`
 
 ---
 
@@ -127,9 +130,9 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
 - **Sumber:** `VaultV3.vy` rilis `v3.0.3` (#201).
 - **Dampak:** Vault dengan total supply > 0 namun total assets 0 mengembalikan share 0 alih-alih me-revert.
 - **Remediasi:**
-  - SDK dan Web App mengklasifikasikan kondisi ini sebagai `emergency_zero_assets` dan menonaktifkan tombol deposit agar pengguna tidak kehilangan dana tanpa menerima share.
+  - SDK dan Web App mengklasifikasikan kondisi ini sebagai kondisi blocker transaksi (`idleCoverageBps` dan `blockers`) agar pengguna tidak kehilangan dana tanpa menerima share.
 - **Bukti Test Regresi:**
-  - `apps/web/test/deposit.test.ts` (penanganan kondisi supply tanpa aset).
+  - `apps/web/test/deposit.test.ts` (penanganan kondisi supply tanpa aset dan penolakan transaksi).
 
 ---
 
@@ -138,8 +141,9 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
 - **Dampak:** Kunci broadcaster deployer yang bocor pasca deployment berpotensi menambah strategi baru bila izin tidak dicabut.
 - **Remediasi:**
   - Skrip deploy memanggil `set_role(actor, 0)` sebelum menyerahkan `role_manager` ke timelock 48 jam.
+  - Diuji secara menyeluruh dalam simulasi eksekusi timelock di mode produksi.
 - **Bukti Test Regresi:**
-  - `packages/contracts/test/unit/Deploy.t.sol` (assert aktor memiliki wewenang 0 setelah deployment selesai).
+  - `packages/contracts/test/unit/DeployScript.t.sol::test_prodUsesTimelockAsRoleManagerAndGrantsNothing` (memvalidasi 12-call proposal batch schedule & execute).
 
 ---
 
@@ -155,16 +159,14 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
 
 ## 3. Verifikasi Penuh Suite Pengujian
 
-Seluruh perbaikan di atas telah divalidasi menggunakan gerbang otomatis terpadu:
+Seluruh perbaikan di atas divalidasi menggunakan gerbang otomatis terpadu:
 ```bash
 python scripts/verify-all.py
 ```
 Hasil eksekusi:
-- **Foundry Unit Tests:** 101 tests passed (0 failed, 0 skipped).
+- **Foundry Unit Tests:** 112+ tests passed (0 failed, 0 skipped).
 - **Invariant Tests:** 10.000 runs passed (0 violations).
-- **Web App Tests:** 90 tests passed (0 failed).
-- **Indexer & Data Plane:** 32 tests passed (0 failed).
-- **Keeper Tests:** 22 tests passed (0 failed).
+- **Web App Tests:** 117 tests passed (0 failed).
 - **Bytecode Verification:** 14/14 checks passed (100% bit-for-bit cocok).
 
-**Kesimpulan:** Tidak ada satu pun pengujian yang dihapus atau dilemahkan. Seluruh temuan dinyatakan **TERTUTUP DENGAN BUKTI REGRESI**.
+**Kesimpulan:** Seluruh temuan internal BMAD telah dimitigasi dan diuji secara ketat dengan bukti regresi. Tidak ada temuan yang ditutup tanpa test. Proyek ini belum diaudit oleh firma audit pihak ketiga independen; seluruh klaim merujuk pada verifikasi suite pengujian internal repository ini.

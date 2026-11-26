@@ -260,6 +260,9 @@ contract Deploy is Script {
         d.guardian = cfg.guardian;
         d.keeper = cfg.keeper;
         d.treasury = cfg.treasury;
+        if (cfg.mode == Mode.Prod && cfg.management == address(0)) {
+            cfg.management = d.timelock;
+        }
         d.management = cfg.management;
         if (cfg.mode == Mode.Prod) {
             (d.proposalTargets, d.proposalCalldatas) = _buildProposal(d, cfg);
@@ -552,36 +555,42 @@ contract Deploy is Script {
         Deployment memory d,
         Config memory cfg
     ) internal pure returns (address[] memory targets, bytes[] memory calldatas) {
-        // 8 vault calls + 2 accountant calls + 1 strategy call. The accountant calls are
-        // the ones that make `process_report` work at all; queueing only `set_accountant`
-        // would revert every report with `"vault not added"` once the timelock executes.
-        // The last call is the second half of the strategy management handoff: the script
-        // set `pendingManagement`, and only the timelock itself can accept it.
-        targets = new address[](11);
-        calldatas = new bytes[](11);
-        for (uint256 i; i < 7; ++i) {
-            targets[i] = d.vault;
-        }
-        calldatas[0] = abi.encodeCall(IVaultV3.set_role, (d.guardian, Roles.EMERGENCY_MANAGER));
-        calldatas[1] = abi.encodeCall(IVaultV3.set_role, (d.keeper, Roles.keeperRoleSet()));
-        calldatas[2] = abi.encodeCall(IVaultV3.set_role, (d.treasury, Roles.DEBT_PURCHASER));
+        // 9 vault calls + 2 accountant calls + 1 strategy call = 12 calls total.
+        // Call 0: The timelock is role_manager but has no operational roles itself.
+        // It must grant itself governanceRoleSet() (3995) so it has the operational roles
+        // needed to call add_strategy, update_max_debt, set_use_default_queue, set_minimum_total_idle,
+        // and set_accountant below. Without this first call, all subsequent vault governance calls revert!
+        targets = new address[](12);
+        calldatas = new bytes[](12);
+        targets[0] = d.vault;
+        calldatas[0] = abi.encodeCall(IVaultV3.set_role, (d.timelock, Roles.governanceRoleSet()));
+        targets[1] = d.vault;
+        calldatas[1] = abi.encodeCall(IVaultV3.set_role, (d.guardian, Roles.EMERGENCY_MANAGER));
+        targets[2] = d.vault;
+        calldatas[2] = abi.encodeCall(IVaultV3.set_role, (d.keeper, Roles.keeperRoleSet()));
+        targets[3] = d.vault;
+        calldatas[3] = abi.encodeCall(IVaultV3.set_role, (d.treasury, Roles.DEBT_PURCHASER));
         // `add_strategy` is overloaded (with and without `add_to_queue`), so it cannot
         // be referenced through `abi.encodeCall`: pin the 2-arg selector explicitly.
-        calldatas[3] = abi.encodeWithSelector(bytes4(0xc2e73cca), d.strategy, true);
-        calldatas[4] =
+        targets[4] = d.vault;
+        calldatas[4] = abi.encodeWithSelector(bytes4(0xc2e73cca), d.strategy, true);
+        targets[5] = d.vault;
+        calldatas[5] =
             abi.encodeCall(IVaultV3.update_max_debt_for_strategy, (d.strategy, cfg.maxDebt));
-        calldatas[5] = abi.encodeCall(IVaultV3.set_use_default_queue, (true));
-        calldatas[6] = abi.encodeCall(IVaultV3.set_minimum_total_idle, (cfg.minimumTotalIdle));
-        targets[7] = d.accountant;
-        calldatas[7] = abi.encodeCall(IAccountant.addVault, (d.vault));
-        targets[8] = d.vault;
-        calldatas[8] = abi.encodeCall(IVaultV3.set_accountant, (d.accountant));
-        targets[9] = d.strategy;
-        calldatas[9] = abi.encodeWithSelector(IStrategyDeploy.acceptManagement.selector);
-        // 11th: hand the bounded fast lane its single bit (ADR-12). Without this call the
+        targets[6] = d.vault;
+        calldatas[6] = abi.encodeCall(IVaultV3.set_use_default_queue, (true));
+        targets[7] = d.vault;
+        calldatas[7] = abi.encodeCall(IVaultV3.set_minimum_total_idle, (cfg.minimumTotalIdle));
+        targets[8] = d.accountant;
+        calldatas[8] = abi.encodeCall(IAccountant.addVault, (d.vault));
+        targets[9] = d.vault;
+        calldatas[9] = abi.encodeCall(IVaultV3.set_accountant, (d.accountant));
+        targets[10] = d.strategy;
+        calldatas[10] = abi.encodeWithSelector(IStrategyDeploy.acceptManagement.selector);
+        // 12th: hand the bounded fast lane its single bit (ADR-12). Without this call the
         // emergency timelock exists but can do nothing.
-        targets[10] = d.vault;
-        calldatas[10] =
+        targets[11] = d.vault;
+        calldatas[11] =
             abi.encodeCall(IVaultV3.set_role, (d.emergencyTimelock, Roles.emergencyRoleSet()));
     }
 
@@ -1124,9 +1133,19 @@ contract Deploy is Script {
             }
             if (cfg.timelock == address(0)) revert ZeroAddress("timelock");
             if (cfg.timelock.code.length == 0) revert RoleManagerIsEoa("timelock");
-            uint256 delay = TimelockController(payable(cfg.timelock)).getMinDelay();
+            TimelockController tl = TimelockController(payable(cfg.timelock));
+            uint256 delay = tl.getMinDelay();
             if (delay < MIN_TIMELOCK_DELAY) {
                 revert TimelockDelayTooShort(delay, MIN_TIMELOCK_DELAY);
+            }
+            if (tl.hasRole(tl.TIMELOCK_ADMIN_ROLE(), cfg.actor)) {
+                revert RoleMatrixViolation("deployer cannot be timelock admin", cfg.actor, 0, 0);
+            }
+            if (tl.hasRole(tl.PROPOSER_ROLE(), cfg.actor)) {
+                revert RoleMatrixViolation("deployer cannot be timelock proposer", cfg.actor, 0, 0);
+            }
+            if (cfg.management != address(0) && cfg.management != cfg.timelock) {
+                revert InvalidConfig("prod mode strategy management must be timelock");
             }
         }
         if (cfg.guardian == cfg.proposer) revert GuardianEqualsProposer(cfg.guardian);

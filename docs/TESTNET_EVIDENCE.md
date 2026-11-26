@@ -86,12 +86,12 @@ Verified directly from on-chain storage on Vault `0xDa4D625B2e14A3C07D21d6eFfe66
 
 | Account | Entity | Role Bitmask | Interpretation |
 |---|---|---|---|
-| `0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc` | Timelock (48h) | `3995` | `governanceRoleSet` (ADD_STRATEGY, REVOKE_STRATEGY, FORCE_REVOKE, ACCOUNTANT_MANAGER, QUEUE_MANAGER, DEPOSIT_LIMIT_MANAGER) |
-| `0xde3f5071559d929d18092EEf7f3B106e39BCD4b6` | Emergency Timelock (6h) | `4` | `EMERGENCY_MANAGER` (bounded fast-lane) |
-| `0x83227a7b21Ead1e0581D03144B85Cb63Fd585af1` | Guardian Safe (2/3) | `8192` | `DEBT_PURGER` (instant emergency pause) |
-| `0x9c4D1f60c74Af03ca92D634A54d55A998CE25d75` | Keeper EOA | `96` | `REPORTING_MANAGER` + `DEBT_ALLOCATOR` |
-| `0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58` | Treasury Safe (2/3) | `4096` | Fees and surplus distribution recipient |
-| `0x56d845a35EDe1436B8053f705b4b189c412A8648` | Deployer EOA | `0` | **Zero privilege** (relinquished post-wire) |
+| `0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc` | Timelock (48h) | `3995` | `governanceRoleSet` (ADD_STRATEGY, REVOKE_STRATEGY, ACCOUNTANT, QUEUE, MAX_DEBT, DEPOSIT_LIMIT, WITHDRAW_LIMIT, MINIMUM_IDLE, PROFIT_UNLOCK) |
+| `0xde3f5071559d929d18092EEf7f3B106e39BCD4b6` | Emergency Timelock (6h) | `4` | `FORCE_REVOKE_MANAGER` (ADR-12 bounded fast lane) |
+| `0x83227a7b21Ead1e0581D03144B85Cb63Fd585af1` | Guardian Safe (2/3) | `8192` | `EMERGENCY_MANAGER` (instant emergency pause & shutdown) |
+| `0x9c4D1f60c74Af03ca92D634A54d55A998CE25d75` | Keeper EOA | `96` | `REPORTING_MANAGER` (32) + `DEBT_MANAGER` (64) |
+| `0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58` | Treasury Safe (2/3) | `4096` | `DEBT_PURCHASER` (`buy_debt` recipient) |
+| `0x56d845a35EDe1436B8053f705b4b189c412A8648` | Deployer EOA | `0` | **Zero role bits** (`future_role_manager` ditransfer ke Timelock) |
 
 ### 4.3. Strategy Parameters & Ownership Handoff
 Verified on MorphoVaultStrategy `0x8f151132f80277b7D42Ad9615172E6De1B26Cf93`:
@@ -108,7 +108,7 @@ Verified on MorphoVaultStrategy `0x8f151132f80277b7D42Ad9615172E6De1B26Cf93`:
 - Total Transactions Broadcast: **26 transactions**
 - Total Gas Used: **20,640,165 gas**
 - Average Gas Price: **0.020000001 gwei**
-- Total Gas Cost Paid: **0.0004128 ETH** (~$1.40 equivalent)
+- Total Gas Cost Paid: **0.0004128 ETH** (testnet gas, zero financial value)
 - Remaining Deployer Balance: **0.0095468 ETH at deploy time**; `0.0097845 ETH` read live at audit block `158001847`
 
 

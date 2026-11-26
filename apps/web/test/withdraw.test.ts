@@ -297,3 +297,18 @@ test("a full-loss budget is warned about, never silently sent", async () => {
   const warnings = withdrawWarnings({ ...quote, maxLossBps: 10_000 }, { isPaused: false, isShutdown: false });
   assert.deepEqual(warnings.map((entry) => entry.case), ["W3", "W4"]);
 });
+
+test("formatMaxShares uses shareDecimals (6) not hardcoded 18 (K-9 fix)", () => {
+  const formatMax = (max: bigint, decimals: number): string => {
+    const whole = max / 10n ** BigInt(decimals);
+    const fraction = (max % 10n ** BigInt(decimals)).toString().padStart(decimals, "0").replace(/0+$/, "");
+    return fraction === "" ? whole.toString() : `${whole}.${fraction}`;
+  };
+
+  // Vault shares on USDG vault have 6 decimals
+  const maxShares6 = 1_500_250_000n; // 1500.25 shares
+  assert.equal(formatMax(maxShares6, 6), "1500.25");
+  // If wrongly formatted with 18 decimals, 1_500_250_000n would produce "0.00000000150025" (10^12 factor error)
+  assert.notEqual(formatMax(maxShares6, 6), formatMax(maxShares6, 18));
+  assert.equal(formatMax(maxShares6, 18), "0.00000000150025");
+});

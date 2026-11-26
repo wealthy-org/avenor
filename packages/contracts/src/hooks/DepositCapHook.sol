@@ -199,8 +199,11 @@ contract DepositCapHook is IDepositHook {
         emit SetWalletCap(account, cap);
     }
 
-    /// @notice The emergency deposit switch. Turning the allowlist off restores the plain
-    ///         global/per-wallet caps; turning it on with no entries rejects every deposit.
+    /// @notice Governance switch for allowlist enforcement (ADR-5). Requires 48h timelock.
+    ///         Turning the allowlist off restores the plain global/per-wallet caps;
+    ///         turning it on with no entries rejects all new deposits.
+    ///         Note: This is not an emergency stop — for rapid emergency freeze, the Guardian
+    ///         uses VaultV3 `set_paused` (reverts deposits and withdrawals) or `shutdown_vault`.
     function setAllowlistEnabled(
         bool enabled
     ) external onlyGovernance {

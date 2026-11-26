@@ -200,11 +200,11 @@ export function WithdrawForm({ vault, chainId: nodeChainId, assetSymbol, live, s
     if (quote === null) return;
     const max = mode === "assets" ? quote.maxAssets : quote.maxShares;
     if (max === 0n) return;
-    const decimals = mode === "assets" ? 6 : 18;
+    const decimals = mode === "assets" ? 6 : shareDecimals;
     const whole = max / 10n ** BigInt(decimals);
     const fraction = (max % 10n ** BigInt(decimals)).toString().padStart(decimals, "0").replace(/0+$/, "");
     setAmount(fraction === "" ? whole.toString() : `${whole}.${fraction}`);
-  }, [mode, quote]);
+  }, [mode, quote, shareDecimals]);
 
   const lossTooHigh = customLoss.trim() !== "" ? Number(customLoss) >= MAX_LOSS_BPS : lossBps >= MAX_LOSS_BPS;
   const busy = phase === "quoting" || phase === "signing";

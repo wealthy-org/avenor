@@ -88,7 +88,7 @@ contract DeployScriptTest is Test {
             guardian: guardian,
             keeper: keeper,
             treasury: treasury,
-            management: address(0),
+            management: mode == Deploy.Mode.Prod ? timelock : address(0),
             maxDebt: STRATEGY_MAX_DEBT_TEST,
             minimumTotalIdle: MINIMUM_TOTAL_IDLE,
             seedAssets: 0,
@@ -298,40 +298,80 @@ contract DeployScriptTest is Test {
         assertEq(vault.roles(treasury), 0);
         assertEq(vault.roles(d.emergencyTimelock), 0, "fast lane granted before the proposal");
         assertEq(vault.strategies(d.strategy).activation, 0, "strategy not added by script");
-        // 7 bootstrap vault calls + addVault(accountant) + set_accountant(vault) + the
+        // 8 bootstrap vault calls + addVault(accountant) + set_accountant(vault) + the
         // second half of the strategy handoff (acceptManagement) + the 6h fast lane's single
-        // bit (ADR-12). The accountant pair is not optional: without it the vault reports
-        // into a reverting accountant the moment the proposal executes.
-        assertEq(d.proposalTargets.length, 11);
-        assertEq(d.proposalCalldatas.length, 11);
-        for (uint256 i; i < 7; ++i) {
+        // bit (ADR-12) = 12 calls total. Call 0 grants the timelock itself governanceRoleSet()
+        // so it has the operational permissions to add strategies and set the accountant.
+        assertEq(d.proposalTargets.length, 12);
+        assertEq(d.proposalCalldatas.length, 12);
+        for (uint256 i; i < 8; ++i) {
             assertEq(d.proposalTargets[i], d.vault, "vault call");
         }
-        assertEq(d.proposalTargets[7], d.accountant, "addVault target is the accountant");
-        assertEq(d.proposalTargets[8], d.vault, "set_accountant target is the vault");
+        assertEq(d.proposalTargets[8], d.accountant, "addVault target is the accountant");
+        assertEq(d.proposalTargets[9], d.vault, "set_accountant target is the vault");
         assertEq(
-            bytes4(d.proposalCalldatas[7]), IAccountant.addVault.selector, "calldata 7 is addVault"
+            bytes4(d.proposalCalldatas[8]), IAccountant.addVault.selector, "calldata 8 is addVault"
         );
-        assertEq(
-            bytes4(d.proposalCalldatas[8]),
-            IVaultV3.set_accountant.selector,
-            "calldata 8 is set_accountant"
-        );
-        assertEq(d.proposalTargets[9], d.strategy, "acceptManagement target is the strategy");
         assertEq(
             bytes4(d.proposalCalldatas[9]),
-            bytes4(keccak256("acceptManagement()")),
-            "calldata 9 is acceptManagement"
+            IVaultV3.set_accountant.selector,
+            "calldata 9 is set_accountant"
         );
-        assertEq(d.proposalTargets[10], d.vault, "fast lane role target is the vault");
+        assertEq(d.proposalTargets[10], d.strategy, "acceptManagement target is the strategy");
         assertEq(
-            bytes4(d.proposalCalldatas[10]), IVaultV3.set_role.selector, "calldata 10 is set_role"
+            bytes4(d.proposalCalldatas[10]),
+            bytes4(keccak256("acceptManagement()")),
+            "calldata 10 is acceptManagement"
+        );
+        assertEq(d.proposalTargets[11], d.vault, "fast lane role target is the vault");
+        assertEq(
+            bytes4(d.proposalCalldatas[11]), IVaultV3.set_role.selector, "calldata 11 is set_role"
         );
         // Prod leaves the accountant unowned by the vault until the timelock executes.
         assertEq(vault.accountant(), address(0), "no accountant before the proposal runs");
         assertFalse(IAccountant(d.accountant).vaults(d.vault), "no addVault before the proposal");
         assertEq(IAccountant(d.accountant).feeManager(), timelock, "timelock manages fees");
         assertEq(vault.deposit_limit(), 0);
+
+        // K-1 verification: Actually execute the proposal batch through TimelockController
+        // to prove that all 12 calls execute cleanly without "not allowed" reverts!
+        uint256[] memory values = new uint256[](12);
+        vm.prank(address(proposerSafe));
+        TimelockController(payable(timelock))
+            .scheduleBatch(
+                d.proposalTargets, values, d.proposalCalldatas, bytes32(0), bytes32(0), 48 hours
+            );
+        vm.warp(block.timestamp + 48 hours + 1);
+        vm.prank(address(proposerSafe));
+        TimelockController(payable(timelock))
+            .executeBatch(d.proposalTargets, values, d.proposalCalldatas, bytes32(0), bytes32(0));
+
+        // Verify state post-proposal execution
+        assertEq(
+            vault.roles(timelock), Roles.governanceRoleSet(), "timelock received governanceRoleSet"
+        );
+        assertEq(
+            vault.roles(address(guardianSafe)),
+            Roles.EMERGENCY_MANAGER,
+            "guardian received emergency role"
+        );
+        assertEq(vault.roles(keeper), Roles.keeperRoleSet(), "keeper received keeper roles");
+        assertEq(
+            vault.roles(treasury), Roles.DEBT_PURCHASER, "treasury received debt purchaser role"
+        );
+        assertEq(
+            vault.roles(d.emergencyTimelock),
+            Roles.emergencyRoleSet(),
+            "emergency timelock received role"
+        );
+        assertGt(vault.strategies(d.strategy).activation, 0, "strategy added by proposal");
+        assertEq(vault.accountant(), d.accountant, "accountant wired by proposal");
+        assertTrue(IAccountant(d.accountant).vaults(d.vault), "vault registered with accountant");
+        assertEq(
+            IDStrategyStrategy(d.strategy).management(),
+            timelock,
+            "strategy management accepted by timelock"
+        );
     }
 
     /// @dev The Accountant allows a 50% performance fee and a 2% management fee; those are

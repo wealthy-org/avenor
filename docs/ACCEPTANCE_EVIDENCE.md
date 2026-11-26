@@ -4,13 +4,13 @@ Dokumen bukti penerimaan teknis dan akseptansi operasional untuk vault ERC-4626 
 
 Sesuai aturan keras `AGENTS.md`: semua angka berasal dari pembacaan rantai (*on-chain*) atau simulasi dengan nomor blok dan timestamp nyata; tidak ada angka karangan; tidak ada klaim "audited" untuk kontrak baru kita.
 
-> **Status provenance (koreksi 2026-11-29).** Dokumen ini mencatat *rehearsal* di **fork lokal anvil** dari state chain `4663`, bukan transaksi di chain `4663` itu sendiri. Per `2026-11-29`: `eth_getTransactionByHash` mengembalikan `null` di chain `4663` untuk ketiga hash di §3, dan `eth_getCode` mengembalikan `0x` untuk vault, factory, emergency timelock, maupun akun pengguna uji. Angka dan hasil di bawah tetap sah sebagai hasil eksekusi nyata terhadap bytecode kanonik Yearn V3, tetapi **bukan** bukti deploy mainnet. Cara memeriksa ulang ada di §0.
+> **Status provenance (koreksi 2026-11-24).** Dokumen ini mencatat *rehearsal* di **fork lokal anvil** dari state chain `4663`, bukan transaksi di chain `4663` itu sendiri. Per `2026-11-24`: `eth_getTransactionByHash` mengembalikan `null` di chain `4663` untuk ketiga hash di §3, dan `eth_getCode` mengembalikan `0x` untuk vault, factory, emergency timelock, maupun akun pengguna uji. Angka dan hasil di bawah tetap sah sebagai hasil eksekusi nyata terhadap bytecode kanonik Yearn V3, tetapi **bukan** bukti deploy mainnet. Cara memeriksa ulang ada di §0.
 
 ---
 
 ## 0. Cara Memeriksa Dokumen Ini
 
-Semua pemeriksaan di bawah dijalankan ke `https://rpc.solidrpc.io/public/evm/4663` pada `2026-11-29`.
+Semua pemeriksaan di bawah dijalankan ke `https://rpc.solidrpc.io/public/evm/4663` pada `2026-11-24`.
 
 | Klaim di dokumen | Perintah | Hasil nyata |
 |---|---|---|
@@ -134,7 +134,7 @@ Semua hash di bagian ini dieksekusi di fork lokal anvil dan **tidak ada** di cha
 
 ## 4. Bukti Verifikasi Suite Penuh (verify-all.py)
 
-**Run penuh, `2026-12-01`:** `python scripts/verify-all.py --with-fork --with-web-build` (tanpa `--no-bytecode`) selesai dalam `9m32s` dengan exit code 0 dan baris terakhir `ALL CHECKS PASSED`. Yang ikut dalam run itu: 101 unit test (11 suite), fork test pin `118337511` **11 test** (`VenueProbe` 7 + `VaultE2E` 4, dua suite `ok`), bukti bytecode `14/14`, dan `next build`.
+**Run penuh, `2026-11-24`:** `python scripts/verify-all.py --with-fork --with-web-build` (tanpa `--no-bytecode`) selesai dalam `9m32s` dengan exit code 0 dan baris terakhir `ALL CHECKS PASSED`. Yang ikut dalam run itu: 101 unit test (11 suite), fork test pin `118337511` **11 test** (`VenueProbe` 7 + `VaultE2E` 4, dua suite `ok`), bukti bytecode `14/14`, dan `next build`.
 
 ```text
 [ok] forge test (unit): Ran 11 test suites in 129.18s (130.82s CPU time): 101 tests passed, 0 failed, 0 skipped (101 total tests)
@@ -147,7 +147,7 @@ ALL CHECKS PASSED
 
 Batas run ini, dinyatakan supaya tidak dibaca lebih jauh dari yang dibuktikan: fork adalah anvil lokal di atas state chain `4663` pada pin `118337511` — ia membuktikan bytecode, wiring, dan perilaku terhadap state venue asli, **bukan** deploy di `4663` (lihat §0). Endpoint arsip publik memang berfluktuasi: satu percobaan `scripts/fork-test.py` pada hari yang sama berakhir `BLOCKED: no endpoint could serve the pinned state`, dan percobaan berikutnya hijau 11/11. Karena itu `--require-fork` adalah bentuk yang dipakai sebelum deploy, dan kegagalan jaringan tidak boleh dibaca sebagai kegagalan kode.
 
-**Run parsial, `2026-12-01`:** `python scripts/verify-all.py --no-bytecode --with-web-build` (commit `6ae57da` + perbaikan gate yang menyertai commit ini). Log ini bukan gate penuh: `test/fork/*` dan bukti bytecode tidak jalan, dan ringkasan mencetak itu apa adanya.
+**Run parsial, `2026-11-24`:** `python scripts/verify-all.py --no-bytecode --with-web-build` (commit `6ae57da` + perbaikan gate yang menyertai commit ini). Log ini bukan gate penuh: `test/fork/*` dan bukti bytecode tidak jalan, dan ringkasan mencetak itu apa adanya.
 
 ```text
 [ok] no secrets tracked: tidak ada rahasia ter-commit
@@ -190,13 +190,13 @@ Angka yang **tidak** berubah dan tidak boleh dipakai sebagai pengganti angka lam
 ALL CHECKS PASSED
 ```
 
-> **Koreksi `2026-12-01`:** baris `ALL CHECKS PASSED` di blok di atas adalah bug gate, bukan hasil: `--no-bytecode` melewati bukti bytecode dan tidak menjalankan `test/fork/*`, tetapi ringkasannya tidak membedakan "lulus" dari "tidak jalan". `scripts/verify-all.py` sekarang mencetak `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN` untuk run parsial dan mengembalikan exit code 1 bila `--require-fork` diminta. Angka `86` juga basi; suite web sekarang 90 test di sepuluh berkas.
+> **Koreksi `2026-11-24`:** baris `ALL CHECKS PASSED` di blok di atas adalah bug gate, bukan hasil: `--no-bytecode` melewati bukti bytecode dan tidak menjalankan `test/fork/*`, tetapi ringkasannya tidak membedakan "lulus" dari "tidak jalan". `scripts/verify-all.py` sekarang mencetak `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN` untuk run parsial dan mengembalikan exit code 1 bila `--require-fork` diminta. Angka `86` juga basi; suite web sekarang 90 test di sepuluh berkas.
 
 ---
 
 ## 5. Bukti Rekonsiliasi (Mathematical Integrity)
 
-Pembacaan `eth_call` di **fork anvil** pada tinggi `118337653` (kanonik chain `4663`: hash `0xf64c2e4bf0e472eb65dddd3170dd4bb77a92fc55fc92bacf5b59cc929ef560b9`, timestamp `1795103668` = `2026-11-19T15:54:28Z`, dibaca `2026-12-01`). Tinggi blok itu nyata; vaultnya tidak — `eth_getCode` di chain `4663` untuk alamat vault mengembalikan `0x`, jadi angka di bawah hanya sah sebagai pembacaan state fork.
+Pembacaan `eth_call` di **fork anvil** pada tinggi `118337653` (kanonik chain `4663`: hash `0xf64c2e4bf0e472eb65dddd3170dd4bb77a92fc55fc92bacf5b59cc929ef560b9`, timestamp `1795103668` = `2026-11-19T15:54:28Z`, dibaca `2026-11-24`). Tinggi blok itu nyata; vaultnya tidak — `eth_getCode` di chain `4663` untuk alamat vault mengembalikan `0x`, jadi angka di bawah hanya sah sebagai pembacaan state fork.
 - `totalAssets`: `2.000.000.000` base units (2.000,00 USDG)
 - `totalIdle`: `2.000.000.000` base units (2.000,00 USDG)
 - `totalDebt`: `0` base units (0,00 USDG)

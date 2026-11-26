@@ -189,7 +189,7 @@ di `.tmp/pg-<pid>` pada port loopback acak dan menghapusnya; `--keep` mencetak
 `127.0.0.1` dengan port acak berperan sebagai chain dan sebagai receiver alert. Suite ini **gagal keras** bila Postgres tidak ada — bukan
 di-skip — karena gate data plane yang diam-diam hijau lebih buruk daripada gate merah.
 
-Dua bug di harness itu sendiri baru ketahuan pada `2026-12-01`; keduanya membuat gate berbohong dengan
+Dua bug di harness itu sendiri baru ketahuan pada `2026-11-24`; keduanya membuat gate berbohong dengan
 cara berbeda, dan keduanya sudah diperbaiki:
 
 1. **Cluster bocor satu per run.** Blok pembersihan duduk *setelah* `try/finally`, sehingga `return 0`
@@ -208,7 +208,7 @@ Langkah 7 memakai `apps/web/node_modules` (dipasang `npm ci`, di-ignore git). Ga
 `scripts/verify-all.py` menjalankan `tsc --noEmit` + 90 test web (sepuluh berkas). `next build` adalah
 langkah 12 dan **opt-in** lewat `--with-web-build` (atau `AVENOR_WITH_WEB_BUILD=1`) karena menambah
 ~40 s; bila tidak dijalankan, ringkasan gate menyebutkannya sebagai gate yang tidak jalan, bukan
-menghitungnya sebagai lulus. Hasil build pada `2026-12-01`: tiga rute statis (`/`, `/transparency`,
+menghitungnya sebagai lulus. Hasil build pada `2026-11-24`: tiga rute statis (`/`, `/transparency`,
 `/_not-found`) dan empat rute dinamis (`/portfolio`, `/vaults/[address]`, `/vaults/[address]/deposit`,
 `/vaults/[address]/withdraw`, semuanya `force-dynamic`), First Load JS 102–219 kB pada rute penarikan
 (viem di klien). `tsc` tidak menggantikannya: rute yang rusak atau pelanggaran batas client/server
