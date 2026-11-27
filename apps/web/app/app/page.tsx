@@ -170,8 +170,8 @@ export default async function AppPage() {
         </div>
       </div>
 
-      {/* Configured Vaults Catalog Section */}
-      <section className="card stack">
+      {/* Configured Vaults Catalog Section (Kassora Multi-Metric Card Style) */}
+      <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 pb-4 border-b border-white/[0.08]">
           <div>
             <span className="font-mono text-xs uppercase tracking-wider text-[#6db89b]">
@@ -187,111 +187,104 @@ export default async function AppPage() {
           </span>
         </div>
 
-        {/* Mobile View: Stacked Cards */}
-        <div className="grid gap-3 sm:hidden">
+        {/* 2-Column Responsive Card Grid (Kassora Flagship Architecture) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
           {vaults.map((vault) => (
             <div
               key={vault.address}
-              className="rounded-xl bg-[#14221c]/70 border border-white/[0.08] p-4 min-w-0 space-y-3"
+              className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] hover:border-white/[0.18] transition-all duration-300 p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between shadow-xl group"
+              style={{
+                borderTopColor: "#52b896",
+                borderTopWidth: "2px",
+              }}
             >
-              <div className="min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="font-medium text-[#f8f9fa] text-base">{vault.label}</div>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border shrink-0 ${
-                      vault.phase === "limited-launch"
-                        ? "bg-[#6db89b]/10 text-[#6db89b] border-[#6db89b]/30"
-                        : "bg-[#e8c468]/10 text-[#e8c468] border-[#e8c468]/30"
-                    }`}
-                  >
-                    {vault.phase === "limited-launch" ? "Limited Launch" : "Research Staging"}
-                  </span>
-                </div>
-                <div className="mt-2 font-mono text-xs text-[#6db89b] flex items-center gap-1.5">
-                  <span>Contract:</span>
-                  <a
-                    href={`${EXPLORER_BASE}/address/${vault.address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline break-all"
-                  >
-                    {vault.address} ↗
-                  </a>
-                </div>
-              </div>
+              {/* Radial glow accent on hover */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 bg-[#52b896]"
+              />
 
-              <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-xs font-mono text-[#a3abb8]">
-                <span>Idle cash: {money(live.totalIdle)} USDG</span>
-                <span>Cap: {money(live.depositLimit)}</span>
-              </div>
-
-              <Link
-                href={`/vaults/${vault.address}`}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#6db89b] hover:bg-[#5aa88b] text-[#0b1310] px-4 py-2 text-xs font-semibold transition-all shadow-md shadow-[#6db89b]/20"
-              >
-                <span>Open Vault</span>
-                <span>→</span>
-              </Link>
-            </div>
-          ))}
-        </div>
-
-        {/* Desktop View: Full Data Table */}
-        <div className="hidden sm:block rounded-xl bg-[#14221c]/70 border border-white/[0.08] overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-white/[0.08] text-[#a3abb8] text-xs font-mono uppercase tracking-wider bg-white/[0.02]">
-                  <th className="py-4 px-5 font-medium">Vault Name</th>
-                  <th className="py-4 px-5 font-medium">Contract Address</th>
-                  <th className="py-4 px-5 font-medium">Deployment Phase</th>
-                  <th className="py-4 px-5 font-medium text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.06]">
-                {vaults.map((vault) => (
-                  <tr key={vault.address} className="hover:bg-white/[0.03] transition-colors">
-                    <td className="py-4.5 px-5">
-                      <div className="font-medium text-[#f8f9fa]">{vault.label}</div>
-                      <div className="text-xs text-[#a3abb8] font-mono mt-0.5">Asset: USDG (6 decimals)</div>
-                    </td>
-                    <td className="py-4.5 px-5 font-mono text-[13px] text-[#6db89b]">
+              <div>
+                {/* Header: Title, Subtitle, Phase Badge */}
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-display text-xl sm:text-2xl font-medium text-[#f8f9fa] group-hover:text-white transition-colors">
+                      {vault.label}
+                    </h3>
+                    <div className="mt-1 font-mono text-xs text-[#8b929e] flex items-center gap-1.5">
+                      <span>Contract:</span>
                       <a
                         href={`${EXPLORER_BASE}/address/${vault.address}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:underline inline-flex items-center gap-1"
+                        className="text-[#6db89b] hover:underline inline-flex items-center gap-1"
                         title={vault.address}
                       >
                         <span>{shortAddress(vault.address)}</span>
-                        <span className="text-[10px] opacity-75">↗</span>
+                        <span className="text-[10px]">↗</span>
                       </a>
-                    </td>
-                    <td className="py-4.5 px-5">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${
-                          vault.phase === "limited-launch"
-                            ? "bg-[#6db89b]/10 text-[#6db89b] border-[#6db89b]/30"
-                            : "bg-[#e8c468]/10 text-[#e8c468] border-[#e8c468]/30"
-                        }`}
-                      >
-                        {vault.phase === "limited-launch" ? "Limited Launch" : "Research Staging"}
-                      </span>
-                    </td>
-                    <td className="py-4.5 px-5 text-right">
-                      <Link
-                        href={`/vaults/${vault.address}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#6db89b] hover:bg-[#5aa88b] text-[#0b1310] px-4 py-1.5 text-xs font-semibold transition-all shadow-md shadow-[#6db89b]/20"
-                      >
-                        <span>Open Vault</span>
-                        <span>→</span>
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+
+                  <span
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-medium shrink-0 border ${
+                      vault.phase === "limited-launch"
+                        ? "bg-[#52b896]/10 text-[#52b896] border-[#52b896]/30"
+                        : "bg-[#e8c468]/10 text-[#e8c468] border-[#e8c468]/30"
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#52b896] animate-pulse" />
+                    {vault.phase === "limited-launch" ? "Limited Launch" : "Research Staging"}
+                  </span>
+                </div>
+
+                {/* 3 Metrics Row */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 my-6 pt-5 pb-5 border-y border-white/[0.06]">
+                  <div className="space-y-1">
+                    <div className="text-lg sm:text-2xl font-mono font-semibold tracking-tight text-[#f8f9fa]">
+                      {money(live.totalAssets)}
+                    </div>
+                    <div className="text-[11px] font-mono text-[#8b929e]">
+                      Total Assets (USDG)
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-lg sm:text-2xl font-mono font-semibold tracking-tight text-[#52b896]">
+                      {money(live.totalIdle)}
+                    </div>
+                    <div className="text-[11px] font-mono text-[#8b929e]">
+                      Idle Cash ({percentBps(idleBps)})
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-lg sm:text-2xl font-mono font-semibold tracking-tight text-[#f8f9fa]">
+                      {money(live.depositLimit)}
+                    </div>
+                    <div className="text-[11px] font-mono text-[#8b929e]">
+                      Enforced Cap (USDG)
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Row */}
+              <div className="flex items-center justify-between gap-3 pt-2 text-xs font-mono">
+                <span className="text-[#8b929e]">USDG · ERC-4626 · 6 Decimals</span>
+
+                <div className="flex items-center gap-3 shrink-0">
+                  <Link
+                    href={`/vaults/${vault.address}`}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#52b896] hover:bg-[#43a182] text-[#0b1310] px-4 py-2 text-xs font-semibold transition-all shadow-md shadow-[#52b896]/20"
+                  >
+                    <span>Open Vault</span>
+                    <span>→</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Provenance Footnote matching specification */}
