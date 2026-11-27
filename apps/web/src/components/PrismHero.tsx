@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 const DOTS = Array.from({ length: 24 }, (_, i) => i);
@@ -131,13 +132,13 @@ export function PrismHero({ blockNumber, rpcReachable, chainLine, metrics }: Pri
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <a
-            href="#vaults"
+          <Link
+            href="/app"
             style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
-            className="rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-6 py-3 text-sm font-semibold hover:bg-white transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+            className="rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-6 py-3 text-sm font-semibold hover:bg-white transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.15)] inline-flex items-center justify-center"
           >
             <span className="text-[#0b1310] font-semibold">Open app</span>
-          </a>
+          </Link>
           <a
             href="#how-it-works"
             className="rounded-lg px-5 py-3 text-sm font-medium text-[#d1d5db] hover:text-[#f8f9fa] transition-colors whitespace-nowrap shrink-0"

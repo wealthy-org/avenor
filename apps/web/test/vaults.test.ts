@@ -83,3 +83,12 @@ test("landing hero does not claim institutional-grade or mainnet sync or APY ben
   assert.doesNotMatch(homeSource, /synced on-chain from Robinhood Chain mainnet/i);
   assert.doesNotMatch(homeSource, /APY benchmarks reflect live venue queries/i);
 });
+
+test("dedicated /app page renders configured vaults catalogue and open vault actions", async () => {
+  const { readFileSync } = await import("node:fs");
+  const appSource = readFileSync(new URL("../app/app/page.tsx", import.meta.url), "utf8");
+  assert.match(appSource, /USDG Allocator Vaults/);
+  assert.match(appSource, /Configured Vaults/);
+  assert.match(appSource, /Open Vault/);
+  assert.match(appSource, /Every figure on this page is read from the node/);
+});

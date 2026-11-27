@@ -128,15 +128,16 @@ export function Navbar() {
             aria-label="Primary navigation"
             className="hidden lg:flex items-center gap-1 xl:gap-2 text-[13px] font-medium"
           >
-            <button
-              type="button"
-              onClick={() => scrollTo("vaults")}
-              className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
-                pathname === "/" ? "text-[#f8f9fa] hover:bg-white/[0.06]" : "text-[#b0b7c3] hover:text-[#f8f9fa] hover:bg-white/[0.04]"
+            <Link
+              href="/app"
+              className={`px-3 py-1.5 rounded-lg transition-colors ${
+                isLinkActive("/app")
+                  ? "text-[#6db89b] bg-[#6db89b]/10 font-semibold"
+                  : "text-[#b0b7c3] hover:text-[#f8f9fa] hover:bg-white/[0.04]"
               }`}
             >
               Vaults
-            </button>
+            </Link>
 
             <Link
               href="/portfolio"
@@ -323,13 +324,15 @@ export function Navbar() {
               <div className="px-3 py-1 text-[11px] font-mono uppercase tracking-wider text-[#6db89b]">
                 Navigation
               </div>
-              <button
-                type="button"
-                onClick={() => scrollTo("vaults")}
-                className="block w-full text-left px-3 py-2 rounded-lg text-sm text-[#d1d5db] hover:bg-white/[0.06] hover:text-[#f8f9fa]"
+              <Link
+                href="/app"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block w-full text-left px-3 py-2 rounded-lg text-sm hover:bg-white/[0.06] ${
+                  isLinkActive("/app") ? "text-[#6db89b] font-semibold bg-white/[0.04]" : "text-[#d1d5db] hover:text-[#f8f9fa]"
+                }`}
               >
                 Vaults
-              </button>
+              </Link>
               <Link
                 href="/portfolio"
                 onClick={() => setMobileMenuOpen(false)}

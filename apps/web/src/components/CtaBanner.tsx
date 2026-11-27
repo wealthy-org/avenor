@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function CtaBanner() {
   return (
     <section className="bg-[#0f1915]/80 py-12 md:py-24 px-4 sm:px-6">
@@ -18,13 +20,13 @@ export function CtaBanner() {
               them. Nothing on it is a projection.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <a
-                href="#vaults"
+              <Link
+                href="/app"
                 style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
-                className="rounded-full bg-[#f8f9fa] !text-[#0b1310] px-7 py-3 text-sm font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_24px_rgba(255,255,255,0.2)] cursor-pointer"
+                className="rounded-full bg-[#f8f9fa] !text-[#0b1310] px-7 py-3 text-sm font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_24px_rgba(255,255,255,0.2)] cursor-pointer inline-flex items-center justify-center"
               >
                 <span className="text-[#0b1310] font-semibold">Open the vault</span>
-              </a>
+              </Link>
               <a
                 href="#security"
                 className="rounded-full px-6 py-3 text-sm font-medium text-[#d1d5db] hover:text-[#f8f9fa] border border-white/[0.12] hover:border-white/[0.2] bg-white/[0.03] transition-colors"
