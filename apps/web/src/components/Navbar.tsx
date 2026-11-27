@@ -11,7 +11,12 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [account, setAccount] = useState<string | null>(null);
   const [walletBalance, setWalletBalance] = useState<string | null>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const walletMenuRef = useRef<HTMLDivElement>(null);
 
   // Sync wallet native balance whenever account changes
   useEffect(() => {
@@ -34,11 +39,6 @@ export function Navbar() {
         .catch(() => {});
     }
   }, [account]);
-  const [account, setAccount] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const walletMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
