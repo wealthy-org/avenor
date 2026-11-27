@@ -86,7 +86,7 @@ export function PrismHero({ blockNumber, rpcReachable, chainLine, metrics }: Pri
       onPointerLeave={() => {
         pointerRef.current = { x: 0, y: 0 };
       }}
-      className="relative bg-[#13201b]/50 min-h-[860px] flex flex-col justify-between pt-32 pb-12 px-4 sm:px-6 overflow-hidden"
+      className="relative bg-[#13201b]/50 min-h-[720px] sm:min-h-[860px] flex flex-col justify-between pt-24 sm:pt-32 pb-8 sm:pb-12 px-4 sm:px-6 overflow-hidden"
     >
       {/* 3D monolith centrepiece */}
       <div
@@ -149,7 +149,7 @@ export function PrismHero({ blockNumber, rpcReachable, chainLine, metrics }: Pri
 
       {/* Metric tiles — server-rendered from the pin read, not authored copy */}
       <div className="relative z-10 mx-auto w-full max-w-[1200px] space-y-2.5">
-        <div className="flex items-center justify-between px-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4 px-1">
           <span className="text-[11px] font-mono uppercase tracking-wider text-[#a3abb8] flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${rpcReachable ? "bg-[#6db89b]" : "bg-[#e8c468]"}`} />
             {rpcReachable
@@ -160,7 +160,7 @@ export function PrismHero({ blockNumber, rpcReachable, chainLine, metrics }: Pri
             {chainLine} · Block {blockNumber}
           </span>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {metrics.map((metric, index) => (
           <div
             key={metric.label}

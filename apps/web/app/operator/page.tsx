@@ -146,7 +146,39 @@ export default function OperatorPage() {
           <span className="text-xs font-mono text-[#8b929e]">Verified On-Chain at Block {PIN_BLOCK}</span>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        {/* Mobile Card Stack */}
+        <div className="grid grid-cols-1 gap-3 sm:hidden">
+          {ROLES_LIST.map((r) => (
+            <div
+              key={r.role}
+              className="rounded-xl bg-[#14221c]/70 border border-white/[0.08] p-4 space-y-2.5"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-mono text-sm font-semibold text-[#f8f9fa]">{r.role}</span>
+                <span
+                  className={`inline-block px-2 py-0.5 rounded text-[10px] font-mono shrink-0 ${
+                    r.channel.includes("Fast Lane")
+                      ? "bg-[#2a1b10] text-[#fb923c] border border-[#43291b]"
+                      : "bg-[#101b16] text-[#6db89b] border border-[#1b3829]"
+                  }`}
+                >
+                  {r.channel}
+                </span>
+              </div>
+              <div className="text-xs font-mono text-[#b0b7c3] break-words">
+                {r.holder} <span className="text-[#a3abb8]">({r.holderType})</span>
+              </div>
+              <div className="text-xs text-[#a3abb8] leading-relaxed">{r.description}</div>
+              <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono">
+                <span className="text-[#8b929e]">Status</span>
+                <span className="text-[#6db89b] font-medium uppercase tracking-wider">{r.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop / Tablet Table */}
+        <div className="hidden sm:block overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
           <table className="w-full text-left text-xs font-mono">
             <thead>
               <tr className="border-b border-white/[0.08] text-[#8b929e]">

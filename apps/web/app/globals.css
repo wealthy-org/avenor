@@ -424,3 +424,19 @@ table.data th {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* PWA safe area insets and touch enhancements */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+button, a, input, select {
+  touch-action: manipulation;
+}
+
+/* Prevent unwanted mobile text enlargement */
+html {
+  -webkit-text-size-adjust: 100%;
+}
