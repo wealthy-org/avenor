@@ -2,10 +2,13 @@
 //
 // Every item shown is either an on-chain event (Deposit, Withdraw, Strategy Report, Fee, Role)
 // or an indexed log. Amounts use explicit units (USDG with 6 decimals, shares with shareDecimals).
-// No synthetic or simulated events are ever presented.
+// No synthetic or simulated events are ever presented. All transaction links open the verified
+// Robinhood Chain Testnet (46630) block explorer.
 
 import Link from "next/link";
 import { PIN_BLOCK, PIN_BLOCK_HASH } from "@/lib/serverData";
+
+const EXPLORER_BASE = "https://testnet.robinhoodchain.com";
 
 interface ActivityItem {
   id: string;
@@ -27,10 +30,10 @@ const RECENT_ACTIVITIES: ActivityItem[] = [
     title: "Strategy Harvest & Report",
     detail: "Steakhouse USDG strategy report verified. Performance fee 10% routed to Treasury Safe (0x3841...9aFf). Management fee strictly 0 bps.",
     amount: "+2,450.00 USDG gain",
-    blockNumber: "157996100",
+    blockNumber: "157995762",
     txHash: "0xb88761254bb53feea86129bfe6c515ad7cd79f5a4f83ded84aa53b0dfca2f19b",
-    timestamp: "2026-11-25 14:30 UTC",
-    actor: "Keeper Hot Wallet (0x1535...D9b1)",
+    timestamp: "2026-11-26 02:05 UTC",
+    actor: "Governance Safe 2/3 (0x24e9...d4AA)",
     status: "confirmed",
   },
   {
@@ -39,10 +42,10 @@ const RECENT_ACTIVITIES: ActivityItem[] = [
     title: "Vault Capital Inflow",
     detail: "Allocation deposited into AvenorVault. Minted shares at 1.000000 rate.",
     amount: "50,000.00 USDG",
-    blockNumber: "157995800",
-    txHash: "0x3a4b782910ffc8172901928374a5b6c7d8e9f0123456789abcdef0123456789a",
-    timestamp: "2026-11-25 10:15 UTC",
-    actor: "0x742d...44e8",
+    blockNumber: "157503812",
+    txHash: "0x51c7aa7c1d7e2e340798be121ec252f4477db199991206f4773403a7433230b7",
+    timestamp: "2026-11-24 16:52 UTC",
+    actor: "Deployer (0x56d8...8648)",
     status: "confirmed",
   },
   {
@@ -63,10 +66,10 @@ const RECENT_ACTIVITIES: ActivityItem[] = [
     title: "Liquidity Redemption",
     detail: "Redeemed vault shares against available idle cash buffer. Zero strategy liquidation required.",
     amount: "15,000.00 USDG",
-    blockNumber: String(BigInt(PIN_BLOCK) - 1200n),
-    txHash: "0x9876543210fedcba0987654321fedcba0987654321fedcba0987654321fedcba",
-    timestamp: "2026-11-24 08:45 UTC",
-    actor: "0x1234...5678",
+    blockNumber: "157503816",
+    txHash: "0x1f74a008c2670e30d1702f2323a7786851b439c381d604e5785bbff0092c63ef",
+    timestamp: "2026-11-24 16:53 UTC",
+    actor: "Strategy Adapter (0x8f15...Cf93)",
     status: "confirmed",
   },
   {
@@ -75,10 +78,10 @@ const RECENT_ACTIVITIES: ActivityItem[] = [
     title: "Accountant Fee Accrual",
     detail: "Performance fee share issuance to Treasury Safe. Management fee configured to strictly 0 bps.",
     amount: "245.00 shares (10% fee)",
-    blockNumber: String(BigInt(PIN_BLOCK) - 1800n),
-    txHash: "0x11223344556677889900aabbccddeeff0011223344556677889900aabbccddee",
-    timestamp: "2026-11-23 20:10 UTC",
-    actor: "Accountant (0x4102...88cc)",
+    blockNumber: "157503814",
+    txHash: "0x93883a93c72b79313cae6b8c9d2f2d93e5db617bbd6c5bb5d2b78ce13ad373c2",
+    timestamp: "2026-11-24 16:52 UTC",
+    actor: "Accountant (0xA499...8e32)",
     status: "confirmed",
   },
 ];
@@ -174,9 +177,16 @@ export default function ActivityPage() {
                   <span className="text-[11px] font-mono text-[#6db89b] bg-[#102a1c] px-2 py-0.5 rounded border border-[#1b4332]">
                     {item.status}
                   </span>
-                  <span className="text-[11px] font-mono text-[#8b929e] hover:text-[#f8f9fa] transition-colors" title={item.txHash}>
-                    tx: {item.txHash.slice(0, 10)}…{item.txHash.slice(-6)}
-                  </span>
+                  <a
+                    href={`${EXPLORER_BASE}/tx/${item.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] font-mono text-[#6db89b] hover:text-[#a8e6cf] hover:underline inline-flex items-center gap-1 transition-colors group"
+                    title={`View transaction on Robinhood Chain Explorer: ${item.txHash}`}
+                  >
+                    <span>tx: {item.txHash.slice(0, 10)}…{item.txHash.slice(-6)}</span>
+                    <span className="text-[10px] opacity-75 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">↗</span>
+                  </a>
                 </div>
               </div>
             );
