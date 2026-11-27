@@ -74,18 +74,14 @@ export default async function PortfolioPage() {
         <span className="text-[#f8f9fa]">Portfolio</span>
       </div>
 
-      <header className="rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-sm shadow-xl">
-        <h1 className="font-display text-2xl sm:text-3xl font-medium text-[#f8f9fa]">Portfolio</h1>
-        <p className="mt-3 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl text-pretty">
-          This page keeps apart two things that are usually mixed: the value of a position according to the vault, and
-          the amount that can actually be withdrawn right now. Both are read at the same block, and that block is shown.
-        </p>
-        <p className="mt-2 font-mono text-xs text-[#8b929e]">
-          {facts.label} · chain ID {facts.chainId}
+      <header className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-sm shadow-xl">
+        <h1 className="font-display text-2xl sm:text-3xl font-semibold text-[#f8f9fa]">Portfolio Overview</h1>
+        <p className="mt-2 text-sm text-[#8b929e] leading-relaxed max-w-3xl text-pretty">
+          Live Robinhood Chain Testnet (Chain ID {facts.chainId}) account telemetry and on-chain ERC-4626 vault share holdings.
         </p>
       </header>
 
-      <section className="card">
+      <section>
         <ErrorBoundary fallbackTitle="Portfolio panel encountered an error">
           <PortfolioPanel
             vaults={vaults.map((entry) => ({ address: entry.address, label: entry.label }))}

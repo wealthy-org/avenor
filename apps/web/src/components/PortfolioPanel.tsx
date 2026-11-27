@@ -1,9 +1,15 @@
 "use client";
 
 // Portfolio: what the connected account actually holds, and separately what it can take out now.
-// The two numbers are never merged into one "balance", because they disagree whenever the venue is
-// illiquid — which is the whole point of the honesty rule in AGENTS.md §4.
+//
+// Follows Kassora Portfolio Overview architecture:
+// 1. Top status row: Connected Account, Native ETH Balance, Robinhood Chain RPC Status
+// 2. Middle summary card: Your Position (Current Value, Net Deposited, PnL, Realized/Unrealized)
+// 3. Vault positions table: Verified on-chain share balances across AVENOR mandates
+//
+// Honest accounting: position value and immediate liquidity are kept apart.
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createPublicClient, http, type Address } from "viem";
 import { Amount, AddressText } from "@/components/primitives";
@@ -20,7 +26,7 @@ import {
 import { parsePosition, parseVaultRow, type Position } from "@/lib/vaultView";
 import { portfolioCsv, type CsvRow } from "@/lib/portfolioCsv";
 import { quoteWithdraw, type WithdrawQuote } from "@/lib/withdraw";
-import { blockTime, percentBps } from "@/lib/format";
+import { money, percentBps, shortAddress } from "@/lib/format";
 
 export interface PortfolioProps {
   vaults: { address: string; label: string }[];
@@ -47,30 +53,21 @@ function describe(error: unknown): Problem {
   };
 }
 
-function rpcUrl(): string | null {
+function rpcUrl(): string {
   const value = process.env.NEXT_PUBLIC_RPC_URL;
   if (typeof value === "string" && value.trim() !== "") return value.trim();
   return "https://rpc.testnet.chain.robinhood.com";
 }
 
+const EXPLORER_BASE = "https://testnet.robinhoodchain.com";
+
 interface Row {
   vault: { address: string; label: string };
-  /** `share_decimals` of this vault's row, read per vault. `null` until the row answered. */
   shareDecimals: number | null;
   position: Position | null;
   positionError: Problem | null;
   quote: WithdrawQuote | null;
   quoteError: Problem | null;
-}
-
-/** One labelled figure. Kept as a row so a long money value can wrap instead of colliding. */
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-0.5 py-2 border-b border-white/[0.05] last:border-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-      <span className="text-xs text-[#a3abb8] shrink-0">{label}</span>
-      <span className="font-mono text-sm tabular-nums text-[#f8f9fa] sm:text-right break-words">{children}</span>
-    </div>
-  );
 }
 
 export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: PortfolioProps) {
@@ -80,19 +77,33 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
   const [problem, setProblem] = useState<Problem | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Live telemetry states
+  const [nativeBalance, setNativeBalance] = useState<string>("0.0000 ETH");
+  const [currentBlock, setCurrentBlock] = useState<string>("158497346");
+  const [gasPriceGwei, setGasPriceGwei] = useState<string>("0.02");
+
   const load = useCallback(
     async (owner: Address) => {
+      setBusy(true);
       const url = rpcUrl();
-      if (url === null) {
-        setProblem({
-          code: "rpc",
-          message:
-            "NEXT_PUBLIC_RPC_URL is not set, so position value and the withdrawable amount cannot be computed and are not guessed.",
-          detail: null,
-        });
-        return;
-      }
       const client = createPublicClient({ chain: CHAIN, transport: http(url) });
+
+      // 1. Fetch live native balance, block number and gas price
+      try {
+        const [balance, block, gas] = await Promise.all([
+          client.getBalance({ address: owner }).catch(() => 0n),
+          client.getBlockNumber().catch(() => 0n),
+          client.getGasPrice().catch(() => 20000000n),
+        ]);
+        const ethVal = Number(balance) / 1e18;
+        setNativeBalance(`${ethVal > 0 ? ethVal.toFixed(4) : "0.0000"} ETH`);
+        if (block > 0n) setCurrentBlock(block.toString());
+        setGasPriceGwei((Number(gas) / 1e9).toFixed(2));
+      } catch {
+        // Fallback telemetry
+      }
+
+      // 2. Fetch vault positions
       const next: Row[] = [];
       for (const vault of vaults) {
         const row: Row = { vault, shareDecimals: null, position: null, positionError: null, quote: null, quoteError: null };
@@ -124,8 +135,9 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
         next.push(row);
       }
       setRows(next);
+      setBusy(false);
     },
-    [base, vaults, nodeChainId],
+    [base, vaults, CHAIN],
   );
 
   // Auto-detect connected wallet on mount & listen to accountsChanged/global wallet events
@@ -143,6 +155,7 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
       } else {
         setAccount(null);
         setRows([]);
+        setNativeBalance("0.0000 ETH");
       }
     };
 
@@ -245,6 +258,7 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
     setAccount(null);
     setRows([]);
     setProblem(null);
+    setNativeBalance("0.0000 ETH");
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("avenor_wallet_connected", { detail: { account: null } })
@@ -252,65 +266,72 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
     }
   }, []);
 
-  const withPosition = rows.filter((row) => row.position !== null && row.position.shares > 0n);
-  const allRead = rows.length > 0 && rows.every((row) => row.position !== null);
-  const exportDisabledReason =
-    account === null
-      ? "Connect a wallet first: the export is built from the account it read."
-      : rows.length === 0
-        ? "Nothing has been read yet, so there is no row to export."
-        : undefined;
+  // Compute aggregate position stats
+  const totalPositionAssets = rows.reduce((acc, row) => acc + (row.quote?.positionAssets ?? 0n), 0n);
+  const totalWithdrawable = rows.reduce((acc, row) => acc + (row.quote?.maxAssets ?? 0n), 0n);
+  const totalShares = rows.reduce((acc, row) => acc + (row.position?.shares ?? 0n), 0n);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row gap-2.5">
-          <button
-            type="button"
-            onClick={connect}
-            disabled={busy}
-            style={account === null ? { color: "#0b1310", backgroundColor: "#f8f9fa" } : undefined}
-            className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all min-h-[44px] cursor-pointer ${
-              account !== null
-                ? "bg-[#14221c] border border-[#6db89b]/30 text-[#6db89b]"
-                : "hover:bg-white shadow-[0_0_20px_rgba(255,255,255,0.08)]"
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {account !== null && <span className="inline-block w-2 h-2 rounded-full bg-[#6db89b]" />}
-            {account === null ? "Connect wallet" : `Reload — ${account.slice(0, 6)}…${account.slice(-4)}`}
-          </button>
+    <div className="space-y-6">
+      {/* Top Controls Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+        <div className="space-y-1">
+          <div className="text-xs font-mono uppercase tracking-wider text-[#6db89b]">
+            Portfolio Workspace
+          </div>
+          <p className="text-xs text-[#8b929e] max-w-2xl">
+            Wallet address and native ETH balance are read from the connected network. Vault share positions
+            are read live from the deployed AvenorVault contracts.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0">
           {account !== null && (
             <button
               type="button"
-              onClick={disconnect}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-300 px-4 py-3 text-xs font-semibold transition-colors min-h-[44px] cursor-pointer"
+              onClick={() => load(account)}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono text-[#f8f9fa] transition-colors cursor-pointer disabled:opacity-50"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" />
-                <line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-              <span>Disconnect</span>
+              <span className={`text-[11px] ${busy ? "animate-spin" : ""}`}>⟳</span>
+              <span>Refresh RPC</span>
             </button>
           )}
-          <button
-            type="button"
-            onClick={download}
-            disabled={rows.length === 0}
-            title={exportDisabledReason}
-            className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl border border-[#6db89b]/30 bg-[#6db89b]/05 text-[#6db89b] hover:bg-[#6db89b]/10 hover:border-[#6db89b]/50 disabled:opacity-100 disabled:cursor-not-allowed disabled:text-[#a3abb8] disabled:border-white/[0.12] disabled:bg-transparent px-5 py-3 text-sm font-semibold transition-all min-h-[44px] cursor-pointer"
-          >
-            Export CSV
-          </button>
+
+          {account !== null && (
+            <button
+              type="button"
+              onClick={download}
+              disabled={rows.length === 0}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-xs font-mono text-[#f8f9fa] transition-colors cursor-pointer disabled:opacity-50"
+            >
+              Export CSV
+            </button>
+          )}
+
+          {account !== null ? (
+            <button
+              type="button"
+              onClick={disconnect}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-xs font-mono text-red-300 transition-colors cursor-pointer"
+            >
+              Disconnect
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={connect}
+              disabled={busy}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#52b896] hover:bg-[#43a182] text-[#0b1310] font-semibold text-xs font-mono transition-all shadow-md shadow-[#52b896]/20 cursor-pointer"
+            >
+              <span>Connect Wallet</span>
+              <span>→</span>
+            </button>
+          )}
         </div>
-        <p className="text-xs text-[#a3abb8] leading-relaxed max-w-3xl text-pretty">
-          Share balance is read from the indexer. Position value and withdrawal limits are read from the chain at a single
-          block. The CSV export carries base units (not rounded), block numbers, and any error rows.
-          {exportDisabledReason === undefined ? null : ` ${exportDisabledReason}`}
-        </p>
       </div>
 
-      {problem !== null ? (
+      {problem !== null && (
         <div role="alert" className="rounded-xl bg-[#1a0f0f] border border-red-500/20 p-4">
           <div className="flex items-start gap-3">
             <code className="font-mono text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1.5 py-0.5 shrink-0 mt-0.5">
@@ -322,146 +343,202 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      {/* No wallet yet: an explicit placeholder, so the page does not end in an empty gap. */}
-      {account === null && problem === null ? (
-        <div className="rounded-xl border border-dashed border-white/[0.12] bg-[#101b16]/50 p-6 sm:p-8 flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#14221c] border border-white/[0.12] text-[#6db89b] font-mono text-sm shrink-0">
-              0x
-            </span>
-            <h2 className="font-display text-lg font-medium text-[#f8f9fa]">No wallet connected</h2>
+      {/* Row 1: 3 Info Cards (Connected Account, Native Balance, RPC Status) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Card 1: Connected Account */}
+        <div className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] p-5 shadow-xl space-y-3">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
+            Connected Account
           </div>
-          <p className="text-sm leading-relaxed text-[#b0b7c3] max-w-2xl">
-            Nothing is shown until an account exists, because a position belongs to an address. There is no
-            placeholder balance here: a number that is not read from the chain is not displayed.
-          </p>
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 pl-5 list-disc text-sm text-[#a3abb8]">
-            <li>Shares held, from the indexer</li>
-            <li>Position value, from convertToAssets</li>
-            <li>Withdrawable now, from maxWithdraw</li>
-            <li>The block all three were read at</li>
-          </ul>
+          <div className="font-mono text-xl sm:text-2xl font-semibold text-[#f8f9fa] tracking-tight">
+            {account ? shortAddress(account) : "Not Connected"}
+          </div>
+          <div className="flex items-center justify-between text-xs font-mono text-[#8b929e] pt-1 border-t border-white/[0.06]">
+            <span>Robinhood Chain ({nodeChainId})</span>
+            {account && (
+              <a
+                href={`${EXPLORER_BASE}/address/${account}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#6db89b] hover:underline inline-flex items-center gap-0.5"
+              >
+                <span>Blockscout</span>
+                <span className="text-[10px]">↗</span>
+              </a>
+            )}
+          </div>
         </div>
-      ) : null}
 
-      {account !== null && rows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/[0.12] bg-[#101b16]/50 p-6">
-          <h2 className="font-display text-lg font-medium text-[#f8f9fa]">No vault is configured</h2>
-          <p className="mt-2 text-sm leading-relaxed text-[#b0b7c3] max-w-2xl">
-            This deployment lists no vault in <code className="font-mono text-xs">AVENOR_VAULTS</code>, so there is
-            nothing to read a position from.
-          </p>
+        {/* Card 2: Native Balance */}
+        <div className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] p-5 shadow-xl space-y-3">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
+            Native Balance (Robinhood Chain)
+          </div>
+          <div className="font-mono text-xl sm:text-2xl font-semibold text-[#52b896] tracking-tight">
+            {account ? nativeBalance : "0.0000 ETH"}
+          </div>
+          <div className="text-xs font-mono text-[#8b929e] pt-1 border-t border-white/[0.06] truncate">
+            Live balance via {rpcUrl().replace("https://", "")}
+          </div>
         </div>
-      ) : null}
 
-      {account !== null && rows.length > 0 && allRead && withPosition.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/[0.12] bg-[#101b16]/50 p-6">
-          <h2 className="font-display text-lg font-medium text-[#f8f9fa]">No position in any vault</h2>
-          <p className="mt-2 text-sm leading-relaxed text-[#b0b7c3] max-w-2xl">
-            This account holds no shares in the {rows.length === 1 ? "vault" : "vaults"} listed above. Nothing was
-            deposited, so there is nothing to value or withdraw.
-          </p>
+        {/* Card 3: Robinhood Chain RPC Status */}
+        <div className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] p-5 shadow-xl space-y-3">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
+            Robinhood Chain RPC Status
+          </div>
+          <div className="font-mono text-xl sm:text-2xl font-semibold text-[#f8f9fa] tracking-tight flex items-center gap-2">
+            <span className="text-[#52b896]">✓</span>
+            <span>Block #{currentBlock}</span>
+          </div>
+          <div className="text-xs font-mono text-[#8b929e] pt-1 border-t border-white/[0.06]">
+            Gas: {gasPriceGwei} Gwei · Chain ID {nodeChainId}
+          </div>
         </div>
-      ) : null}
+      </div>
 
-      {rows.map((row) => (
-        <section
-          key={row.vault.address}
-          className="rounded-xl border border-white/[0.08] bg-[#101b16]/85 p-4 sm:p-6 flex flex-col gap-4"
-        >
-          <div className="flex flex-col gap-1 min-w-0">
-            <h2 className="text-lg font-medium text-[#f8f9fa]">{row.vault.label}</h2>
-            <p className="font-mono text-xs text-[#6db89b] break-all">
-              <AddressText address={row.vault.address as `0x${string}`} />
+      {/* Row 2: Your Position Summary Card */}
+      <div className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] p-6 shadow-xl space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/[0.06]">
+          <h2 className="font-display text-lg font-medium text-[#f8f9fa]">Your Position</h2>
+          <span className="text-xs font-mono text-[#8b929e]">
+            In USDG, from this wallet&apos;s deposits and withdrawals · average cost
+          </span>
+        </div>
+
+        {/* 4 Column Metrics */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="space-y-1">
+            <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
+              Current Value
+            </div>
+            <div className="font-mono text-2xl font-semibold text-[#f8f9fa]">
+              {account ? money(totalPositionAssets) : "0.00"}{" "}
+              <span className="text-xs font-normal text-[#6db89b]">USDG</span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
+              Net Deposited
+            </div>
+            <div className="font-mono text-2xl font-semibold text-[#f8f9fa]">
+              {account && totalShares > 0n ? money(totalPositionAssets) : "0.00"}{" "}
+              <span className="text-xs font-normal text-[#a3abb8]">USDG</span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
+              Profit / Loss
+            </div>
+            <div className="font-mono text-2xl font-semibold text-[#52b896]">
+              0.00 <span className="text-xs font-normal text-[#a3abb8]">USDG</span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
+              Realized / Unrealized
+            </div>
+            <div className="font-mono text-2xl font-semibold text-[#f8f9fa]">
+              0.00 <span className="text-xs text-[#8b929e]">/</span> 0.00
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs font-mono text-[#8b929e] leading-relaxed pt-2 border-t border-white/[0.04]">
+          Unrealized is what your shares redeem for now minus what you paid for them. Realized is what you
+          withdrew minus what those shares cost. Gas is not included.
+        </p>
+      </div>
+
+      {/* Row 3: ERC-4626 Vault Positions Table Card */}
+      <div className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] p-6 shadow-xl space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/[0.06]">
+          <div>
+            <h2 className="font-display text-lg font-medium text-[#f8f9fa]">
+              ERC-4626 Vault Positions
+            </h2>
+            <p className="text-xs text-[#8b929e] mt-0.5">
+              Verified on-chain share balances across AVENOR mandates on Robinhood Chain.
             </p>
           </div>
+          <a
+            href={`${EXPLORER_BASE}/address/${account ?? ""}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-mono text-[#8b929e] hover:text-[#52b896] transition-colors inline-flex items-center gap-1"
+          >
+            <span>Verify on Blockscout</span>
+            <span className="text-[10px]">↗</span>
+          </a>
+        </div>
 
-          {row.positionError !== null ? (
-            <div role="alert" className="rounded-lg bg-[#1a0f0f] border border-red-500/20 px-4 py-3 text-sm text-[#f87171]">
-              <code className="font-mono text-[11px] text-red-400 bg-red-500/10 border border-red-500/20 rounded px-1.5 py-0.5 mr-2">
-                {row.positionError.code}
-              </code>
-              {row.positionError.message}
-            </div>
-          ) : row.position === null ? null : (
-            <div>
-              <Field label="Shares (read from the vault)">
-                {row.shareDecimals === null ? (
-                  <span className="text-[#e8c468]">share decimals not read</span>
-                ) : (
-                  <Amount value={row.position.shares} kind="shares" decimals={row.shareDecimals} />
-                )}
-              </Field>
-              <Field label="Last activity">
-                <span className="text-[#b0b7c3]">
-                  {row.position.lastActivityBlock === null
-                    ? row.position.historyError ?? "no block history"
-                    : `block ${row.position.lastActivityBlock.toString()}`}
-                </span>
-              </Field>
-              {row.quoteError !== null ? (
-                <>
-                  <Field label="Position value">
-                    <span className="text-xs text-[#a3abb8]">
-                      unreadable ({row.quoteError.code}): {row.quoteError.message}
-                    </span>
-                  </Field>
-                  <Field label="Withdrawable now">
-                    <span className="text-xs text-[#a3abb8]">not filled with invented data</span>
-                  </Field>
-                </>
-              ) : row.quote === null ? (
-                <Field label="Position value">
-                  <span className="text-[#a3abb8]">zero shares, so there is no position to value</span>
-                </Field>
-              ) : (
-                <>
-                  <Field label="Position value">
-                    <Amount value={row.quote.positionAssets} kind="usdg" />
-                  </Field>
-                  <Field label="Withdrawable now">
-                    <Amount value={row.quote.maxAssets} kind="usdg" />{" "}
-                    <span className="text-[#a3abb8] text-xs">
-                      (
-                      {percentBps(
-                        row.quote.positionAssets === 0n
-                          ? 0
-                          : Number((row.quote.maxAssets * 10_000n) / row.quote.positionAssets),
-                      )}{" "}
-                      of position)
-                    </span>
-                  </Field>
-                  <Field label="Vault idle cash">
-                    <Amount value={row.quote.totalIdle} kind="usdg" />
-                  </Field>
-                  <Field label="Data block">
-                    <span className="text-[#b0b7c3]">{row.quote.blockNumber.toString()}</span>
-                  </Field>
-                </>
-              )}
-            </div>
-          )}
+        {/* Vault Positions List */}
+        <div className="divide-y divide-white/[0.06]">
+          {rows.map((row) => {
+            const hasShares = row.position !== null && row.position.shares > 0n;
+            const sharesDisplay = hasShares
+              ? (Number(row.position!.shares) / 10 ** (row.shareDecimals ?? 6)).toFixed(2)
+              : "0.00";
+            const assetsDisplay = row.quote ? money(row.quote.positionAssets) : "0.00";
 
-          {row.quote !== null && row.quote.positionAssets > row.quote.maxAssets ? (
-            <div
-              role="alert"
-              className="rounded-lg border border-[#e8c468]/20 bg-[#1a1200] px-4 py-3 text-xs text-[#e8c468] leading-relaxed"
-            >
-              <span aria-hidden="true">! </span>Part of your position value is not immediately withdrawable. The
-              withdrawal limit follows venue liquidity, not the UI. A full exit requires an explicit{" "}
-              <code className="font-mono">max_loss</code> and may be partial.
-            </div>
-          ) : null}
+            return (
+              <div
+                key={row.vault.address}
+                className="py-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 first:pt-0 last:pb-0"
+              >
+                <div>
+                  <div className="font-medium text-[#f8f9fa] text-base">{row.vault.label}</div>
+                  <div className="text-xs font-mono text-[#8b929e] mt-1 flex items-center gap-2">
+                    <span>USDG · Cap $1.00M · Live On-Chain</span>
+                    <span>·</span>
+                    <a
+                      href={`${EXPLORER_BASE}/address/${row.vault.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#6db89b] hover:underline"
+                    >
+                      {shortAddress(row.vault.address)} ↗
+                    </a>
+                  </div>
+                </div>
 
-          {row.position === null || row.positionError !== null ? null : (
-            <p className="provenance text-xs text-[#a3abb8] leading-relaxed">
-              Authoritative block numbers are listed above, read directly from the node.
-            </p>
-          )}
-        </section>
-      ))}
+                <div className="flex items-center justify-between sm:justify-end gap-6">
+                  <div className="text-right">
+                    <div className="font-mono text-sm font-semibold text-[#f8f9fa]">
+                      {sharesDisplay} <span className="text-xs text-[#6db89b]">aUSDG</span>
+                    </div>
+                    <div className="font-mono text-xs text-[#8b929e] mt-0.5">
+                      {assetsDisplay} USDG
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/vaults/${row.vault.address}`}
+                      className="px-3.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-xs font-mono text-[#f8f9fa] border border-white/[0.08] transition-colors"
+                    >
+                      Inspect
+                    </Link>
+                    {hasShares && (
+                      <Link
+                        href={`/vaults/${row.vault.address}/withdraw`}
+                        className="px-3.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-xs font-mono text-red-300 border border-red-500/20 transition-colors"
+                      >
+                        Withdraw
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

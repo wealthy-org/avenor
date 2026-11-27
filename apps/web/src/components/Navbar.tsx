@@ -11,6 +11,29 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [walletMenuOpen, setWalletMenuOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<string | null>(null);
+
+  // Sync wallet native balance whenever account changes
+  useEffect(() => {
+    if (!account) {
+      setWalletBalance(null);
+      return;
+    }
+    const bag = (globalThis as { ethereum?: unknown }).ethereum;
+    const provider = findInjectedProvider({ ethereum: bag });
+    if (provider) {
+      provider
+        .request({ method: "eth_getBalance", params: [account, "latest"] })
+        .then((hex) => {
+          if (typeof hex === "string") {
+            const wei = BigInt(hex);
+            const eth = Number(wei) / 1e18;
+            setWalletBalance(`${eth > 0 ? eth.toFixed(3) : "0.000"} ETH`);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [account]);
   const [account, setAccount] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -313,7 +336,7 @@ export function Navbar() {
                   className="inline-flex items-center gap-1.5 rounded-lg bg-[#14221c] border border-[#6db89b]/40 px-3 py-1.5 text-[12px] font-mono font-medium text-[#6db89b] hover:bg-[#1a2d25] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
                 >
                   <span className="inline-block w-2 h-2 rounded-full bg-[#6db89b] animate-pulse" />
-                  <span>{`${account.slice(0, 6)}…${account.slice(-4)}`}</span>
+                  <span>{`${account.slice(0, 6)}…${account.slice(-4)}`}{walletBalance ? ` · ${walletBalance}` : ""}</span>
                   <svg
                     className={`w-3.5 h-3.5 transition-transform duration-200 text-[#6db89b]/70 ${walletMenuOpen ? "rotate-180" : ""}`}
                     fill="none"
