@@ -68,5 +68,9 @@ apps/web/next-env.d.ts
 # tangkapan layar masukan (bukan artefak aplikasi)
 ss/
 
+# generated audit bundle artifacts
+_bmad-output/audit-bundle/
+*.tar.gz
+
 # Vercel CLI project link (lokal, bukan konfigurasi aplikasi)
 .vercel/
