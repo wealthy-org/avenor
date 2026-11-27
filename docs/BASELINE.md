@@ -94,7 +94,7 @@ Catatan akses jaringan: `docs.robinhood.com` + `rpc.mainnet.chain.robinhood.com`
 - [x] `TokenizedStrategy v3.1.1` cocok dengan deployed: 18.224 B, setelah mask immutable `factory` + metadata CBOR → 18.171 B, **0 byte berbeda**, di mainnet dan di chain 4663.
 - [x] `scripts/compile-vault.py` + `scripts/verify-bytecode.py` ada dan hijau (`14/14 checks passed`).
 - [x] Fork test Robinhood Chain `4663` berjalan: `VaultFactory.deploy_new_vault(USDG, ...)` + `role_manager` berupa `TimelockController` + satu adapter Morpho berhasil — 4 test `test/fork/VaultE2E.t.sol` lulus di pin `118337511` dengan gas identik pada dua run (lihat `docs/COMPATIBILITY_MATRIX.md` §3). Catatan: `RoleManager` tidak dipakai (ADR-4).
-- [x] `SECURITY_DIFF.md` untuk commit 2026 vs commit audit 2023 selesai untuk perubahan keamanan; sisa pekerjaan yang masih terbuka (baca baris-per-baris seluruh `VaultV3.vy`) dicatat di `SECURITY_DIFF.md` §7 dan **tidak** diklaim tuntas.
+- [x] `SECURITY_DIFF.md` untuk commit 2026 vs commit audit 2023 selesai untuk perubahan keamanan; penomoran baris disinkronkan dengan source kanonik `referensi/yearn-vaults-v3/contracts/VaultV3.vy` pin `v3.1.1` (`f449264f`), di mana fungsi `set_auto_allocate` didefinisikan pada baris `:1429` dan penegakan peran `DEBT_MANAGER` pada baris `:1438`. Sisa telaah per-baris non-keamanan dicatat di `SECURITY_DIFF.md` §7.
 - [x] Matriks kompatibilitas (§2) diuji, hasilnya menggantikan asumsi di dokumen ini: `docs/COMPATIBILITY_MATRIX.md`.
 ## 7. Keadaan chain 4663 yang terverifikasi (bukan asumsi)
 

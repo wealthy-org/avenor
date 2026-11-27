@@ -42,10 +42,11 @@ packages/contracts/
 
 | Kontrak / Berkas | Baris (SLOC) | Bahasa | Fungsi Kritis yang Ditinjau |
 |---|---|---|---|
-| `MorphoVaultStrategy.sol` | ~250 | Solidity 0.8.28 | Alokasi dana (`_deployFunds`), penarikan likuiditas (`_freeFunds`), pelaporan laba (`_harvestAndReport`), pembacaan batas likuiditas (`availableWithdrawLimit`), proteksi revert saat venue kekurangan kas (`VenueLiquidityShortfall`), manajemen allowance nol. |
-| `DepositCapHook.sol` | ~160 | Solidity 0.8.28 | Plafon global aset (`totalAssets`), plafon posisi per-wallet, allowlist fase terbatas, sifat *non-interfering* terhadap penarikan (`available_withdraw_limit` tidak pernah membatasi exit), kontrol governance timelock 48 jam. |
-| `Deploy.s.sol` | ~380 | Solidity 0.8.28 | Urutan wiring peran, inisialisasi timelock 48 jam & timelock darurat 6 jam, penyerahan `role_manager`, pencabutan hak deployer (`set_role(actor, 0)`), assert runtime bytecode prefix dan ekor immutable `VAULT_ORIGINAL`. |
-| `Roles.sol` | ~80 | Solidity 0.8.28 | Definisi 14-bit izin akses Yearn V3, bitmask kombinasi governance (`3995`), emergency timelock (`4`), emergency pause (`8192`), dan keeper (`96`). |
+| `MorphoVaultStrategy.sol` | 343 | Solidity 0.8.18 | Alokasi dana (`_deployFunds`), penarikan likuiditas (`_freeFunds`), pelaporan laba (`_harvestAndReport`), pembacaan batas likuiditas (`availableWithdrawLimit`), proteksi revert saat venue kekurangan kas (`VenueLiquidityShortfall`), manajemen allowance nol. |
+| `DepositCapHook.sol` | 256 | Solidity 0.8.18 | Plafon global aset (`totalAssets`), plafon posisi per-wallet, allowlist fase terbatas, sifat *non-interfering* terhadap penarikan (`available_withdraw_limit` tidak pernah membatasi exit), kontrol governance timelock 48 jam. |
+| `Deploy.s.sol` | 1.233 | Solidity 0.8.18 | Urutan wiring peran, inisialisasi timelock 48 jam & timelock darurat 6 jam, penyerahan `role_manager`, pencabutan hak deployer (`set_role(actor, 0)`), assert runtime bytecode prefix dan ekor immutable `VAULT_ORIGINAL`. |
+| `DeployTestnet.s.sol` | 175 | Solidity 0.8.18 | Skrip deploy staging/rehearsal testnet 46630 dengan pengamanan kunci fail-closed (menolak `makeAddr` pada rantai non-lokal), bootstrap initial liquidity, wiring Safe governance 2/3, guardian, treasury, dan keeper. |
+| `Roles.sol` | 63 | Solidity 0.8.18 | Definisi 14-bit izin akses Yearn V3, bitmask kombinasi governance (`3995`), emergency timelock (`4`), emergency pause (`8192`), dan keeper (`96`). |
 
 ### 2.2 Komponen Out-of-Scope (Upstream Dependencies)
 
@@ -75,7 +76,7 @@ Reviewer diminta menguji integritas invariant berikut secara formal maupun empir
    - Safe Guardian hanya dapat memicu de-risking strategi (`FORCE_REVOKE_MANAGER`) melalui Timelock Darurat dengan jeda minimal **6 jam**, mencegah eksekusi instan yang menurunkan nilai buku share secara sepihak.
    - Tindakan `setPaused(true)` dapat dilakukan instan oleh Guardian hanya untuk membendung eksploit, dengan kesadaran bahwa seluruh penarikan ikut tertahan sementara.
 5. **Proteksi Manipulasi Inflasi Share Awal (Anti Share-Inflation):**
-   - Vault yang diinisialisasi wajib memiliki *dead shares* permanen (1.000 USDG ditransfer ke `0xdEaD`) serta pembatasan minimum deposit (10 USDG) untuk mematikan vektor serangan donasi ERC-4626.
+   - Vault yang diinisialisasi wajib memiliki *dead shares* permanen (1.000 USDG ditransfer ke `0xdEaD`) serta pembatasan minimum deposit (10 USDG = `10_000_000n` micro-USDG ditegakkan di SDK dan antarmuka web) untuk mematikan vektor serangan donasi ERC-4626.
 
 ---
 
@@ -124,14 +125,18 @@ flowchart TD
 
 Reviewer eksternal akan menerima repositori lengkap dengan referensi wajib:
 
-1. **Kode Kontrak:** Direktori [packages/contracts/](../packages/contracts/)
+1. **Kode Kontrak & Script:** Direktori [packages/contracts/](../packages/contracts/) (Solidity 0.8.18, 5 berkas in-scope total 2.070 SLOC).
 2. **Dokumen Arsitektur & Peran:**
-   - [ARCHITECTURE.md](ARCHITECTURE.md) (ADR-1 s.d. ADR-14)
+   - [ARCHITECTURE.md](ARCHITECTURE.md) (ADR-1 s.d. ADR-15)
    - [ROLE_PERMISSION_MATRIX.md](ROLE_PERMISSION_MATRIX.md) (Peta 14 bit dan penugasan)
    - [WITHDRAWAL_SEMANTICS.md](WITHDRAWAL_SEMANTICS.md) (12 skenario penarikan)
    - [SECURITY_DIFF.md](SECURITY_DIFF.md) (Delta audit 2023 vs. pin 2026)
-   - [FEE_CONFIG.md](FEE_CONFIG.md) (Konfigurasi akuntansi fee)
+   - [FEE_CONFIG.md](FEE_CONFIG.md) (Konfigurasi akuntansi fee dan batas kebijakan vs kontrak)
    - [DEPLOYMENT.md](DEPLOYMENT.md) (Tahapan dan assert runtime)
+   - [RUNBOOK.md](RUNBOOK.md) (SOP 7 insiden operasional terhubung kode monitor)
+   - [TESTNET_EVIDENCE.md](TESTNET_EVIDENCE.md) & [LIFECYCLE_EVIDENCE.md](LIFECYCLE_EVIDENCE.md) (Bukti on-chain testnet 46630)
 3. **Instruksi Eksekusi Uji Mandiri:**
-   - Reproduksi lokal satu perintah: `python scripts/verify-all.py`
+   - Reproduksi lokal satu perintah: `python scripts/verify-all.py` (320 tests monorepo: 124 Foundry + 12 SDK + 38 Indexer + 24 Keeper + 122 Web)
    - Uji fork pin jaringan riil: `python scripts/fork-test.py`
+   - Uji verifikasi serah-terima governance: `python scripts/check-handover.py`
+   - Uji drill lifecycle testnet: `python scripts/testnet-lifecycle-drill.py`

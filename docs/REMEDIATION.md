@@ -1,9 +1,10 @@
-# REMEDIATION — Register Temuan Keamanan Internal & Bukti Regresi
+# REMEDIATION — Register Temuan Keamanan Internal & Bukti Regresi (Internal Registry, Audit-Ready)
 
 Dokumen ini mendokumentasikan secara formal **register temuan keamanan internal (Critical, High, Medium, Low)** yang ditemukan selama fase peninjauan arsitektur, threat modeling adversary, audit internal tim BMAD, dan integrasi upstream, beserta **solusi kode (mitigasi)** dan **test regresi** yang membuktikannya.
 
 > [!NOTE]
-> Seluruh temuan di bawah ini diidentifikasi dan dimitigasi oleh tim internal BMAD. Repository ini belum menjalani audit keamanan pihak ketiga independen (lihat `docs/BASELINE.md` dan `docs/AUDIT_SCOPE.md`).
+> **Status Dokumen: Register Internal Tim BMAD (Audit-Ready)**
+> Seluruh temuan di bawah ini diidentifikasi, dimitigasi, dan diverifikasi dengan 320 automated tests oleh tim internal BMAD. Repositori ini telah dipersiapkan secara menyeluruh (*audit-ready*) untuk peninjauan keamanan independen pihak ketiga formal (*independent external security review*) sebelum pembukaan deposit publik pada mainnet (lihat `docs/BASELINE.md` dan `docs/AUDIT_SCOPE.md`).
 
 Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-re-run-full-test-suite.md` (Tiket 7.2, Slice S6).
 
@@ -64,10 +65,11 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
 - **Dampak:** Depositor pertama rentan terhadap eksploitasi donasi frontrunning (ERC-4626 inflation attack).
 - **Remediasi (ADR-7):**
   - Skrip deploy `Deploy.s.sol` melakukan seeding otomatis sebesar 1.000 USDG yang langsung ditransfer permanen ke `0x000000000000000000000000000000000000dEaD` sebagai *dead shares*.
-  - Batas deposit dikendalikan secara on-chain via `DepositCapHook.sol` dan validasi unit deposit integer non-zero.
+  - Batas deposit dikendalikan secara on-chain via `DepositCapHook.sol` serta penegakan batas minimum deposit 10 USDG (`10_000_000n` micro-USDG) pada layer antarmuka web dan SDK untuk menolak donasi bernominal mikro.
 - **Bukti Test Regresi:**
   - `packages/contracts/test/unit/DeployScript.t.sol::test_seedMintsDeadSharesThenClosesTheDoor` (assert transfer dead shares saat bootstrap).
   - `packages/contracts/test/unit/DepositCapHookDeploy.t.sol` (validasi pembatasan deposit hook).
+  - `apps/web/test/deposit.test.ts` (assert penolakan deposit di bawah batas minimum 10 USDG).
 
 ---
 

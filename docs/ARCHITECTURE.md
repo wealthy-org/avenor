@@ -124,7 +124,7 @@ Keeper = hot wallet dengan gas saja, tanpa izin `REVOKE`/`FORCE_REVOKE`/`EMERGEN
 
 **ADR-6 — `auto_allocate = false`, `use_default_queue = true`.** Alokasi eksplisit oleh keeper (bisa diaudit per tx), urutan penarikan ditetapkan protokol (tidak bisa dimanipulasi user).
 
-**ADR-7 — Anti share-inflation: seed + minimum deposit, bukan virtual shares.** Core tidak punya decimals offset. Seed treasury 1.000 USDG saat inisialisasi (dibiarkan permanen sebagai dead shares) + minimum deposit 10 USDG. Didokumentasikan di UI sebagai "vault seeded".
+**ADR-7 — Anti share-inflation: seed + minimum deposit, bukan virtual shares.** Core tidak punya decimals offset. Seed treasury 1.000 USDG saat inisialisasi (dibiarkan permanen sebagai dead shares) + minimum deposit 10 USDG (ditegakkan pada layer antarmuka web dan SDK lewat `MIN_DEPOSIT_ASSETS = 10_000_000n`). Didokumentasikan di UI sebagai "vault seeded".
 
 **ADR-8 — Tidak ada proxy di depan vault.** Vault V3 tidak upgradeable. "Upgrade" = vault baru + migrasi sukarela user; tidak ada pemindahan state diam-diam.
 

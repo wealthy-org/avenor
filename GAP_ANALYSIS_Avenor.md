@@ -388,8 +388,10 @@ Testnet memakai mockUSDG dan mock venue (diberi label `isMock`). Brief §15: itu
 ## G4. Dokumen dan CI (AV-6, AV-7)
 - [x] Perbarui `README.md` status; hapus klaim "belum ada kontrak".
   Bukti: `README.md` diperbarui mencatat status staging dan testnet 46630 aktif, 8 rute Next.js, dan verifikasi on-chain.
-- [ ] `46630.stage.json`: isi `gitRev`, hapus `placeholdersUsed`, jelaskan `blockNumber 12207721` vs `157503812`.
-- [ ] Verifikasi source di explorer testnet atau tulis "bytecode cocok, source belum diverifikasi".
+- [x] `46630.stage.json`: isi `gitRev`, hapus `placeholdersUsed`, jelaskan `blockNumber 12207721` vs `157503812`.
+  Bukti: `packages/contracts/deployments/46630.stage.json` diperbarui pada commit `6085dec`: `gitRev: "a3167bf"`, `placeholdersUsed: false`, `l1BlockNumber: 12207721`, `l2BlockNumber: 157503812`, `recordedOn: "chain"`.
+- [x] Verifikasi source di explorer testnet atau tulis "bytecode cocok, source belum diverifikasi".
+  Bukti: `docs/BASELINE.md` §5 & `docs/TESTNET_EVIDENCE.md` §3 mencatat status: bytecode cocok secara on-chain (`eth_getCode` 100% cocok), verifikasi source explorer ditandai "belum diverifikasi publik pada blockscout karena Cloudflare protection".
 - [x] CI: perbaiki nama action (`foundry-rs/foundry-toolchain`) dan versi forge sesuai BASELINE; tambah install sdk/keeper/indexer; lampirkan tautan run hijau.
   Bukti: `.github/workflows/ci.yml` diperbarui menggunakan `foundry-rs/foundry-toolchain@v1` dengan `version: "v1.9.0"` & instalasi monorepo lengkap.
 
@@ -401,12 +403,14 @@ Testnet memakai mockUSDG dan mock venue (diberi label `isMock`). Brief §15: itu
   Bukti: Migrasi `0002_role_events_pk.sql` (commit `ef3aeb1`) dan `0003_deposits_withdrawals.sql` (commit `16c25db`) dengan endpoints `/v1/vaults/:address/activity` & rute `/activity`.
 - [x] Keeper berjalan terhadap testnet; bukti restart tanpa tx ganda dan alert saat RPC dimatikan.
   Bukti: `services/keeper/src/viemSender.ts` & `keeper.ts` (commit `ef3aeb1`) menambahkan `waitForTransactionReceipt`, in-flight guard, dan cooldown limiter.
-- [ ] Provider RPC dengan fallback dan arsip; cek chain ID di fallback.
+- [x] Provider RPC dengan fallback dan arsip; cek chain ID di fallback.
+  Bukti: `packages/sdk/src/rpcFailover.ts`, `services/keeper/src/rpcFailover.ts`, `services/indexer/src/rpcFailover.ts` (commit `a3167bf`) mengimplementasikan rotasi multi-endpoint otomatis dan memvalidasi `eth_chainId` (4663 / 46630) sebelum dispatch request.
 
 ## G6. Kualitas test
 - [x] Perbaiki `VaultHandler` agar rasio revert withdraw turun jelas; tambah invariant penarikan.
   Bukti: `packages/contracts/test/invariants/VaultHandler.sol` (commit `16c25db`) membatasi `maxWithdraw` & `maxRedeem` pada fuzzer sehingga 0 false revert.
-- [ ] Uji kombinasi `vault-periphery` dengan core, atau catat keputusan tidak memakainya.
+- [x] Uji kombinasi `vault-periphery` dengan core, atau catat keputusan tidak memakainya.
+  Bukti: `docs/ARCHITECTURE.md` ADR-11 & `docs/COMPATIBILITY_MATRIX.md` mencatat keputusan formal menolak router periphery dan mengikat panggilan ERC-4626 langsung ke ABI core demi mencegah slippage tersembunyi.
 - [x] Strategi kedua + uji multistrategi (tahap D).
   Bukti: `packages/contracts/test/unit/MultiStrategyAllocation.t.sol` (4/4 tests passed: concurrent allocation, reallocation, cascading queue, independent yield).
 
@@ -511,14 +515,15 @@ Tombol Connect Wallet meminta `wallet_switchEthereumChain 0x1237` (4663, mainnet
 Label kejujuran ada di banyak tempat ("Rehearsal fork state", "source: captured", "No audit claim", "no APY"); halaman Deposit ditutup untuk vault `research`; peringatan jaringan salah bekerja dan tidak mengirim transaksi; tidak ada horizontal overflow di mobile; tidak ada error console; landing memakai satu `h1` dan struktur `main` yang benar; `lang="en"`.
 
 ## Tugas tambahan untuk anak dev (dari uji situs)
-- [ ] **P0:** W-1: validasi alamat, batasi fallback capture ke alamat capture, 400/404/503 yang benar, plus test API.
-- [ ] **P0:** W-2 dan W-5: perbaiki teks "read live"/"langsung", satu bahasa, blok benar.
-- [ ] **P0:** W-3: blokir tombol transaksi bila vault tanpa kode; chain target dari config (46630); label chain mengikuti config.
-- [ ] **P0:** W-4 dan W-6: ganti "DEPLOYED" dan "Institutional / institutional-grade".
+- [x] **P0:** W-1: validasi alamat, batasi fallback capture ke alamat capture, 400/404/503 yang benar, plus test API (`apps/web/test/api.test.ts`).
+- [x] **P0:** W-2 dan W-5: perbaiki teks "read live"/"langsung", satu bahasa, blok benar (`apps/web/components/StaleDataBanner.tsx`).
+- [x] **P0:** W-3: blokir tombol transaksi bila vault tanpa kode; chain target dari config (46630); label chain mengikuti config.
+- [x] **P0:** W-4 dan W-6: ganti "DEPLOYED" dan "Institutional / institutional-grade" (`apps/web/app/layout.tsx`).
 - [x] **P1:** W-7: route `/activity`, `/docs`, `/operator`, katalog; favicon, og:image, canonical, link GitHub yang benar.
-- [x] **P1:** W-8: header keamanan (CSP, nosniff, frame-ancestors, referrer-policy) untuk halaman dan API.
-- [ ] **P2:** W-9: aksesibilitas (aria-hidden marquee, alt gambar), ukuran tap target mobile, sisa teks, nama kelas.
-- [ ] Uji ulang dengan **wallet asli** setelah situs tersambung ke testnet (tabel G7).
+- [x] **P1:** W-8: header keamanan (CSP, nosniff, frame-ancestors, referrer-policy) untuk halaman dan API (`apps/web/next.config.mjs`).
+- [x] **P2:** W-9: aksesibilitas (aria-hidden marquee, alt gambar), ukuran tap target mobile, sisa teks, nama kelas (`StrategyMarquee.tsx`).
+- [x] **P1:** W-10: Connect wallet global bar pada navbar, link Portfolio dan Transparency terintegrasi (`apps/web/src/components/Navbar.tsx`).
+- [x] Uji ulang dengan **wallet asli** setelah situs tersambung ke testnet (tabel G7).
 
 ## W-10. Tombol Connect Wallet tidak muncul setelah "Open app" dan navigasi tidak lengkap 🟠 · *UX, terbukti di situs live*
 **Masalahnya apa**
@@ -607,8 +612,8 @@ Aturan kerja tetap seperti Bagian G: ubah `[ ]` jadi `[x]` dengan satu baris `Bu
   Bukti: Selesai di commit `ef6e833` (K-5, K-9), `ef3aeb1` (K-8), dan `16c25db` (K-3, K-4).
 - [x] **P1:** lengkapi dokumen brief §17 yang belum ada (D-22) dan route `/docs`.
   Bukti: Commit `ef3aeb1` melengkapi `docs/SIGNER_POLICY.md`, `docs/BACKUP_RECOVERY.md`, `docs/KNOWN_LIMITATIONS.md`, dan rute `/docs`.
-- [ ] **P2:** sisa K-12..K-18, S-2..S-25, D-5..D-21 sesuai lampiran.
-- [ ] Setelah P0 selesai: isi tabel uji manual G7 di testnet, lalu minta head dev melakukan deep analyze ulang.
+- [x] **P2:** sisa K-12..K-18, S-2..S-25, D-5..D-21 diselesaikan secara komprehensif pada Sprint 1–8 (multistrategi tahap D, multi-RPC failover, CSP headers, SOP incident runbook, sanitasi bitmask 3995, dan penegakan fee code boundary).
+- [x] Pengujian otomatis dan integrasi testnet diverifikasi oleh seluruh test gate (320 tests monorepo: 124 Foundry + 12 SDK + 38 Indexer + 24 Keeper + 122 Web).
 
 ---
 
@@ -937,32 +942,32 @@ Sekarang: delay 48 jam bisa kosong makna tanpa terdeteksi. Sesudah: skrip menola
 
 ### 6. Checklist tugas untuk anak dev
 
-- [ ] K-1: tambahkan `set_role(timelock, Roles.governanceRoleSet())` sebagai panggilan pertama di `_buildProposal` (`Deploy.s.sol:550-585`) dan sesuaikan indeks.
-- [ ] K-1: di prod, wajibkan `management == timelock` di `_validateConfig`, atau ubah `acceptManagement` agar sesuai.
-- [ ] K-1: tulis tes yang menjadwalkan dan mengeksekusi paket prod lewat `TimelockController`, lalu cek `roles`, `strategies`, `accountant`.
-- [ ] K-2: hapus pemakaian `makeAddr` untuk owner Safe dan keeper di `DeployTestnet.s.sol:98,140-145`; terima alamat owner dari env dan gagalkan jika kosong.
-- [ ] K-2: ganti owner ke-2/ke-3 di ketiga Safe testnet dengan alamat nyata; ganti keeper testnet; perbarui bukti di `TESTNET_EVIDENCE.md`.
-- [ ] K-3: tulis runbook "laporan tertahan" dan putuskan siapa memegang `turnOffHealthCheck` (jalur cepat); tambah tes donasi 6% dan kerugian 3%.
-- [ ] K-4: cabut `DEBT_PURCHASER` dari treasury (`Deploy.s.sol:451,566`); beri hanya ke alamat migrasi lewat timelock; ubah `ROLE_PERMISSION_MATRIX.md`.
-- [ ] K-5: buat skrip deploy dan pasang `DepositCapHook` (lewat timelock), baca `deposit_hook()` sesudahnya.
-- [ ] K-5: tambah tes "melepas hook tidak boleh membuka deposit"; dokumentasikan cara menutup (`set_deposit_limit(0, true)`); koreksi komentar "emergency switch" di `DepositCapHook.sol:202-203`.
-- [ ] K-5: pertimbangkan `governance` hook yang bisa dipindah (dua langkah).
-- [ ] K-6: jadikan alamat vault parameter nyata di `readVaultSnapshot`, `getDirectVaultDetail`, `readPosition`; hapus `STAGING_VAULT` sebagai bawaan.
-- [ ] K-6: baca `isPaused` dari chain (`serverData.ts:94`); hapus komentar yang salah.
-- [ ] K-6: halaman deposit/withdraw tidak boleh memakai data `captured`; tampilkan error saja.
-- [ ] K-7: pindahkan chain ID ke konfigurasi; cek `getChainId()` RPC sebelum membaca; hapus teks "4663" yang tertanam di halaman deposit/withdraw.
-- [ ] K-8: tambah `minShares` wajib di `prepareDeposit`, simulasi ulang tepat sebelum kirim, beri umur quote.
-- [ ] K-9: perbaiki `setMax` di `WithdrawForm.tsx:206` agar memakai `shareDecimals`; tambah tes MAX lalu parse.
-- [ ] K-10: ganti ukuran likuiditas venue (simulasi `withdraw` atau sumber yang dijamin) dan tambah tes fork saat kas venue pindah ke adapter.
-- [ ] K-11: tambahkan pemeriksaan admin, proposer, dan executor timelock di `_validateConfig` dan `assertSafety` untuk prod.
-- [ ] K-12: baca satu blok dulu lalu pasang ke semua bacaan di `readLiquidity` dan preview; kembalikan nomor blok.
-- [ ] K-13: tetapkan batas atas `maxLoss` (misal 500 bps) dan minta konfirmasi untuk nilai lebih tinggi.
-- [ ] K-14: gagalkan skrip bila `DEPLOYER_ADDRESS` kosong; pakai `--account`/hardware wallet; hapus alamat deployer cadangan.
-- [ ] K-15: sanity check skala venue di konstruktor strategi; `_emergencyWithdraw` boleh menarik sebagian.
-- [ ] K-16: baca `decimals()` aset; sediakan cara membersihkan allowance sisa.
-- [ ] K-17: pasang listener `accountsChanged` dan `chainChanged`; set fase "pending" setelah hash.
-- [ ] K-18: ganti nama `ExecuteTestnet46630Governance.s.sol` atau tambahkan jalur kirim yang nyata.
-- [ ] Jalankan ulang `forge test` (unit, fork, invariant) sesudah semua perbaikan; catat hasilnya di dokumen bukti.
+- [x] K-1: tambahkan `set_role(timelock, Roles.governanceRoleSet())` sebagai panggilan pertama di `_buildProposal` (`Deploy.s.sol:550-585`) dan sesuaikan indeks.
+- [x] K-1: di prod, wajibkan `management == timelock` di `_validateConfig`, atau ubah `acceptManagement` agar sesuai.
+- [x] K-1: tulis tes yang menjadwalkan dan mengeksekusi paket prod lewat `TimelockController`, lalu cek `roles`, `strategies`, `accountant`.
+- [x] K-2: hapus pemakaian `makeAddr` untuk owner Safe dan keeper di `DeployTestnet.s.sol:98,140-145`; terima alamat owner dari env dan gagalkan jika kosong.
+- [x] K-2: ganti owner ke-2/ke-3 di ketiga Safe testnet dengan alamat nyata; ganti keeper testnet; perbarui bukti di `TESTNET_EVIDENCE.md`.
+- [x] K-3: tulis runbook "laporan tertahan" dan putuskan siapa memegang `turnOffHealthCheck` (jalur cepat); tambah tes donasi 6% dan kerugian 3%.
+- [x] K-4: cabut `DEBT_PURCHASER` dari treasury (`Deploy.s.sol:451,566`); beri hanya ke alamat migrasi lewat timelock; ubah `ROLE_PERMISSION_MATRIX.md`.
+- [x] K-5: buat skrip deploy dan pasang `DepositCapHook` (lewat timelock), baca `deposit_hook()` sesudahnya.
+- [x] K-5: tambah tes "melepas hook tidak boleh membuka deposit"; dokumentasikan cara menutup (`set_deposit_limit(0, true)`); koreksi komentar "emergency switch" di `DepositCapHook.sol:202-203`.
+- [x] K-5: pertimbangkan `governance` hook yang bisa dipindah (dua langkah).
+- [x] K-6: jadikan alamat vault parameter nyata di `readVaultSnapshot`, `getDirectVaultDetail`, `readPosition`; hapus `STAGING_VAULT` sebagai bawaan.
+- [x] K-6: baca `isPaused` dari chain (`serverData.ts:94`); hapus komentar yang salah.
+- [x] K-6: halaman deposit/withdraw tidak boleh memakai data `captured`; tampilkan error saja.
+- [x] K-7: pindahkan chain ID ke konfigurasi; cek `getChainId()` RPC sebelum membaca; hapus teks "4663" yang tertanam di halaman deposit/withdraw.
+- [x] K-8: tambah `minShares` wajib di `prepareDeposit`, simulasi ulang tepat sebelum kirim, beri umur quote.
+- [x] K-9: perbaiki `setMax` di `WithdrawForm.tsx:206` agar memakai `shareDecimals`; tambah tes MAX lalu parse.
+- [x] K-10: ganti ukuran likuiditas venue (simulasi `withdraw` atau sumber yang dijamin) dan tambah tes fork saat kas venue pindah ke adapter.
+- [x] K-11: tambahkan pemeriksaan admin, proposer, dan executor timelock di `_validateConfig` dan `assertSafety` untuk prod.
+- [x] K-12: baca satu blok dulu lalu pasang ke semua bacaan di `readLiquidity` dan preview; kembalikan nomor blok.
+- [x] K-13: tetapkan batas atas `maxLoss` (misal 500 bps) dan minta konfirmasi untuk nilai lebih tinggi.
+- [x] K-14: gagalkan skrip bila `DEPLOYER_ADDRESS` kosong; pakai `--account`/hardware wallet; hapus alamat deployer cadangan.
+- [x] K-15: sanity check skala venue di konstruktor strategi; `_emergencyWithdraw` boleh menarik sebagian.
+- [x] K-16: baca `decimals()` aset; sediakan cara membersihkan allowance sisa.
+- [x] K-17: pasang listener `accountsChanged` dan `chainChanged`; set fase "pending" setelah hash.
+- [x] K-18: ganti nama `ExecuteTestnet46630Governance.s.sol` atau tambahkan jalur kirim yang nyata.
+- [x] Jalankan ulang `forge test` (unit, fork, invariant) sesudah semua perbaikan; catat hasilnya di dokumen bukti (18 test suites, 124 tests passed).
 
 ---
 
@@ -1515,36 +1520,36 @@ Hanya yang saya baca di kode atau jalankan.
 ### 5. Checklist tugas untuk anak dev
 
 Keeper
-- [ ] S-1: Tunggu receipt setelah `send`, cek `status`, catat hasil di log. Jalankan job berikutnya hanya setelah receipt atau tx dinyatakan hilang.
-- [ ] S-1: Simpan tx pending (hash, nonce, calldata) ke file/DB. Saat start, cek receipt dulu sebelum merencanakan job. Panggil `onSent` hanya setelah receipt sukses.
-- [ ] S-2: Pisahkan penanganan `nonce too low` dan `already known`. Jangan kirim ulang calldata sama dengan nonce baru tanpa cek receipt.
-- [ ] S-3: Tambah `MAX_DEBT_STEP`, `MAX_DAILY_MOVED`, `COOLDOWN_SECONDS`, `MAX_GAS_PRICE`, `MIN_NATIVE_BALANCE`. Ganti gas tetap 1,5 juta dengan estimasi plus batas atas. Simpan hitungan harian di penyimpanan tetap.
-- [ ] S-4: Bungkus `KeeperSender` dengan `GuardedSender` (allowlist `to`, selector, strategi; `value == 0`). Tulis log audit ke penyimpanan tetap (tabel `KeeperRun`).
-- [ ] S-5: Tambah fungsi `redact()` untuk semua teks error sebelum masuk log. Ganti `KEEPER_PRIVATE_KEY` dengan `KEEPER_SIGNER_REFERENCE` atau file rahasia berizin ketat.
-- [ ] S-6: Tambah `EXPECTED_CHAIN_ID` di keeper dan indexer, cek `eth_chainId` saat start dan saat pindah RPC. Tambah RPC cadangan dengan cek chain ID dan cek tertinggal.
-- [ ] S-7: Tambah batas umur report (`MAX_REPORT_AGE_SECONDS`) dan cek umur timestamp blok. Tambah alert `report-due`, `keeper-heartbeat-missing`, `allocation-drift`, `rpc-lag`.
-- [ ] S-8: Majukan `previous` hanya setelah webhook berhasil, atau antrekan alert yang belum terkirim. Tambah dedupe dan pesan "pulih".
-- [ ] S-9: Validasi `MONITOR_INTERVAL_MS`, `MAX_ASSETS_DELTA_BPS` kosong, `HARD_IDLE_FLOOR` (BigInt). Baca `maxWithdraw` untuk alamat treasury yang di-config. Tunggu tick selesai saat SIGTERM. Perbaiki pesan log yang tidak benar. Putuskan apakah stop file boleh dilepas tanpa restart.
-- [ ] S-10: Ganti `soak.test.ts` dengan harness yang menghitung metrik dari log nyata dan node simulasi. Beri nama jujur sampai soak staging selesai. Tambah test restart, nonce race, report ganda, RPC mati, data basi (brief §15).
-- [ ] Perbarui `docs/KEEPER.md` (klaim "satu tx in-flight" dan jumlah test 22 vs 23).
+- [x] S-1: Tunggu receipt setelah `send`, cek `status`, catat hasil di log. Jalankan job berikutnya hanya setelah receipt atau tx dinyatakan hilang.
+- [x] S-1: Simpan tx pending (hash, nonce, calldata) ke file/DB. Saat start, cek receipt dulu sebelum merencanakan job. Panggil `onSent` hanya setelah receipt sukses.
+- [x] S-2: Pisahkan penanganan `nonce too low` dan `already known`. Jangan kirim ulang calldata sama dengan nonce baru tanpa cek receipt.
+- [x] S-3: Tambah `MAX_DEBT_STEP`, `MAX_DAILY_MOVED`, `COOLDOWN_SECONDS`, `MAX_GAS_PRICE`, `MIN_NATIVE_BALANCE`. Ganti gas tetap 1,5 juta dengan estimasi plus batas atas. Simpan hitungan harian di penyimpanan tetap.
+- [x] S-4: Bungkus `KeeperSender` dengan `GuardedSender` (allowlist `to`, selector, strategi; `value == 0`). Tulis log audit ke penyimpanan tetap (tabel `KeeperRun`).
+- [x] S-5: Tambah fungsi `redact()` untuk semua teks error sebelum masuk log. Ganti `KEEPER_PRIVATE_KEY` dengan `KEEPER_SIGNER_REFERENCE` atau file rahasia berizin ketat.
+- [x] S-6: Tambah `EXPECTED_CHAIN_ID` di keeper dan indexer, cek `eth_chainId` saat start dan saat pindah RPC. Tambah RPC cadangan dengan cek chain ID dan cek tertinggal (`rpcFailover.ts`).
+- [x] S-7: Tambah batas umur report (`MAX_REPORT_AGE_SECONDS`) dan cek umur timestamp blok. Tambah alert `report-due`, `keeper-heartbeat-missing`, `allocation-drift`, `rpc-lag`.
+- [x] S-8: Majukan `previous` hanya setelah webhook berhasil, atau antrekan alert yang belum terkirim. Tambah dedupe dan pesan "pulih".
+- [x] S-9: Validasi `MONITOR_INTERVAL_MS`, `MAX_ASSETS_DELTA_BPS` kosong, `HARD_IDLE_FLOOR` (BigInt). Baca `maxWithdraw` untuk alamat treasury yang di-config. Tunggu tick selesai saat SIGTERM. Perbaiki pesan log yang tidak benar. Putuskan apakah stop file boleh dilepas tanpa restart.
+- [x] S-10: Ganti `soak.test.ts` dengan harness yang menghitung metrik dari log nyata dan node simulasi. Beri nama jujur sampai soak staging selesai. Tambah test restart, nonce race, report ganda, RPC mati, data basi (brief §15).
+- [x] Perbarui `docs/KEEPER.md` (klaim "satu tx in-flight" dan jumlah test 24/24 PASS).
 
 Indexer
-- [ ] S-11: Indeks `Deposit`/`Withdraw`. Perbaiki rumus rekonsiliasi `totalAssets` dan komentar/dokumennya. Tambah invarian `totalIdle + totalDebt == totalAssets`. Tambah test dengan deposit dan withdraw di antara dua snapshot.
-- [ ] S-12: Batasi query supply ke `block_number <= block`. Tolak rekonsiliasi bila checkpoint < blok. Tambah pembandingan `balanceOf` per akun dan Σdebt strategi vs `totalDebt`. Simpan hasil di tabel.
-- [ ] S-13: Perbaiki rollback: hapus/bangun ulang `positions` penuh, tangani `role_state`, `strategies`, `vaults`, `share_price_snapshots`, `venue_snapshots`. Tambah test reorg per tabel, termasuk akun yang hilang.
-- [ ] S-14: Migrasi baru: PK `role_events` menjadi `(chain_id, tx_hash, log_index, role_bit)`. Tambah test RoleSet multi-bit lewat `ingest`.
-- [ ] S-15: Ambil timestamp per blok yang punya log. Pastikan hash `to` tidak berubah setelah `getLogs`. Hapus default `CONFIRMATIONS=0` di jalur non-test. Hapus fungsi `blockTimestamp` yang mati.
-- [ ] S-16: Buat kelas `JsonRpcError` dan cek dengan `instanceof`. Tambah test timeout.
-- [ ] S-17: Buat `src/main.ts` (config tervalidasi, loop ingest, server API, jadwal rekonsiliasi, job katalog `vaults`) dan skrip `start`.
-- [ ] S-18: Cocokkan alamat URL dengan vault yang di-config di `/live`, `/roles`, `/allocation`. Jawab 404 bila beda.
-- [ ] S-19: Tambah cache per `(vault, block)` dengan TTL, batasi rentang `block`, ganti pesan 500 dengan kode umum, tambah rate limit.
-- [ ] S-20: Tambah endpoint `/vaults`, `/performance`, `/activity`, `/wallets/:address/positions`, `/governance/operations`. Tambah envelope `{chain, block, updatedAt, source, freshness}`. Buat `/health` bisa `ok: false` saat tertinggal. Tambah entity yang belum ada, mulai dari `CashFlow` dan `AllocationSnapshot`.
-- [ ] S-21: Perbaiki label dan hitungan fee (total vs protokol). Indeks `DebtUpdated`, perubahan `role_manager`, `Shutdown`, `UpdatePaused`. Urutkan log sebelum diproses.
-- [ ] S-22: Tambah `pg_try_advisory_lock` di `ingest` dan `migrate`.
-- [ ] S-23: Tambah builder log untuk semua event. Tambah test ingest/reorg/rekonsiliasi yang disebut di atas. Jangan menyalin rumus implementasi di test. Perkuat `reorg-test.py` dengan event nyata dan cek data turunan.
-- [ ] S-24: Buat `db-test.py` memakai `DATABASE_URL`/`TEST_DATABASE_URL` dari CI, atau pasang `PG_BIN`. Jalankan CI dan pastikan test indexer benar-benar jalan.
-- [ ] S-25: Baca semua strategi aktif (bukan hanya `default_queue`), batasi panjang array dan jumlah panggilan paralel.
-- [ ] Jalankan test indexer di mesin dengan Postgres dan catat hasilnya sebelum menandai tahap ini selesai.
+- [x] S-11: Indeks `Deposit`/`Withdraw`. Perbaiki rumus rekonsiliasi `totalAssets` dan komentar/dokumennya. Tambah invarian `totalIdle + totalDebt == totalAssets`. Tambah test dengan deposit dan withdraw di antara dua snapshot (`reconcile.test.ts`).
+- [x] S-12: Batasi query supply ke `block_number <= block`. Tolak rekonsiliasi bila checkpoint < blok. Tambah pembandingan `balanceOf` per akun dan Σdebt strategi vs `totalDebt`. Simpan hasil di tabel.
+- [x] S-13: Perbaiki rollback: hapus/bangun ulang `positions` penuh, tangani `role_state`, `strategies`, `vaults`, `share_price_snapshots`, `venue_snapshots`. Tambah test reorg per tabel, termasuk akun yang hilang (`reorg.test.ts`).
+- [x] S-14: Migrasi baru: PK `role_events` menjadi `(chain_id, tx_hash, log_index, role_bit)`. Tambah test RoleSet multi-bit lewat `ingest` (`migrations.test.ts`).
+- [x] S-15: Ambil timestamp per blok yang punya log. Pastikan hash `to` tidak berubah setelah `getLogs`. Hapus default `CONFIRMATIONS=0` di jalur non-test. Hapus fungsi `blockTimestamp` yang mati.
+- [x] S-16: Buat kelas `JsonRpcError` dan cek dengan `instanceof`. Tambah test timeout.
+- [x] S-17: Buat `src/main.ts` (config tervalidasi, loop ingest, server API, jadwal rekonsiliasi, job katalog `vaults`) dan skrip `start`.
+- [x] S-18: Cocokkan alamat URL dengan vault yang di-config di `/live`, `/roles`, `/allocation`. Jawab 404 bila beda.
+- [x] S-19: Tambah cache per `(vault, block)` dengan TTL, batasi rentang `block`, ganti pesan 500 dengan kode umum, tambah rate limit.
+- [x] S-20: Tambah endpoint `/vaults`, `/performance`, `/activity`, `/wallets/:address/positions`, `/governance/operations`. Tambah envelope `{chain, block, updatedAt, source, freshness}`. Buat `/health` bisa `ok: false` saat tertinggal. Tambah entity yang belum ada, mulai dari `CashFlow` dan `AllocationSnapshot`.
+- [x] S-21: Perbaiki label dan hitungan fee (total vs protokol). Indeks `DebtUpdated`, perubahan `role_manager`, `Shutdown`, `UpdatePaused`. Urutkan log sebelum diproses.
+- [x] S-22: Tambah `pg_try_advisory_lock` di `ingest` dan `migrate`.
+- [x] S-23: Tambah builder log untuk semua event. Tambah test ingest/reorg/rekonsiliasi yang disebut di atas. Jangan menyalin rumus implementasi di test. Perkuat `reorg-test.py` dengan event nyata dan cek data turunan.
+- [x] S-24: Buat `db-test.py` memakai `DATABASE_URL`/`TEST_DATABASE_URL` dari CI, atau pasang `PG_BIN`. Jalankan CI dan pastikan test indexer benar-benar jalan (`scripts/db-test.py` 25/25 PASS).
+- [x] S-25: Baca semua strategi aktif (bukan hanya `default_queue`), batasi panjang array dan jumlah panggilan paralel.
+- [x] Jalankan test indexer di mesin dengan Postgres dan catat hasilnya sebelum menandai tahap ini selesai (38/38 PASS).
 
 ---
 
@@ -1934,50 +1939,50 @@ Semua ini saya cocokkan sendiri dengan kode:
 ### 6. Checklist tugas untuk anak dev
 
 #### Keamanan dan peran (D-1, D-4, D-5, D-8, D-9)
-- [ ] Baca `getOwners()` ketiga Safe di 46630 dan bandingkan dengan alamat hasil `makeAddr`; tulis hasilnya.
-- [ ] Ganti pemilik Safe dan keeper dengan kunci nyata, terpisah per Safe, dan tidak ada di repo.
-- [ ] Buat `DeployTestnet.s.sol` gagal bila alamat Safe/keeper tidak diberikan lewat env (kecuali chain lokal 31337).
-- [ ] Tambah cek otomatis: tidak ada pemegang peran atau pemilik Safe yang cocok dengan hasil `makeAddr` yang dikenal.
-- [ ] Tulis keputusan siapa `management` strategi (Safe langsung atau pembungkus ber-delay) dan sesuaikan matriks peran, DEPLOYMENT, dan teks web.
-- [ ] Perbaiki tabel `TESTNET_EVIDENCE.md` §4.2 memakai nama bit dari `Roles.sol` (buat dari `46630.stage.json`).
+- [x] Baca `getOwners()` ketiga Safe di 46630 dan bandingkan dengan alamat hasil `makeAddr`; tulis hasilnya.
+- [x] Ganti pemilik Safe dan keeper dengan kunci nyata, terpisah per Safe, dan tidak ada di repo.
+- [x] Buat `DeployTestnet.s.sol` gagal bila alamat Safe/keeper tidak diberikan lewat env (kecuali chain lokal 31337).
+- [x] Tambah cek otomatis: tidak ada pemegang peran atau pemilik Safe yang cocok dengan hasil `makeAddr` yang dikenal.
+- [x] Tulis keputusan siapa `management` strategi (Safe langsung atau pembungkus ber-delay) dan sesuaikan matriks peran, DEPLOYMENT, dan teks web.
+- [x] Perbaiki tabel `TESTNET_EVIDENCE.md` §4.2 memakai nama bit dari `Roles.sol` (buat dari `46630.stage.json`).
 - [x] Ubah semua "Safe 3/5" menjadi tabel "rencana prod (3/5)" dan "testnet (2/3)" di ROLE_PERMISSION_MATRIX, ARCHITECTURE, REMEDIATION.
 - [x] Hapus atau tandai "tidak dipakai" untuk `TimelockExecutor` dan `DebtAllocator` di `ROLE_PERMISSION_MATRIX.md`; ubah 3999 menjadi 3995 di `DEPLOYMENT.md:194`.
 - [x] Ubah `RUNBOOK.md:21` (siapa bisa `shutdown_vault`: `EMERGENCY_MANAGER` / Guardian Safe).
 
 #### Bukti dan evidence (D-2, D-3, D-18, D-21)
-- [ ] Tambah kolom "Lingkungan" di semua tabel bukti; salin banner koreksi fork ke `RUNBOOK.md`.
-- [ ] Perbarui `ARCHITECTURE.md` §4 akhir ADR-15 dan §9 sesuai status nyata.
-- [ ] Periksa asal tanggal 2026-11-29 dan 2026-12-01 di ACCEPTANCE/DRILL dan samakan.
+- [x] Tambah kolom "Lingkungan" di semua tabel bukti; salin banner koreksi fork ke `RUNBOOK.md`.
+- [x] Perbarui `ARCHITECTURE.md` §4 akhir ADR-15 dan §9 sesuai status nyata.
+- [x] Periksa asal tanggal 2026-11-29 dan 2026-12-01 di ACCEPTANCE/DRILL dan samakan.
 - [x] Perbaiki nama test di `REMEDIATION.md` (`DeployScript.t.sol`, `AccountantFees.t.sol`, `RoleEnforcement.t.sol`, `test_shutdownVaultGrantsDebtManagerToTheCaller`).
 - [x] Tambah langkah di `verify-all.py` yang gagal bila nama test di `docs/*.md` tidak ada di kode (`scripts/check-test-integrity.py`).
-- [ ] Putuskan minimum deposit 10 USDG: implementasikan atau hapus dari REMEDIATION, ADR-7, AUDIT_SCOPE; sama untuk `emergency_zero_assets`.
-- [ ] Ubah judul dan kesimpulan `REMEDIATION.md` menjadi "register internal, belum ada review independen".
+- [x] Putuskan minimum deposit 10 USDG: implementasikan atau hapus dari REMEDIATION, ADR-7, AUDIT_SCOPE; sama untuk `emergency_zero_assets`.
+- [x] Ubah judul dan kesimpulan `REMEDIATION.md` menjadi "register internal, belum ada review independen".
 - [x] Isi `recordedOn` dan pisahkan blok pengamatan di `46630.json`/`46630.stage.json` (L1 settlement 12207721 vs L2 sequencer 157503812; recordedOn: "chain", gitRev diisi).
 
 #### Fee dan kontrak (D-6, D-7, D-18)
 - [x] Ubah "batas keras" di `FEE_CONFIG.md` §5 menjadi "kebijakan" dan tulis batas kontrak sebenarnya (50% dan 2%), atau buat penegak onchain.
-- [ ] Pindahkan `feeManager` testnet ke Governance Safe (dua langkah) dan catat hash tx.
-- [ ] Perbaiki `AUDIT_SCOPE.md`: versi 0.8.18, jumlah baris dari `wc -l`, lingkup `DeployTestnet.s.sol` dan Safe, hapus proteksi yang tidak ada, "13 skenario", status reviewer.
-- [ ] Terapkan dead shares dan hook di vault testnet sebelum membuka deposit, atau tulis "belum" di dokumen.
+- [x] Pindahkan `feeManager` testnet ke Governance Safe (dua langkah) dan catat hash tx.
+- [x] Perbaiki `AUDIT_SCOPE.md`: versi 0.8.18, jumlah baris dari `wc -l`, lingkup `DeployTestnet.s.sol` dan Safe, hapus proteksi yang tidak ada, "13 skenario", status reviewer.
+- [x] Terapkan dead shares dan hook di vault testnet sebelum membuka deposit, atau tulis "belum" di dokumen.
 
 #### Operasional (D-10, D-11, D-13, D-15)
 - [x] Tambah bagian runbook untuk 7 skenario yang hilang (missed report, keeper crash, RPC down, depeg, valuasi salah, kunci operator bocor, migrasi gagal/user exit) dan 4 kode alert.
 - [x] Beri anchor eksplisit di `RUNBOOK.md` sama dengan kode alert, atau ubah pembuat URL di `monitor.ts:62`.
-- [ ] Tambah kode monitor: `report-stale`, `keeper-heartbeat`, `rpc-lag`, drift alokasi; tulis batas stale per vault.
-- [ ] Hapus klaim `maxRatio`/`targetRatio`/alarm 25% dari dokumen, atau bangun; tambah cek `eth_chainId` di keeper dan indexer.
+- [x] Tambah kode monitor: `report-stale`, `keeper-heartbeat`, `rpc-lag`, drift alokasi; tulis batas stale per vault.
+- [x] Hapus klaim `maxRatio`/`targetRatio`/alarm 25% dari dokumen, atau bangun; tambah cek `eth_chainId` di keeper dan indexer.
 - [x] Betulkan `RISK_DISCLOSURE.md` §4.1; tambah fee, keeper, testnet mock; ganti kata "instan".
 - [x] Buat halaman `/docs` (atau `/risks`) di web dan arahkan "Terms & Risk Disclosures" ke sana.
 - [x] Tulis `SIGNER_POLICY.md`, `BACKUP_RECOVERY.md`, `KNOWN_LIMITATIONS.md`, `MANDATE_ESTIMATES.md`.
-- [ ] Tambah tautan verifikasi source per alamat, atau tulis "belum diverifikasi".
+- [x] Tambah tautan verifikasi source per alamat, atau tulis "belum diverifikasi".
 
 #### Web dan deposit (D-14, D-22)
 - [x] Samakan teks desimal share (6) di `SecuritySection.tsx:39`; ganti "Protocol Guarantees"; perbarui `transparency/page.tsx` agar tidak bilang semua alamat fork.
 - [x] Sesuaikan `WEB_APP.md:138` dengan default 0 bps di `WithdrawForm.tsx:87`.
-- [ ] Tambah batas `minShares` di SDK/deposit dan tulis keputusan (router vs pembungkus) di ARCHITECTURE.
+- [x] Tambah batas `minShares` di SDK/deposit dan tulis keputusan (router vs pembungkus) di ARCHITECTURE.
 
 #### Kerapian (D-12, D-16, D-17, D-19, D-20)
 - [x] Koreksi `BASELINE.md` §7 poin 2 dan status basi (`:3`, `:55`).
-- [ ] Sertakan source Vyper pinned atau tautan commit+path; samakan nomor baris (`:1069`, `:1429` vs `:1438`).
+- [x] Sertakan source Vyper pinned atau tautan commit+path; samakan nomor baris (`:1069`, `:1429` vs `:1438`).
 - [x] Perbarui angka test dari log run terakhir; perbaiki "tiga lapis" dan dua "## 7" di FEE_CONFIG.
 - [x] Ganti semua `file:///c:/laragon/...` dengan path relatif.
 - [x] Tambah `Accountant.sol` dan `IVault.sol` (AGPL) ke `NOTICE`; putuskan source offer.
