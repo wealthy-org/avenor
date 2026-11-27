@@ -4,49 +4,108 @@ export function HowItWorks() {
       step: "01",
       title: "Connect",
       description:
-        "Read the mandate, the fees and the block the figures came from, then connect an EIP-1193 browser wallet. The app reads the chain id from the node, asks the wallet to switch to that chain and no other, and refuses to sign anywhere else.",
+        "The app reads the chain id from the node, asks your wallet to switch to that chain and no other, and refuses to sign anywhere else.",
+      tag: "Chain 46630",
     },
     {
       step: "02",
       title: "Allocate",
       description:
-        "Deposit USDG against a cap the contract enforces, not a number copied into the page. Shares are minted at the price per share read in the same block; the allowance is set to exactly the amount being deposited.",
+        "Deposit USDG against a cap the contract enforces. Shares mint at the price per share read in the same block, with an exact allowance and slippage guard.",
+      tag: "Exact Allowance",
     },
     {
       step: "03",
       title: "Monitor and redeem",
       description:
-        "Position value and the amount withdrawable now appear as two separate figures. A withdrawal carries an explicit max_loss budget, so a partial fill or a revert is visible to the signer before the transaction is sent.",
+        "Position value and withdrawable amounts are separate figures. A withdrawal carries an explicit max_loss budget, visible before signing.",
+      tag: "max_loss explicit",
     },
   ];
 
   return (
     <section
       id="how-it-works"
-      className="bg-[#f8f9fa] text-[#0b1310] py-14 md:py-28 px-4 sm:px-6 transition-colors"
+      className="bg-[#0e1612] text-[#e9efeb] py-16 md:py-28 px-4 sm:px-6 relative overflow-hidden border-y border-white/[0.06]"
     >
       <div className="mx-auto max-w-[1200px]">
-        <div className="max-w-xl">
-          <h2 className="font-display text-[clamp(2rem,3.6vw,3.1rem)] font-medium tracking-[-0.025em] text-[#0b1310]">
-            No black boxes.
+        {/* Header */}
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#52b896]/30 bg-[#52b896]/10 text-xs font-mono uppercase tracking-widest text-[#52b896] mb-4">
+            Deterministic Execution
+          </div>
+          <h2 className="font-display text-[clamp(2.1rem,3.8vw,3.2rem)] font-medium tracking-[-0.03em] text-[#f8f9fa] leading-tight">
+            No black boxes.<br />
+            <span className="text-[#52b896]">Follow the money, block by block.</span>
           </h2>
-          <p className="mt-3 text-sm sm:text-[15px] leading-relaxed text-[#4b5563]">
+          <p className="mt-4 text-sm sm:text-base leading-relaxed text-[#a3abb8]">
             Every asset flow is recorded on Robinhood Chain. From deposit authorization to venue deployment and final settlement, logic executes deterministically on-chain.
           </p>
         </div>
 
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-10">
+        {/* Visual Architecture Fund Flow Box */}
+        <div className="mt-10 rounded-2xl bg-[#080d0b] border border-white/[0.08] p-5 sm:p-8 overflow-hidden shadow-2xl">
+          <div className="text-[11px] font-mono uppercase tracking-wider text-[#6db89b] mb-4 flex items-center justify-between">
+            <span>On-Chain Fund Flow Architecture</span>
+            <span className="text-[#a3abb8]">Arbitrum Orbit L2</span>
+          </div>
+          <div className="overflow-x-auto pb-2">
+            <svg
+              viewBox="0 0 1100 170"
+              role="img"
+              aria-label="Fund flow from wallet to vault to strategy to venue"
+              className="w-full min-w-[760px] h-auto block"
+            >
+              <g fill="#101b16" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5">
+                <rect x="10" y="45" width="190" height="80" rx="14" />
+                <rect x="300" y="45" width="200" height="80" rx="14" stroke="#52b896" strokeWidth="2" />
+                <rect x="600" y="45" width="190" height="80" rx="14" />
+                <rect x="900" y="45" width="190" height="80" rx="14" />
+              </g>
+              <g stroke="#52b896" strokeWidth="2" fill="none">
+                <path strokeDasharray="5 9" className="animate-pulse" d="M200 85H300" />
+                <path strokeDasharray="5 9" className="animate-pulse" d="M500 85H600" />
+                <path strokeDasharray="5 9" className="animate-pulse" d="M790 85H900" />
+              </g>
+              <g font-family="system-ui, sans-serif" fontSize="16" fontWeight="600" fill="#f8f9fa" textAnchor="middle">
+                <text x="105" y="91">Your Wallet</text>
+                <text x="400" y="91" fill="#52b896">Avenor Vault</text>
+                <text x="695" y="91">Tokenized Strategy</text>
+                <text x="995" y="91">Steakhouse USDG</text>
+              </g>
+              <g font-family="monospace" fontSize="12" fill="#8fa198" textAnchor="middle">
+                <text x="250" y="72">1. deposit()</text>
+                <text x="550" y="72">2. update_debt()</text>
+                <text x="845" y="72">3. supply()</text>
+                <text x="105" y="148">USDG (6 dec)</text>
+                <text x="400" y="148" fill="#52b896">ERC-4626 avUSDG</text>
+                <text x="695" y="148">default queue</text>
+                <text x="995" y="148">Morpho Blue Venue</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        {/* 3 Steps Cards */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
           {steps.map((s) => (
             <div
               key={s.step}
-              className="pt-6 border-t border-[#0b1310]/15 flex flex-col justify-between"
+              className="rounded-2xl bg-[#121c17]/90 border border-white/[0.08] hover:border-[#52b896]/30 p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40"
             >
               <div>
-                <div className="font-mono text-xs text-[#6b7280]">{s.step}</div>
-                <h3 className="mt-4 font-display text-xl font-medium text-[#0b1310]">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-mono text-sm font-semibold text-[#52b896] bg-[#52b896]/10 px-2.5 py-1 rounded-lg">
+                    {s.step}
+                  </span>
+                  <span className="text-[11px] font-mono text-[#a3abb8] uppercase tracking-wider">
+                    {s.tag}
+                  </span>
+                </div>
+                <h3 className="font-display text-xl font-medium text-[#f8f9fa]">
                   {s.title}
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-[#4b5563]">
+                <p className="mt-3 text-sm leading-relaxed text-[#a3abb8]">
                   {s.description}
                 </p>
               </div>

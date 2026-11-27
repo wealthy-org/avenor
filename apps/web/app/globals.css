@@ -440,3 +440,38 @@ button, a, input, select {
 html {
   -webkit-text-size-adjust: 100%;
 }
+
+/* High-end micro-interactions and visual depth from Avenor Design System */
+.gridbg {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 900px;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+  mask-image: linear-gradient(180deg, #000 0%, transparent 85%);
+  pointer-events: none;
+}
+
+.vig {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1000px;
+  background: radial-gradient(ellipse 60% 50% at 70% 20%, rgba(82, 184, 150, 0.08), transparent 70%);
+  pointer-events: none;
+}
+
+.glow-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glow-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(109, 184, 155, 0.35);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(109, 184, 155, 0.06);
+}
+
+.tab-pill {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}

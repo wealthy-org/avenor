@@ -121,27 +121,46 @@ export function PrismHero({ blockNumber, rpcReachable, chainLine, metrics }: Pri
 
       {/* Headline */}
       <div className="relative z-10 mx-auto max-w-[900px] text-center pt-16 sm:pt-24 pb-16">
+        <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] backdrop-blur-md mb-6 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-[#52b896] animate-pulse" />
+          <span className="font-mono text-xs tracking-wider uppercase text-[#a3abb8]">
+            Robinhood Chain Testnet · Chain 46630
+          </span>
+        </div>
+
         <h1
-          className="font-display text-[clamp(2.35rem,4.4vw,3.85rem)] font-medium leading-[1.08] tracking-[-0.03em] text-[#f8f9fa]"
+          className="font-display text-[clamp(2.4rem,4.6vw,4.2rem)] font-medium leading-[1.06] tracking-[-0.035em] text-[#f8f9fa]"
           style={{ textWrap: "balance" }}
         >
-          Capital, Working Smarter.
+          Managed yield,<br />
+          <span className="bg-gradient-to-r from-[#6db89b] via-[#8ed1b7] to-[#7f9fd8] bg-clip-text text-transparent">
+            readable on-chain.
+          </span>
         </h1>
-        <p className="mx-auto mt-5 max-w-[600px] text-[15px] sm:text-base leading-relaxed text-[#b0b7c3]">
-          Systematically managed ERC-4626 allocator vaults on Robinhood Chain. Every figure is verifiable on-chain with block provenance.
+        <p className="mx-auto mt-6 max-w-[620px] text-[15px] sm:text-base leading-relaxed text-[#b0b7c3] font-normal">
+          ERC-4626 allocator vaults for USDG, built on Yearn V3. Every figure is read from the node with its block number. No APY promises, no black boxes.
         </p>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3.5">
           <Link
             href="/app"
-            style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
-            className="rounded-lg bg-[#f8f9fa] !text-[#0b1310] px-6 py-3 text-sm font-semibold hover:bg-white transition-colors cursor-pointer whitespace-nowrap shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.15)] inline-flex items-center justify-center"
+            style={{ color: "#06130d", backgroundColor: "#52b896" }}
+            className="group rounded-xl bg-[#52b896] !text-[#06130d] px-7 py-3.5 text-sm font-semibold hover:bg-[#63c7a5] transition-all transform hover:-translate-y-0.5 shadow-[0_0_25px_rgba(82,184,150,0.25)] whitespace-nowrap shrink-0 inline-flex items-center justify-center gap-2 cursor-pointer"
           >
-            <span className="text-[#0b1310] font-semibold">Open app</span>
+            <span>Open app</span>
+            <svg
+              className="w-4 h-4 transition-transform group-hover:translate-x-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
           </Link>
           <a
             href="#how-it-works"
-            className="rounded-lg px-5 py-3 text-sm font-medium text-[#d1d5db] hover:text-[#f8f9fa] transition-colors whitespace-nowrap shrink-0"
+            className="rounded-xl px-6 py-3.5 text-sm font-medium text-[#d1d5db] hover:text-[#f8f9fa] bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] hover:border-white/[0.2] transition-all whitespace-nowrap shrink-0 cursor-pointer"
           >
             How it works
           </a>
@@ -165,7 +184,7 @@ export function PrismHero({ blockNumber, rpcReachable, chainLine, metrics }: Pri
         {metrics.map((metric, index) => (
           <div
             key={metric.label}
-            className="rounded-xl bg-[#101b16]/85 backdrop-blur-sm border border-white/[0.08] p-4 sm:p-6 flex flex-col justify-between min-h-[126px] sm:min-h-[156px]"
+            className="rounded-2xl bg-[#0f1713]/85 backdrop-blur-md border border-white/[0.08] hover:border-[#6db89b]/40 p-5 sm:p-6 flex flex-col justify-between min-h-[136px] sm:min-h-[160px] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
           >
             <div className="grid grid-cols-12 gap-1 sm:gap-1.5 w-24 sm:w-28" aria-hidden="true">
               {DOTS.map((dot) => (
@@ -183,7 +202,7 @@ export function PrismHero({ blockNumber, rpcReachable, chainLine, metrics }: Pri
               </div>
               <div className="mt-1 text-xs text-[#9ca3af] leading-snug">{metric.label}</div>
               {metric.detail && (
-                <div className="mt-0.5 text-[11px] text-[#6b7280] leading-snug break-words">
+                <div className="mt-0.5 text-[11px] text-[#6b7280] leading-snug break-words font-mono">
                   {metric.detail}
                 </div>
               )}

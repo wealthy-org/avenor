@@ -8,6 +8,7 @@
 
 import Link from "next/link";
 import { PortfolioPanel } from "@/components/PortfolioPanel";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ErrorState } from "@/components/primitives";
 import { parseVaultList, type VaultConfig } from "@/config/vaults";
 import { ApiError } from "@/lib/api";
@@ -85,11 +86,13 @@ export default async function PortfolioPage() {
       </header>
 
       <section className="card">
-        <PortfolioPanel
-          vaults={vaults.map((entry) => ({ address: entry.address, label: entry.label }))}
-          base={base}
-          chainId={facts.chainId}
-        />
+        <ErrorBoundary fallbackTitle="Portfolio panel encountered an error">
+          <PortfolioPanel
+            vaults={vaults.map((entry) => ({ address: entry.address, label: entry.label }))}
+            base={base}
+            chainId={facts.chainId}
+          />
+        </ErrorBoundary>
       </section>
 
       <p className="provenance">

@@ -4,7 +4,7 @@
 // The two numbers are never merged into one "balance", because they disagree whenever the venue is
 // illiquid — which is the whole point of the honesty rule in AGENTS.md §4.
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPublicClient, http, type Address } from "viem";
 import { Amount, AddressText } from "@/components/primitives";
 import { fetchJson } from "@/lib/api";
@@ -49,7 +49,8 @@ function describe(error: unknown): Problem {
 
 function rpcUrl(): string | null {
   const value = process.env.NEXT_PUBLIC_RPC_URL;
-  return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
+  if (typeof value === "string" && value.trim() !== "") return value.trim();
+  return "https://rpc.testnet.chain.robinhood.com";
 }
 
 interface Row {
@@ -240,6 +241,17 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
     }
   }, [load, nodeChainId]);
 
+  const disconnect = useCallback(() => {
+    setAccount(null);
+    setRows([]);
+    setProblem(null);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("avenor_wallet_connected", { detail: { account: null } })
+      );
+    }
+  }, []);
+
   const withPosition = rows.filter((row) => row.position !== null && row.position.shares > 0n);
   const allRead = rows.length > 0 && rows.every((row) => row.position !== null);
   const exportDisabledReason =
@@ -267,6 +279,20 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
             {account !== null && <span className="inline-block w-2 h-2 rounded-full bg-[#6db89b]" />}
             {account === null ? "Connect wallet" : `Reload — ${account.slice(0, 6)}…${account.slice(-4)}`}
           </button>
+          {account !== null && (
+            <button
+              type="button"
+              onClick={disconnect}
+              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 hover:bg-red-500/20 text-red-300 px-4 py-3 text-xs font-semibold transition-colors min-h-[44px] cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                <polyline points="16 17 21 12 16 7" />
+                <line x1="21" y1="12" x2="9" y2="12" />
+              </svg>
+              <span>Disconnect</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={download}
@@ -431,8 +457,7 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
 
           {row.position === null || row.positionError !== null ? null : (
             <p className="provenance text-xs text-[#a3abb8] leading-relaxed">
-              Rendered at {blockTime(new Date().toISOString())}. The authoritative block numbers are listed above, not the
-              display timestamp.
+              Authoritative block numbers are listed above, read directly from the node.
             </p>
           )}
         </section>

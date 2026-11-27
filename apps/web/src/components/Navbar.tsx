@@ -10,15 +10,21 @@ export function Navbar() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [walletMenuOpen, setWalletMenuOpen] = useState(false);
   const [account, setAccount] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [copied, setCopied] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const walletMenuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (walletMenuRef.current && !walletMenuRef.current.contains(event.target as Node)) {
+        setWalletMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -29,6 +35,7 @@ export function Navbar() {
   useEffect(() => {
     setMobileMenuOpen(false);
     setDropdownOpen(false);
+    setWalletMenuOpen(false);
   }, [pathname]);
 
   // Read injected Web3 account
@@ -87,6 +94,24 @@ export function Navbar() {
       // User rejection or missing provider handled safely
     } finally {
       setConnecting(false);
+    }
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    setAccount(null);
+    setWalletMenuOpen(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("avenor_wallet_connected", { detail: { account: null } })
+      );
+    }
+  }, []);
+
+  const copyAddress = useCallback((addr: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(addr);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   }, []);
 
@@ -278,14 +303,95 @@ export function Navbar() {
 
             {/* Wallet Connection */}
             {account !== null ? (
-              <Link
-                href="/portfolio"
-                aria-label={`Wallet connected: ${account}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#14221c] border border-[#6db89b]/40 px-3 py-1.5 text-[12px] font-mono font-medium text-[#6db89b] hover:bg-[#1a2d25] transition-colors whitespace-nowrap shrink-0"
-              >
-                <span className="inline-block w-2 h-2 rounded-full bg-[#6db89b] animate-pulse" />
-                <span>{`${account.slice(0, 6)}…${account.slice(-4)}`}</span>
-              </Link>
+              <div className="relative" ref={walletMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setWalletMenuOpen((prev) => !prev)}
+                  aria-label={`Wallet connected: ${account}`}
+                  aria-expanded={walletMenuOpen}
+                  aria-haspopup="true"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-[#14221c] border border-[#6db89b]/40 px-3 py-1.5 text-[12px] font-mono font-medium text-[#6db89b] hover:bg-[#1a2d25] transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  <span className="inline-block w-2 h-2 rounded-full bg-[#6db89b] animate-pulse" />
+                  <span>{`${account.slice(0, 6)}…${account.slice(-4)}`}</span>
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform duration-200 text-[#6db89b]/70 ${walletMenuOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {walletMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#0e1814]/98 backdrop-blur-2xl border border-white/[0.1] shadow-2xl shadow-black/80 p-3 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] mb-2">
+                      <div className="flex items-center justify-between text-[11px] text-[#a3abb8] mb-1">
+                        <span>Connected Account</span>
+                        <span className="inline-flex items-center gap-1 text-[#6db89b]">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#6db89b]" />
+                          Testnet 46630
+                        </span>
+                      </div>
+                      <div className="font-mono text-xs text-[#f8f9fa] break-all font-medium">
+                        {account}
+                      </div>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => copyAddress(account)}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-[11px] text-[#d1d5db] transition-colors cursor-pointer"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                          <span>{copied ? "Copied!" : "Copy"}</span>
+                        </button>
+                        <a
+                          href={`https://testnet.robinhoodchain.com/address/${account}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 py-1 px-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] text-[11px] text-[#d1d5db] transition-colors"
+                        >
+                          <span>Explorer</span>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                            <polyline points="15 3 21 3 21 9" />
+                            <line x1="10" y1="14" x2="21" y2="3" />
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+
+                    <Link
+                      href="/portfolio"
+                      onClick={() => setWalletMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-2 rounded-xl text-xs text-[#d1d5db] hover:text-[#f8f9fa] hover:bg-white/[0.06] transition-colors mb-1"
+                    >
+                      <span>View Portfolio Position</span>
+                      <span className="text-[#6db89b]">→</span>
+                    </Link>
+
+                    <div className="border-t border-white/[0.08] my-1" />
+
+                    <button
+                      type="button"
+                      onClick={handleDisconnect}
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-red-300 hover:text-red-200 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 transition-colors cursor-pointer"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                      </svg>
+                      <span>Disconnect Wallet</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <button
                 type="button"
@@ -319,6 +425,23 @@ export function Navbar() {
         {/* Mobile Dropdown Drawer */}
         {mobileMenuOpen && (
           <div className="mt-2 rounded-2xl bg-[#0e1814]/98 backdrop-blur-2xl border border-white/[0.1] p-4 shadow-2xl space-y-3 z-50">
+            {/* Mobile Wallet Status */}
+            {account !== null && (
+              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase font-mono tracking-wider text-[#6db89b]">Connected Account</div>
+                  <div className="font-mono text-xs text-[#f8f9fa] truncate">{account}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDisconnect}
+                  className="px-2.5 py-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 text-xs font-medium hover:bg-red-500/20 shrink-0 cursor-pointer"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+
             {/* Primary Section */}
             <div className="space-y-1">
               <div className="px-3 py-1 text-[11px] font-mono uppercase tracking-wider text-[#6db89b]">

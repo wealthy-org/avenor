@@ -22,14 +22,23 @@ export function CtaBanner() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Link
                 href="/app"
-                style={{ color: "#0b1310", backgroundColor: "#f8f9fa" }}
-                className="rounded-full bg-[#f8f9fa] !text-[#0b1310] px-7 py-3 text-sm font-semibold hover:bg-white hover:scale-105 transition-all shadow-[0_0_24px_rgba(255,255,255,0.2)] cursor-pointer inline-flex items-center justify-center"
+                style={{ color: "#06130d", backgroundColor: "#52b896" }}
+                className="group rounded-xl bg-[#52b896] !text-[#06130d] px-7 py-3.5 text-sm font-semibold hover:bg-[#63c7a5] transition-all transform hover:-translate-y-0.5 shadow-[0_0_25px_rgba(82,184,150,0.25)] cursor-pointer inline-flex items-center justify-center gap-2"
               >
-                <span className="text-[#0b1310] font-semibold">Open the vault</span>
+                <span>Open app</span>
+                <svg
+                  className="w-4 h-4 transition-transform group-hover:translate-x-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
               </Link>
               <a
                 href="#security"
-                className="rounded-full px-6 py-3 text-sm font-medium text-[#d1d5db] hover:text-[#f8f9fa] border border-white/[0.12] hover:border-white/[0.2] bg-white/[0.03] transition-colors"
+                className="rounded-xl px-6 py-3.5 text-sm font-medium text-[#d1d5db] hover:text-[#f8f9fa] border border-white/[0.12] hover:border-white/[0.2] bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
               >
                 Review security
               </a>
