@@ -3,8 +3,10 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://avenorfi.xyz";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://avenor-kappa.vercel.app"),
+  metadataBase: new URL(siteUrl),
   alternates: {
     canonical: "/",
   },
@@ -28,7 +30,7 @@ export const metadata: Metadata = {
     description:
       "Access systematically managed on-chain investment strategies through transparent, risk-bounded ERC-4626 vaults engineered for Robinhood Chain.",
     type: "website",
-    url: "https://avenor-kappa.vercel.app/",
+    url: siteUrl,
   },
 };
 
