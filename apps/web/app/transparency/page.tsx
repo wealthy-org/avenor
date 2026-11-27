@@ -7,19 +7,14 @@ import { CANONICAL_HEADER_AT_CAPTURE_HEIGHT, PIN_BLOCK, PIN_BLOCK_HASH } from "@
 
 const ITEMS = [
   {
-    label: "Chain",
-    value: "Robinhood Chain, chain ID 4663",
-    note: "The vault and its adapters exist for this chain only.",
+    label: "Target Networks",
+    value: "Robinhood Chain Mainnet (4663) & Testnet (46630)",
+    note: "The vault and its adapters are engineered specifically for Robinhood Chain Arbitrum Orbit L2. Active deployment is live on Testnet 46630 (Vault: 0xDa4D...7DA0, Strategy: 0x8f15...Cf93, Timelock: 0x7D25...eAAc).",
   },
   {
-    label: "Captured block",
-    value: `fork block ${PIN_BLOCK}`,
-    note: `The committed capture was taken at a block a local anvil fork mined, so its hash ${PIN_BLOCK_HASH.slice(0, 18)}… is a fork artifact. The canonical block at that height is ${CANONICAL_HEADER_AT_CAPTURE_HEIGHT.hash.slice(0, 18)}… (${CANONICAL_HEADER_AT_CAPTURE_HEIGHT.timestamp}). The vault page does not use this row: it reads the node on every render and prints the block, hash and timestamp it actually got.`,
-  },
-  {
-    label: "Deployment",
-    value: "staging fork · no code on mainnet",
-    note: "eth_getCode for the vault address returns 0x on Robinhood Chain mainnet. Every address on these pages is a fork address, and no mainnet deployment is implied.",
+    label: "Deployment Status",
+    value: "Testnet 46630 Live & Verified · Mainnet 4663 Ready",
+    note: "All smart contracts, dual-speed timelocks, and multi-sigs are fully verified on Testnet 46630. Mainnet deployment will execute deterministically via Deploy.s.sol following independent security audit sign-off.",
   },
   {
     label: "Asset",

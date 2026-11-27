@@ -10,7 +10,7 @@ interface OperatorRole {
   role: string;
   holder: string;
   holderType: "Safe 2/3" | "Timelock" | "Dedicated EOA" | "Safe 2/2";
-  channel: "Timelock (48h)" | "Fast Lane (Instant)";
+  channel: "Timelock (48h)" | "Emergency Timelock (6h)" | "Fast Lane (Instant)";
   status: "active" | "standby";
   description: string;
 }
@@ -18,7 +18,7 @@ interface OperatorRole {
 const ROLES_LIST: OperatorRole[] = [
   {
     role: "role_manager",
-    holder: "TimelockController (0x9922...33aa)",
+    holder: "TimelockController (0x7D25...eAAc)",
     holderType: "Timelock",
     channel: "Timelock (48h)",
     status: "active",
@@ -26,31 +26,39 @@ const ROLES_LIST: OperatorRole[] = [
   },
   {
     role: "EMERGENCY_MANAGER",
-    holder: "Guardian Safe (0x1144...77bb)",
+    holder: "Guardian Safe (0x9183...2FEA)",
     holderType: "Safe 2/3",
     channel: "Fast Lane (Instant)",
     status: "active",
-    description: "Emergency circuit breaker. Can invoke shutdown_vault() instantly to prevent new deposits.",
+    description: "Emergency circuit breaker. Can invoke shutdown_vault() or setPaused(true) instantly during exploits.",
   },
   {
-    role: "REVOKE_STRATEGY_MANAGER",
-    holder: "Guardian Safe (0x1144...77bb)",
+    role: "FORCE_REVOKE_MANAGER",
+    holder: "Guardian Safe (0x9183...2FEA)",
     holderType: "Safe 2/3",
-    channel: "Fast Lane (Instant)",
+    channel: "Emergency Timelock (6h)",
     status: "active",
-    description: "Bounded fast-lane revocation. Pulls strategy allocation back to idle cash without 48h delay.",
+    description: "Bounded fast-lane de-risking via Emergency Timelock (0xa575...C6c2). Revokes problematic strategy in 6 hours without 48h delay.",
   },
   {
     role: "REPORTING_MANAGER",
-    holder: "Keeper EOA (0x8794...4210)",
+    holder: "Keeper Hot Wallet (0x1535...D9b1)",
     holderType: "Dedicated EOA",
     channel: "Fast Lane (Instant)",
     status: "active",
-    description: "Executes periodic strategy harvest and accounting reports. Strictly non-custodial.",
+    description: "Executes periodic strategy harvest and accounting reports. Strictly bounded by Accountant healthcheck (gain <= 5%, loss <= 2%).",
+  },
+  {
+    role: "DEBT_MANAGER",
+    holder: "Keeper Hot Wallet (0x1535...D9b1)",
+    holderType: "Dedicated EOA",
+    channel: "Fast Lane (Instant)",
+    status: "active",
+    description: "Allocates idle cash to active strategies per debt queue. Cannot send funds outside registered venues.",
   },
   {
     role: "ADD_STRATEGY_MANAGER",
-    holder: "TimelockController (0x9922...33aa)",
+    holder: "TimelockController (0x7D25...eAAc)",
     holderType: "Timelock",
     channel: "Timelock (48h)",
     status: "active",
@@ -58,7 +66,7 @@ const ROLES_LIST: OperatorRole[] = [
   },
   {
     role: "DEPOSIT_LIMIT_MANAGER",
-    holder: "TimelockController (0x9922...33aa)",
+    holder: "TimelockController (0x7D25...eAAc)",
     holderType: "Timelock",
     channel: "Timelock (48h)",
     status: "active",
@@ -97,7 +105,7 @@ export default function OperatorPage() {
       </header>
 
       {/* Overview Metric Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card">
           <span className="font-mono text-xs uppercase tracking-wider text-[#8b929e]">Timelock Delay</span>
           <div className="text-xl sm:text-2xl font-mono font-medium text-[#f8f9fa] mt-1">48 Hours</div>
@@ -110,7 +118,7 @@ export default function OperatorPage() {
           <span className="font-mono text-xs uppercase tracking-wider text-[#8b929e]">Guardian Multisig</span>
           <div className="text-xl sm:text-2xl font-mono font-medium text-[#6db89b] mt-1">2-of-3 Safe</div>
           <p className="text-xs text-[#a3abb8] mt-2">
-            Independent guardian signers. Separation of duty: Proposer address is never the Guardian.
+            Independent guardian signers (0x9183...2FEA). Proposer is Governance Safe (0x24e9...d4AA).
           </p>
         </div>
 
@@ -119,6 +127,14 @@ export default function OperatorPage() {
           <div className="text-xl sm:text-2xl font-mono font-medium text-[#38bdf8] mt-1">Operational</div>
           <p className="text-xs text-[#a3abb8] mt-2">
             In-flight transaction guard active; receipt verification enforced before onSent completion.
+          </p>
+        </div>
+
+        <div className="card border-[#6db89b]/30 bg-[#6db89b]/5">
+          <span className="font-mono text-xs uppercase tracking-wider text-[#6db89b]">Handover Maturity</span>
+          <div className="text-xl sm:text-2xl font-mono font-medium text-[#f8f9fa] mt-1">28 Nov, 02:09 UTC</div>
+          <p className="text-xs text-[#a3abb8] mt-2">
+            Scheduled operation <span className="font-mono text-[#6db89b]">0x906838...</span> transfers role_manager to Timelock (0x7D25...eAAc).
           </p>
         </div>
       </div>
