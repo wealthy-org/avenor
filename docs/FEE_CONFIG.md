@@ -37,7 +37,7 @@ Perilaku yang terverifikasi (`report()`):
 
 Untuk v1: **performance fee saja** (lihat §5), jadi jebakan ini tidak aktif.
 
-## 3. Tiga lapis biaya yang dialami user
+## 3. Empat komponen biaya yang dialami user
 
 | Lapis | Siapa ambil | Bentuk | Terlihat di |
 |---|---|---|---|
@@ -154,7 +154,7 @@ yang sebelumnya sudah dihapus. Konsekuensi operasional:
   report pemulihan **selalu** kena `"too much gain"` dan membutuhkan `turnOffHealthCheck` satu kali
   oleh `feeManager`. UI/admin runbook harus menyebut ini, bukan menemukannya saat insiden.
 
-## 7. Kewajiban transparansi
+## 8. Kewajiban transparansi
 
 Halaman fee wajib menampilkan, dibaca on-chain saat render:
 

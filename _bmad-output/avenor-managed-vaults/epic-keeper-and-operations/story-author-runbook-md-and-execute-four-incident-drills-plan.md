@@ -21,7 +21,7 @@ tanpa membakar share; `set_default_queue` menolak strategi tidak aktif.
 
 Empat drill insiden D1–D4 telah dieksekusi secara nyata pada staging fork Robinhood Chain (pin `118337511`)
 menggunakan skrip `packages/contracts/script/ExecuteDrills.s.sol`. Bukti blok, pergerakan dana, dan
-verifikasi batas waktu terdokumentasi lengkap di [`docs/DRILL_EVIDENCE.md`](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/DRILL_EVIDENCE.md):
+verifikasi batas waktu terdokumentasi lengkap di [`docs/DRILL_EVIDENCE.md`](../../../docs/DRILL_EVIDENCE.md):
 - **D1 (Pause/Unpause):** Blok `26450185`, withdrawal terblokir saat pause (`maxWithdraw = 0`), penarikan uji 1 USDG sukses pasca unpause.
 - **D2 (Fast Lane Force Revoke ADR-12):** Blok `26450195` (schedule) dan `26457395` (execute lewat 6h timelock), `current_debt` terbukti turun ke 0.
 - **D3 (Liquidity Drop Inspection):** Terukur pada blok `26450185` dan `26450195` memisahkan kas idle, `maxWithdraw`, dan `maxRedeem`.

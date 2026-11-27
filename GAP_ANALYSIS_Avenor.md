@@ -540,7 +540,7 @@ Pengunjung menekan Open app, halaman hanya bergulir ke daftar satu vault. Ia men
 **Bedanya setelah diperbaiki**
 Pengguna menekan Open app, langsung melihat tombol Connect di atas, terhubung dalam satu klik, dan bisa berpindah antar Vaults, Portfolio, dan Transparency dari menu.
 
-- [ ] **P1 (tugas anak dev, W-10):** Connect Wallet di navbar semua halaman; Open app menuju halaman aplikasi nyata; Portfolio dan Transparency masuk navbar; status wallet bersama; uji dengan wallet asli (tabel G7, baris 4 dan 5).
+- [x] **P1 (tugas anak dev, W-10):** Connect Wallet di navbar semua halaman; Open app menuju halaman aplikasi nyata; Portfolio dan Transparency masuk navbar; status wallet bersama; uji dengan wallet asli (tabel G7, baris 4 dan 5).
 
 ---
 
@@ -1948,8 +1948,8 @@ Semua ini saya cocokkan sendiri dengan kode:
 - [ ] Tambah kolom "Lingkungan" di semua tabel bukti; salin banner koreksi fork ke `RUNBOOK.md`.
 - [ ] Perbarui `ARCHITECTURE.md` §4 akhir ADR-15 dan §9 sesuai status nyata.
 - [ ] Periksa asal tanggal 2026-11-29 dan 2026-12-01 di ACCEPTANCE/DRILL dan samakan.
-- [ ] Perbaiki nama test di `REMEDIATION.md` (`DeployScript.t.sol`, `AccountantFees.t.sol`, `RoleEnforcement.t.sol`, `test_shutdownVaultGrantsDebtManagerToTheCaller`).
-- [ ] Tambah langkah di `verify-all.py` yang gagal bila nama test di `docs/*.md` tidak ada di kode.
+- [x] Perbaiki nama test di `REMEDIATION.md` (`DeployScript.t.sol`, `AccountantFees.t.sol`, `RoleEnforcement.t.sol`, `test_shutdownVaultGrantsDebtManagerToTheCaller`).
+- [x] Tambah langkah di `verify-all.py` yang gagal bila nama test di `docs/*.md` tidak ada di kode (`scripts/check-test-integrity.py`).
 - [ ] Putuskan minimum deposit 10 USDG: implementasikan atau hapus dari REMEDIATION, ADR-7, AUDIT_SCOPE; sama untuk `emergency_zero_assets`.
 - [ ] Ubah judul dan kesimpulan `REMEDIATION.md` menjadi "register internal, belum ada review independen".
 - [x] Isi `recordedOn` dan pisahkan blok pengamatan di `46630.json`/`46630.stage.json` (L1 settlement 12207721 vs L2 sequencer 157503812; recordedOn: "chain", gitRev diisi).
@@ -1961,8 +1961,8 @@ Semua ini saya cocokkan sendiri dengan kode:
 - [ ] Terapkan dead shares dan hook di vault testnet sebelum membuka deposit, atau tulis "belum" di dokumen.
 
 #### Operasional (D-10, D-11, D-13, D-15)
-- [ ] Tambah bagian runbook untuk 7 skenario yang hilang (missed report, keeper crash, RPC down, depeg, valuasi salah, kunci operator bocor, migrasi gagal/user exit) dan 4 kode alert.
-- [ ] Beri anchor eksplisit di `RUNBOOK.md` sama dengan kode alert, atau ubah pembuat URL di `monitor.ts:62`.
+- [x] Tambah bagian runbook untuk 7 skenario yang hilang (missed report, keeper crash, RPC down, depeg, valuasi salah, kunci operator bocor, migrasi gagal/user exit) dan 4 kode alert.
+- [x] Beri anchor eksplisit di `RUNBOOK.md` sama dengan kode alert, atau ubah pembuat URL di `monitor.ts:62`.
 - [ ] Tambah kode monitor: `report-stale`, `keeper-heartbeat`, `rpc-lag`, drift alokasi; tulis batas stale per vault.
 - [ ] Hapus klaim `maxRatio`/`targetRatio`/alarm 25% dari dokumen, atau bangun; tambah cek `eth_chainId` di keeper dan indexer.
 - [ ] Betulkan `RISK_DISCLOSURE.md` §4.1; tambah fee, keeper, testnet mock; ganti kata "instan".
@@ -1978,6 +1978,6 @@ Semua ini saya cocokkan sendiri dengan kode:
 #### Kerapian (D-12, D-16, D-17, D-19, D-20)
 - [ ] Koreksi `BASELINE.md` §7 poin 2 dan status basi (`:3`, `:55`).
 - [ ] Sertakan source Vyper pinned atau tautan commit+path; samakan nomor baris (`:1069`, `:1429` vs `:1438`).
-- [ ] Perbarui angka test dari log run terakhir; perbaiki "tiga lapis" dan dua "## 7" di FEE_CONFIG.
-- [ ] Ganti semua `file:///c:/laragon/...` dengan path relatif.
+- [x] Perbarui angka test dari log run terakhir; perbaiki "tiga lapis" dan dua "## 7" di FEE_CONFIG.
+- [x] Ganti semua `file:///c:/laragon/...` dengan path relatif.
 - [x] Tambah `Accountant.sol` dan `IVault.sol` (AGPL) ke `NOTICE`; putuskan source offer.

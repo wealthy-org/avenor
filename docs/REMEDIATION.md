@@ -51,7 +51,7 @@ Tiket BMAD: `epic-security-and-limited-launch` / `story-remediate-findings-and-r
 - **Sumber:** `TokenizedStrategy.sol` upstream logic pada penarikan parsial.
 - **Dampak:** Jika venue Morpho kekurangan kas, pengembalian dana sebagian diperlakukan sebagai kerugian (*unrealised loss*), membakar share pengguna tanpa hasil setimpal.
 - **Remediasi:**
-  - Kontrak [MorphoVaultStrategy.sol](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/packages/contracts/src/strategies/MorphoVaultStrategy.sol) mengimplementasikan `_freeFunds` yang mengukur pergerakan saldo kas riil (`USDG.balanceOf(strategy)`).
+  - Kontrak [MorphoVaultStrategy.sol](../packages/contracts/src/strategies/MorphoVaultStrategy.sol) mengimplementasikan `_freeFunds` yang mengukur pergerakan saldo kas riil (`USDG.balanceOf(strategy)`).
   - Jika kas yang diterima kurang dari yang diminta, fungsi langsung me-revert dengan custom error `VenueLiquidityShortfall(requested, available)` alih-alih mencatat kerugian palsu.
 - **Bukti Test Regresi:**
   - `packages/contracts/test/unit/MorphoVaultStrategy.t.sol::test_venueWithdrawLimitIsMeasuredNotReadFromMaxWithdraw`

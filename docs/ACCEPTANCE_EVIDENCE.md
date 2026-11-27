@@ -172,25 +172,24 @@ ALL CHECKED CHECKS PASSED — 2 GATE(S) NOT RUN:
 This is a partial result, not a green gate.
 ```
 
-Angka yang **tidak** berubah dan tidak boleh dipakai sebagai pengganti angka lama di atas: 101 unit test, 11 fork test, 32 indexer/data-plane, 22 keeper, 90 web, 10.000 run invariant. Blok log lama di bawah disimpan sebagai riwayat (angka di dalamnya sudah basi: 86 web test, dan ringkasan `ALL CHECKS PASSED` untuk run `--no-bytecode`):
-
+**Run verifikasi monorepo terbaru (`2026-11-27`):** `python scripts/verify-all.py --no-bytecode`
 ```text
+[ok] secret scanner self-test: pola rahasia menangkap semua bentuk uji
 [ok] no secrets tracked: tidak ada rahasia ter-commit
+[ok] test name integrity: OK: 30 test references verified against disk (0 missing)
 [ok] vendored dependencies: OK: 603 vendored files verified, impl 0x3110D1Eec90f0651C18e75AD37711A8777342504, API 3.1.1
 [ok] generated interfaces: OK: 2 generated interfaces up to date
 [ok] sdk abi matches artifact: sdk abi matches the artifact
 [ok] forge build: No files changed, compilation skipped
 [ok] forge fmt --check
-[ok] forge test (unit): Ran 11 test suites: 101 tests passed, 0 failed, 0 skipped
-[ok] sdk tests: pass (amounts, previews, writes, abi)
-[ok] indexer + data plane tests: 32 tests pass
-[ok] keeper tests: 22 tests pass
+[ok] forge test (unit): Ran 18 test suites in 118.62s: 124 tests passed, 0 failed, 0 skipped (124 total tests)
+[ok] sdk tests: 12 passed
+[ok] indexer + data plane tests: 38 schema & postgres tests passed
+[ok] keeper tests: 24 tests passed
 [ok] web typecheck: OK
-[ok] web tests: 86 tests pass
-ALL CHECKS PASSED
+[ok] web tests: 122 tests passed (10 suites)
 ```
-
-> **Koreksi `2026-11-24`:** baris `ALL CHECKS PASSED` di blok di atas adalah bug gate, bukan hasil: `--no-bytecode` melewati bukti bytecode dan tidak menjalankan `test/fork/*`, tetapi ringkasannya tidak membedakan "lulus" dari "tidak jalan". `scripts/verify-all.py` sekarang mencetak `ALL CHECKED CHECKS PASSED — N GATE(S) NOT RUN` untuk run parsial dan mengembalikan exit code 1 bila `--require-fork` diminta. Angka `86` juga basi; suite web sekarang 90 test di sepuluh berkas.
+Total metrik test monorepo aktif: **320 tests** (124 unit/invariant contracts, 122 web, 38 indexer, 24 keeper, 12 SDK).
 
 ---
 

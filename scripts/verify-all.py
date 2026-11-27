@@ -134,6 +134,7 @@ def main() -> int:
 
     run("secret scanner self-test", [python(), "scripts/check-secrets.py", "--self-test"], ROOT, args.quiet)
     run("no secrets tracked", [python(), "scripts/check-secrets.py"], ROOT, args.quiet)
+    run("test name integrity", [python(), "scripts/check-test-integrity.py"], ROOT, args.quiet)
     run("vendored dependencies", [python(), "scripts/check-vendor.py"], ROOT, args.quiet)
     run(
         "generated interfaces",

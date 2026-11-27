@@ -81,7 +81,7 @@ menolak.
 
 **Target.** Penjelasan tertulis (blok + angka) ≤ 30 menit.
 
-## D. Likuiditas venue turun
+## D. `no-withdrawal-capacity` / `liquidity-warning` — Likuiditas venue turun
 
 **Gejala.** `maxWithdraw` vault turun; `withdraw` menarik dana dari venue dan bisa mengurangi debt.
 Ingat: `maxWithdraw` **venue** tidak dipakai sebagai sinyal (bisa 0 walau likuid).
@@ -100,11 +100,117 @@ Ingat: `maxWithdraw` **venue** tidak dipakai sebagai sinyal (bisa 0 walau likuid
 
 ---
 
+## E. `report-stale` — Laporan Yield Terlambat / Tertunda (>24 Jam)
+
+**Gejala.** Monitor mendeteksi `block.timestamp - lastReport > 86400`. Share price tidak terbarui dan yield belum terakumulasi ke vault.
+
+1. **Periksa Saldo Gas Keeper:** Jalankan `cast balance <KEEPER_ADDRESS> --rpc-url <RPC>`. Bila saldo < 0.01 ETH, segera lakukan isi ulang (top-up).
+2. **Periksa Log Eksekusi:** Buka log container/layanan keeper (`services/keeper`). Cek apakah transaksi `process_report` revert dengan `"too much gain"` atau `"too much loss"` (lihat Prosedur H).
+3. **Periksa Status Proses:** Bila proses berhenti atau unhandled exception, jalankan Prosedur F (Keeper Crash Recovery).
+4. **Manual Report Fallback:** Bila proses keeper terhambat tetapi transaksi valid, pemegang peran `REPORTING_MANAGER` dapat memicu report langsung:
+   ```bash
+   cast send <VAULT_ADDRESS> "process_report(address)(uint256,uint256)" <STRATEGY_ADDRESS> --private-key <KEEPER_KEY>
+   ```
+
+**Target.** Diagnosis ≤ 15 menit; report kembali normal ≤ 60 menit.
+
+---
+
+## F. `keeper-crash` / `keeper-heartbeat` — Layanan Keeper Berhenti atau Nonce Macet
+
+**Gejala.** Endpoint `/health` keeper tidak membalas (`status != ok`), transaksi tertahan berstatus pending di mempool (in-flight transaction guard aktif terus), atau terjadi nonce collision.
+
+1. **Inspeksi Nonce:** Bandingkan nonce lokal vs on-chain:
+   ```bash
+   cast nonce <KEEPER_ADDRESS> --rpc-url <RPC>
+   ```
+2. **Atasi Transaksi Macet:** Bila ada transaksi pending berjam-jam akibat kenaikan gas tip:
+   Kirim transaksi replacement (0 ETH ke diri sendiri) dengan nonce yang sama dan prioritas gas lebih tinggi (+20%):
+   ```bash
+   cast send <KEEPER_ADDRESS> --value 0 --nonce <PENDING_NONCE> --priority-gas-price 2gwei --private-key <KEEPER_KEY>
+   ```
+3. **Restart Service:** Restart proses keeper melalui systemd/pm2/docker:
+   ```bash
+   npm run start --prefix services/keeper
+   ```
+4. **Verifikasi:** Periksa endpoint `/health` mengembalikan status `ok`, dan log monitor menunjukkan siklus berjalan normal tanpa duplikasi nonce.
+
+**Target.** Pemulihan transaksi dan restart proses ≤ 10 menit.
+
+---
+
+## G. `rpc-lag` / `rpc-outage` — Gangguan Endpoint RPC atau Sequencer Lag
+
+**Gejala.** RPC primer mengembalikan HTTP 429/5xx, timeout, atau ketinggian blok tertinggal jauh (>50 blok) dari L2 Arbitrum Orbit sequencer.
+
+1. **Pemeriksaan Multi-RPC:** Indexer dan Keeper Avenor dilengkapi viem fallback transport lintas endpoint (`FALLBACK_RPC_URLS`). Pastikan fallback RPC aktif dan melayani chain ID `4663` / `46630`.
+2. **Rotasi Endpoint:** Bila seluruh endpoint publik mengalami rate limit atau Cloudflare 403, ubah URL RPC di konfigurasi lingkungan (`.env`) ke penyedia privat/dedicated.
+3. **Sequencer Outage:** Bila jaringan Robinhood Chain L2 sequencer berhenti memproduksi blok (outage global):
+   - Jangan spam transaksi.
+   - Amankan vault dengan memantau saldo idle saat jaringan pulih kembali.
+
+**Target.** Failover otomatis < 5 detik; intervensi manual penyedia RPC ≤ 15 menit.
+
+---
+
+## H. `valuation-drift` — Laba / Rugi Melebihi Health Check Accountant
+
+**Gejala.** Keeper gagal mengeksekusi report karena `Accountant` revert dengan `"too much gain"` (>500 bps) atau `"too much loss"` (>200 bps).
+
+1. **Investigasi Angka:** Jangan pernah mematikan health check (`turnOffHealthCheck`) secara terburu-buru! Health check revert adalah pelindung utama dari inflasi palsu atau depeg venue.
+2. **Audit Saldo Riil:** Baca saldo kas Morpho venue dan posisi underlying:
+   - Hitung selisih aset: `newTotalAssets` vs `current_debt`.
+   - Periksa apakah pergerakan disebabkan oleh donasi token, reward distribution, atau haircut kredit di pasar peminjam.
+3. **Keputusan Tata Kelola:**
+   - Bila gain/loss terbukti valid dan wajar: jadwalkan penyesuaian parameter `maxGain`/`maxLoss` melalui TimelockController 48 jam.
+   - Bila terindikasi exploit atau manipulasi share price: segera koordinasikan penghentian deposit (Prosedur B / Freeze) dan isolasi venue.
+
+**Target.** Verifikasi numerik on-chain ≤ 30 menit; eskalasi proposal tata kelola ≤ 24 jam.
+
+---
+
+## I. `key-compromise` — Kebocoran Kunci Privat Operator atau Keeper
+
+**Gejala.** Terdeteksi aktivitas transaksi mencurigakan dari alamat keeper atau dugaan kebocoran private key operator.
+
+1. **Kebocoran Kunci Keeper:**
+   - Guardian Safe atau Timelock segera mencabut peran bit `96` (`DEBT_MANAGER` dan `REPORTING_MANAGER`) dari alamat keeper yang bocor:
+     ```solidity
+     vault.set_role(compromised_keeper, 0);
+     ```
+   - Generate keypair baru secara offline, kirim seed gas, dan beri wewenang peran `96` ke alamat baru.
+2. **Kebocoran Kunci Signer Safe:**
+   - Karena Safe tata kelola beroperasi dengan ambang multi-sig (2/3 di testnet, 3/5 di prod), satu kunci bocor **tidak dapat** mengeksekusi transaksi sendirian.
+   - Pemilik Safe lainnya segera mengeksekusi `swapOwner` untuk mencabut signer yang bocor dan menunjuk signer pengganti.
+3. **Kebocoran Deployer EOA:**
+   - Verifikasi melalui `python scripts/check-handover.py`: pastikan deployer sudah memegang 0 peran pada vault (`roles(deployer) == 0`).
+
+**Target.** Pencabutan peran keeper ≤ 15 menit; swap owner Safe ≤ 60 menit.
+
+---
+
+## J. `orderly-shutdown` — Penutupan Permanen Vault dan User Exit
+
+**Gejala.** Keputusan resmi untuk menghentikan operasional vault atau migrasi arsitektur secara total.
+
+1. **Pemicu Shutdown:** Governance Timelock memanggil `vault.shutdown_vault()`.
+   - Efek otomatis kontrak: `deposit_limit` menjadi 0 (deposit ditutup permanen), `deposit_hook` dihapus, dan pemanggil menerima peran `DEBT_MANAGER`.
+2. **Repatriasi Seluruh Modal ke Kas Idle:**
+   - Panggil `vault.update_debt(strategy, 0, 0)` untuk menarik 100% modal dari Morpho strategy kembali ke kas idle vault.
+3. **Verifikasi Kas Idle:**
+   - Pastikan `totalIdle == totalAssets`. Semua dana kini berada aman di dalam kontrak Vault.
+4. **Penarikan Pengguna (User Exit):**
+   - Penabung dapat memanggil `withdraw` atau `redeem` kapan saja tanpa batas waktu, tanpa haircut, dan tanpa slippage langsung dari kas idle.
+
+**Target.** Penutupan deposit instan; 100% modal ditarik ke kas idle ≤ 2 jam.
+
+---
+
 ## Drill (HITL) — status: DIEKSEKUSI & TERVERIFIKASI (FORK LOKAL ANVIL)
 
 > **Status provenance:** Drill di bawah ini dijalankan di **fork lokal anvil** dari state chain `4663` (bukan transaksi di chain `4663` atau testnet `46630`). Tinggi blok yang dipakai milik run chain lokal. Prosedur dan hasil drill tetap berlaku sebagai latihan runbook operasional yang valid; bukan bukti deploy testnet/mainnet.
 
-Empat drill di bawah adalah bagian dari tiket epik 6 T4 dan **telah dieksekusi** pada staging fork pin `118337511` menggunakan `packages/contracts/script/ExecuteDrills.s.sol`. Bukti on-chain lengkap tercatat di [`docs/DRILL_EVIDENCE.md`](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/DRILL_EVIDENCE.md).
+Empat drill di bawah adalah bagian dari tiket epik 6 T4 dan **telah dieksekusi** pada staging fork pin `118337511` menggunakan `packages/contracts/script/ExecuteDrills.s.sol`. Bukti on-chain lengkap tercatat di [`docs/DRILL_EVIDENCE.md`](DRILL_EVIDENCE.md).
 
 | Drill | Prosedur | Target waktu | Bukti tercatat | Status |
 | --- | --- | --- | --- | --- |

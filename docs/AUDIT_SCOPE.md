@@ -116,7 +116,7 @@ flowchart TD
 
 ### 4.4 Vektor V4: Eskalasi Wewenang Deployer
 - **Risiko:** Kunci broadcaster deployer masih memiliki izin `set_role` setelah deployment selesai.
-- **Fokus Audit:** Periksa logika pelepasan peran pada [Deploy.s.sol](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/packages/contracts/script/Deploy.s.sol) yang memanggil `set_role(actor, 0)` tepat sebelum `transfer_role_manager(timelock)`.
+- **Fokus Audit:** Periksa logika pelepasan peran pada [Deploy.s.sol](../packages/contracts/script/Deploy.s.sol) yang memanggil `set_role(actor, 0)` tepat sebelum `transfer_role_manager(timelock)`.
 
 ---
 
@@ -124,14 +124,14 @@ flowchart TD
 
 Reviewer eksternal akan menerima repositori lengkap dengan referensi wajib:
 
-1. **Kode Kontrak:** Direktori [packages/contracts/](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/packages/contracts/)
+1. **Kode Kontrak:** Direktori [packages/contracts/](../packages/contracts/)
 2. **Dokumen Arsitektur & Peran:**
-   - [docs/ARCHITECTURE.md](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/ARCHITECTURE.md) (ADR-1 s.d. ADR-14)
-   - [docs/ROLE_PERMISSION_MATRIX.md](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/ROLE_PERMISSION_MATRIX.md) (Peta 14 bit dan penugasan)
-   - [docs/WITHDRAWAL_SEMANTICS.md](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/WITHDRAWAL_SEMANTICS.md) (12 skenario penarikan)
-   - [docs/SECURITY_DIFF.md](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/SECURITY_DIFF.md) (Delta audit 2023 vs. pin 2026)
-   - [docs/FEE_CONFIG.md](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/FEE_CONFIG.md) (Konfigurasi akuntansi fee)
-   - [docs/DEPLOYMENT.md](file:///c:/laragon/www/kevin-work/wealthy-project/avenor/docs/DEPLOYMENT.md) (Tahapan dan assert runtime)
+   - [ARCHITECTURE.md](ARCHITECTURE.md) (ADR-1 s.d. ADR-14)
+   - [ROLE_PERMISSION_MATRIX.md](ROLE_PERMISSION_MATRIX.md) (Peta 14 bit dan penugasan)
+   - [WITHDRAWAL_SEMANTICS.md](WITHDRAWAL_SEMANTICS.md) (12 skenario penarikan)
+   - [SECURITY_DIFF.md](SECURITY_DIFF.md) (Delta audit 2023 vs. pin 2026)
+   - [FEE_CONFIG.md](FEE_CONFIG.md) (Konfigurasi akuntansi fee)
+   - [DEPLOYMENT.md](DEPLOYMENT.md) (Tahapan dan assert runtime)
 3. **Instruksi Eksekusi Uji Mandiri:**
    - Reproduksi lokal satu perintah: `python scripts/verify-all.py`
    - Uji fork pin jaringan riil: `python scripts/fork-test.py`
