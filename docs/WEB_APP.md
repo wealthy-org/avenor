@@ -135,10 +135,12 @@ skrip (14 test), bukan browser + wallet nyata, karena belum ada vault terdeploy 
 
 ## 6. Penarikan (tiket 5.4)
 
-1. **`max_loss` eksplisit, tanpa default.** Pilihan 0/10/50/100 bps atau angka lain 0–9999. Nilai
-   `>= 10000` ditolak sebelum dikirim (`parseLossBps`) dan form menyebut alasannya. `submitWithdraw`
-   memanggil `prepareWithdraw`/`prepareRedeem` dari SDK, yang mensimulasikan lebih dulu dan menolak
-   `maxLoss` yang hilang — jadi tidak mungkin jatuh ke default kontrak (`withdraw`=0, `redeem`=10000).
+1. **`max_loss` eksplisit dengan default aman 0 bps.** Form menginisialisasi pilihan pada `0` bps
+   (menolak haircut kerugian secara fail-closed), dengan opsi preset 0/10/50/100 bps atau input kustom
+   0–9999 bps. Nilai `>= 10000` ditolak sebelum dikirim (`parseLossBps`) dan form menyebut alasannya.
+   `submitWithdraw` memanggil `prepareWithdraw`/`prepareRedeem` dari SDK, yang mensimulasikan lebih
+   dulu dan menolak `maxLoss` yang hilang — jadi tidak mungkin jatuh ke default kontrak (`withdraw`=0,
+   `redeem`=10000).
 2. **Kutipan satu blok.** `quoteWithdraw` membaca preview, plafon mode yang satunya, `balanceOf`,
    `totalIdle`, dan `convertToAssets(shareBalance)` pada satu `blockNumber`. Mode `assets` memakai
    `maxWithdraw` dari SDK, mode `shares` memakai `maxRedeem`.

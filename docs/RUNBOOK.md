@@ -18,11 +18,11 @@ Peran yang dipakai di bawah (lihat `docs/ROLE_PERMISSION_MATRIX.md`):
 
 | Peran | Pemegang | Bisa apa |
 | --- | --- | --- |
-| `GOVERNANCE` | Timelock 48 jam | semua setter, role, `shutdown_vault` |
-| guardian Safe → timelock 6 jam | Guardian | **hanya** `FORCE_REVOKE_MANAGER` (ADR-12) |
-| `EMERGENCY_MANAGER` | Safe guardian | `setPaused(true/false)` |
+| `GOVERNANCE` | Timelock 48 jam | semua setter parameter, penugasan role, strategi baru |
+| guardian Safe → timelock 6 jam | Guardian | **hanya** `FORCE_REVOKE_MANAGER` (ADR-12 fast lane) |
+| `EMERGENCY_MANAGER` | Safe guardian | `setPaused(true/false)`, `shutdown_vault` (emergency shutdown langsung) |
 | `REPORTING_MANAGER` | keeper | `process_report` |
-| `DEBT_MANAGER` | keeper | `update_debt`, `set_auto_allocate` |
+| `DEBT_MANAGER` | keeper | `update_debt`, `set_auto_allocate` (dan otomatis diterima oleh pemanggil `shutdown_vault`) |
 
 ---
 

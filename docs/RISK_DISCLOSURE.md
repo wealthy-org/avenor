@@ -46,10 +46,11 @@ Sesuai aturan ketat `AGENTS.md`: dokumen ini tidak memperhalus risiko (*no sugar
 1. **Dual-Speed Timelock (ADR-12):**
    - Peran `role_manager` vault dipegang oleh `TimelockController` dengan keterlambatan eksekusi minimal **48 jam**.
    - Setiap perubahan parameter kritis (penambahan strategi baru, alokasi debt, penggantian accountant) memerlukan proposal publik dengan masa tunggu 48 jam.
+   - **Invarian Keselamatan:** Pintu deposit vault (`deposit_limit > 0`) dilarang dibuka sebelum serah terima `role_manager` ke TimelockController terverifikasi penuh on-chain.
 2. **Fast Lane Emergency Timelock (6 Jam):**
    - Peran pencabutan paksa (`FORCE_REVOKE_MANAGER`) dipegang oleh Timelock Darurat 6 jam untuk merespons kerentanan venue tanpa menunggu 48 jam, namun tetap mencegah eksekusi sepihak instan.
 3. **Guardian Safe:**
-   - Guardian memegang peran darurat `EMERGENCY_MANAGER` untuk menjeda (*pause*) atau mematikan (*shutdown*) vault seketika saat terjadi insiden.
+   - Guardian memegang peran darurat `EMERGENCY_MANAGER` untuk menjeda (*setPaused*) atau mematikan (*shutdown_vault*) seketika saat terjadi insiden.
    - Guardian terpisah dari pengusul timelock dan tidak dapat mengubah parameter ekonomi.
 
 ---
@@ -57,7 +58,7 @@ Sesuai aturan ketat `AGENTS.md`: dokumen ini tidak memperhalus risiko (*no sugar
 ## 5. Mekanisme Penghentian & Pembekuan Dana
 
 1. **Pembekuan Deposit:**
-   - Penghentian penerimaan deposit dilakukan melalui `deposit_limit = 0` atau pembatasan `deposit_hook`.
+   - Penghentian penerimaan deposit dilakukan melalui `deposit_limit = 0` atau pembatasan `deposit_hook`. Penarikan dana penabung yang ada tetap aktif 100%.
 2. **Dampak setPaused:**
    - Fungsi `setPaused` di Yearn V3 memblokir **deposit sekaligus penarikan**. Fungsi ini hanya diizinkan untuk mitigasi insiden kritis aktif dan tidak boleh digunakan sebagai alat pembatas deposit harian.
 
@@ -69,3 +70,29 @@ Sesuai aturan ketat `AGENTS.md`: dokumen ini tidak memperhalus risiko (*no sugar
    - Aset yang dialokasikan ke `steakUSDG` disalurkan ke pasar peminjaman Morpho Blue. Kegagalan mekanisme likuidasi jaminan atau penurunan drastis harga jaminan pada pasar terkait dapat menyebabkan kerugian pokok (*bad debt*).
 2. **Risiko Depeg USDG:**
    - Nilai share `avUSDG` bertumpu pada integritas nilai tukar USDG (Global Dollar). Jika token USDG kehilangan patokan 1:1 terhadap USD, nilai ekuivalen fiat posisi pengguna akan terpengaruh.
+
+---
+
+## 7. Risiko Ketergantungan Layanan Otomatisasi (Keeper)
+
+1. **Frekuensi & Ketergantungan Pelaporan:**
+   - Akumulasi laba dan pembaharuan nilai share bergantung pada pelaporan periodik keeper (`process_report` maksimal 24 jam).
+   - Jika proses keeper mengalami kegagalan proses, transaksi macet (nonce collision), atau kehabisan gas ETH, pembaruan yield akan tertunda hingga keeper dipulihkan atau intervensi manual dilakukan oleh pemegang peran `REPORTING_MANAGER`.
+
+---
+
+## 8. Struktur Biaya Transparan (Fee Model)
+
+1. **Performance Fee Terpusat:**
+   - Biaya performa 10% dipungut secara terpusat oleh Vault melalui `Accountant.sol` dengan profit unlock period 7 hari.
+   - Strategi adapter (`MorphoVaultStrategy.sol`) memaksakan 0% fee untuk mencegah *double deduction*.
+2. **Zero Management Fee:**
+   - Pada v1, management fee ditetapkan 0% untuk mencegah pengikisan saldo modal saat utilisasi rendah.
+
+---
+
+## 9. Status Lingkungan Testnet (Mock Venue & Mock USDG)
+
+1. **Rehearsal Staging:**
+   - Pada Robinhood Chain Testnet (`46630`), underlying asset adalah `mockUSDG` dan venue adalah `MockMorphoVault`.
+   - Pengujian testnet membuktikan kebenaran integrasi kontrak, lifecycle multi-sig Safe, dan automasi keeper, namun BUKAN bukti performa atau likuiditas pasar Morpho di mainnet riil.

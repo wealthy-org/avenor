@@ -191,7 +191,7 @@ Semua ini sengaja tidak dilakukan script, dan semuanya tercatat di `pendingActio
 | Berkas | Cakupan |
 |---|---|
 | `test/unit/DeployScript.t.sol` (12 test) | dry-run lengkap + assert peran; deposit tertutup; handoff strategi dua langkah (dan tidak ada handoff bila target kosong); seed dead shares lalu tutup; prod `role_manager = timelock` dan **tidak ada** grant; prod menolak EOA timelock; prod menolak `getMinDelay < 48 jam`; prod menolak EOA proposer; prod menolak EOA guardian; prod menolak proposer == deployer; guardian == proposer; guardian == keeper |
-| `test/unit/Roles.t.sol` (5 test) | `ALL == 16383`, `governanceRoleSet() == 3999`, `keeperRoleSet() == 96`, `dangerousBits() == 13070`, keeper ∩ dangerous == 0 |
+| `test/unit/Roles.t.sol` (5 test) | `ALL == 16383`, `governanceRoleSet() == 3995`, `keeperRoleSet() == 96`, `dangerousBits() == 13070`, keeper ∩ dangerous == 0 |
 
 Test prod memakai `MockMultisig` (kontrak tanpa perilaku) karena aturan "proposer/guardian harus kontrak" diuji dari sisi `code.length`, bukan dari ABI Safe.
 

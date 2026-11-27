@@ -1940,9 +1940,9 @@ Semua ini saya cocokkan sendiri dengan kode:
 - [ ] Tambah cek otomatis: tidak ada pemegang peran atau pemilik Safe yang cocok dengan hasil `makeAddr` yang dikenal.
 - [ ] Tulis keputusan siapa `management` strategi (Safe langsung atau pembungkus ber-delay) dan sesuaikan matriks peran, DEPLOYMENT, dan teks web.
 - [ ] Perbaiki tabel `TESTNET_EVIDENCE.md` §4.2 memakai nama bit dari `Roles.sol` (buat dari `46630.stage.json`).
-- [ ] Ubah semua "Safe 3/5" menjadi tabel "rencana prod (3/5)" dan "testnet (2/3)" di ROLE_PERMISSION_MATRIX, ARCHITECTURE, REMEDIATION.
-- [ ] Hapus atau tandai "tidak dipakai" untuk `TimelockExecutor` dan `DebtAllocator` di `ROLE_PERMISSION_MATRIX.md`; ubah 3999 menjadi 3995 di `DEPLOYMENT.md:194`.
-- [ ] Ubah `RUNBOOK.md:21` (siapa bisa `shutdown_vault`).
+- [x] Ubah semua "Safe 3/5" menjadi tabel "rencana prod (3/5)" dan "testnet (2/3)" di ROLE_PERMISSION_MATRIX, ARCHITECTURE, REMEDIATION.
+- [x] Hapus atau tandai "tidak dipakai" untuk `TimelockExecutor` dan `DebtAllocator` di `ROLE_PERMISSION_MATRIX.md`; ubah 3999 menjadi 3995 di `DEPLOYMENT.md:194`.
+- [x] Ubah `RUNBOOK.md:21` (siapa bisa `shutdown_vault`: `EMERGENCY_MANAGER` / Guardian Safe).
 
 #### Bukti dan evidence (D-2, D-3, D-18, D-21)
 - [ ] Tambah kolom "Lingkungan" di semua tabel bukti; salin banner koreksi fork ke `RUNBOOK.md`.
@@ -1955,7 +1955,7 @@ Semua ini saya cocokkan sendiri dengan kode:
 - [x] Isi `recordedOn` dan pisahkan blok pengamatan di `46630.json`/`46630.stage.json` (L1 settlement 12207721 vs L2 sequencer 157503812; recordedOn: "chain", gitRev diisi).
 
 #### Fee dan kontrak (D-6, D-7, D-18)
-- [ ] Ubah "batas keras" di `FEE_CONFIG.md` §5 menjadi "kebijakan" dan tulis batas kontrak sebenarnya (50% dan 2%), atau buat penegak onchain.
+- [x] Ubah "batas keras" di `FEE_CONFIG.md` §5 menjadi "kebijakan" dan tulis batas kontrak sebenarnya (50% dan 2%), atau buat penegak onchain.
 - [ ] Pindahkan `feeManager` testnet ke Governance Safe (dua langkah) dan catat hash tx.
 - [ ] Perbaiki `AUDIT_SCOPE.md`: versi 0.8.18, jumlah baris dari `wc -l`, lingkup `DeployTestnet.s.sol` dan Safe, hapus proteksi yang tidak ada, "13 skenario", status reviewer.
 - [ ] Terapkan dead shares dan hook di vault testnet sebelum membuka deposit, atau tulis "belum" di dokumen.
@@ -1965,18 +1965,18 @@ Semua ini saya cocokkan sendiri dengan kode:
 - [x] Beri anchor eksplisit di `RUNBOOK.md` sama dengan kode alert, atau ubah pembuat URL di `monitor.ts:62`.
 - [ ] Tambah kode monitor: `report-stale`, `keeper-heartbeat`, `rpc-lag`, drift alokasi; tulis batas stale per vault.
 - [ ] Hapus klaim `maxRatio`/`targetRatio`/alarm 25% dari dokumen, atau bangun; tambah cek `eth_chainId` di keeper dan indexer.
-- [ ] Betulkan `RISK_DISCLOSURE.md` §4.1; tambah fee, keeper, testnet mock; ganti kata "instan".
+- [x] Betulkan `RISK_DISCLOSURE.md` §4.1; tambah fee, keeper, testnet mock; ganti kata "instan".
 - [x] Buat halaman `/docs` (atau `/risks`) di web dan arahkan "Terms & Risk Disclosures" ke sana.
 - [x] Tulis `SIGNER_POLICY.md`, `BACKUP_RECOVERY.md`, `KNOWN_LIMITATIONS.md`, `MANDATE_ESTIMATES.md`.
 - [ ] Tambah tautan verifikasi source per alamat, atau tulis "belum diverifikasi".
 
 #### Web dan deposit (D-14, D-22)
 - [x] Samakan teks desimal share (6) di `SecuritySection.tsx:39`; ganti "Protocol Guarantees"; perbarui `transparency/page.tsx` agar tidak bilang semua alamat fork.
-- [ ] Sesuaikan `WEB_APP.md:138` dengan default 0 bps di `WithdrawForm.tsx:87`.
+- [x] Sesuaikan `WEB_APP.md:138` dengan default 0 bps di `WithdrawForm.tsx:87`.
 - [ ] Tambah batas `minShares` di SDK/deposit dan tulis keputusan (router vs pembungkus) di ARCHITECTURE.
 
 #### Kerapian (D-12, D-16, D-17, D-19, D-20)
-- [ ] Koreksi `BASELINE.md` §7 poin 2 dan status basi (`:3`, `:55`).
+- [x] Koreksi `BASELINE.md` §7 poin 2 dan status basi (`:3`, `:55`).
 - [ ] Sertakan source Vyper pinned atau tautan commit+path; samakan nomor baris (`:1069`, `:1429` vs `:1438`).
 - [x] Perbarui angka test dari log run terakhir; perbaiki "tiga lapis" dan dua "## 7" di FEE_CONFIG.
 - [x] Ganti semua `file:///c:/laragon/...` dengan path relatif.

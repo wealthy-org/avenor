@@ -65,18 +65,20 @@ Aturan UI: **jangan** menampilkan "APY" gabungan tanpa menyebut sumber. Format: 
 - Fee protokol dihitung dari `total_fees_shares` (bukan dari gain langsung) saat report.
 - Nilai ini bisa berubah oleh governance Yearn per vault. Karena itu `FEE_CONFIG` harus dibaca ulang on-chain pada setiap render halaman fee, dan angka hard-coded di frontend dilarang.
 
-## 5. Konfigurasi v1 (usulan, harus disetujui di PRD)
+## 5. Konfigurasi v1 (Parameter & Batasan)
 
-| Parameter | Nilai awal | Batas keras | Rasional |
-|---|---|---|---|
-| `performanceFee` | 10% (1.000 bps) | 20% (2.000 bps) | produk managed yield retail; fee di atas 20% sulit dipertahankan |
-| `managementFee` | 0 | 2%/tahun | hindari double charge saat TVL kecil dan interaksi dengan `maxFee` |
-| `refundRatio` | 0 pada v1 | 50% | refund hanya boleh aktif bila Accountant didanai eksplisit (lihat §2.4) |
-| `maxFee` | 0 | 2.000 | 0 = tidak dibatasi; hanya aman karena managementFee = 0 |
-| `maxGain` | 500 bps (5%) per report | 1.000 | mencegah report gain absurd / oracle rusak |
-| `maxLoss` | 200 bps (2%) per report | 1.000 | loss lebih besar harus lewat `force_revoke` yang terlihat |
-| `profit_max_unlock_time` | 7 hari | 30 hari | smoothing pps; cukup pendek agar user melihat hasil |
-| Protocol fee (Yearn) | mengikuti factory | 50% dari fee | di luar kendali kita; tampilkan apa adanya |
+Pemisahan tegas antara **Batas Keras Kontrak (Invarian `Accountant.sol`)** dan **Batas Kebijakan Tata Kelola Avenor** yang dikunci oleh jeda waktu 48 jam Timelock:
+
+| Parameter | Nilai Awal v1 | Batas Kebijakan Avenor | Batas Keras Kontrak (`Accountant.sol`) | Rasional |
+|---|:---:|:---:|:---:|---|
+| `performanceFee` | **10%** (1.000 bps) | 20% (2.000 bps) | **50%** (`MAX_FEE = 5000`) | Produk managed yield retail; kenaikan >20% dilarang oleh kebijakan timelock |
+| `managementFee` | **0** | 0% (v1) | **2%/thn** (`MAX_MANAGEMENT_FEE = 200`) | Hindari pembebanan ganda saat TVL awal |
+| `refundRatio` | **0** | 0% | 100% | Refund hanya boleh aktif bila Accountant didanai kas eksplisit (§2.4) |
+| `maxFee` | **0** | 0 | Tidak dibatasi (bila 0) | 0 = tidak dibatasi plafon absolut; aman karena managementFee = 0 |
+| `maxGain` | **500 bps** (5%) | 1.000 bps (10%) | Tidak dibatasi kode | Mencegah report inflasi gain mendadak akibat flash-donation |
+| `maxLoss` | **200 bps** (2%) | 500 bps (5%) | Tidak dibatasi kode | Loss >2% harus melalui penelaahan atau `FORCE_REVOKE_MANAGER` 6 jam |
+| `profit_max_unlock_time` | **7 hari** (604.800 s) | 30 hari | Tidak dibatasi kode | Smoothing pps; cukup pendek agar user melihat hasil yield mingguan |
+| Protocol fee (Yearn) | Mengikuti factory | 50% dari fee | **50%** (`MAX_FEE_BPS = 5000`) | Di luar kendali kita; dibaca on-chain apa adanya |
 
 Alasan `maxLoss` ketat: `Accountant` revert adalah pertahanan terhadap keeper jahat/bug. Konsekuensi: strategi yang loss besar tidak bisa di-report normal; jalurnya `force_revoke_strategy` (`FORCE_REVOKE_MANAGER`) yang menanggung loss eksplisit. Ini perilaku yang benar dan harus ada di runbook, bukan kegagalan.
 

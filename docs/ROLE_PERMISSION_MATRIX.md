@@ -39,16 +39,26 @@ Catatan yang sering salah:
 
 Prinsip: **kunci panas tidak boleh memegang apa pun yang bisa memindahkan dana user.** Keeper hanya boleh melakukan hal yang hasilnya bisa diverifikasi publik dan dibatasi.
 
+### Topologi Safe Multi-Sig: Rencana Prod vs. Testnet Aktual
+
+| Entitas Safe | Rencana Mainnet Prod | Implementasi Testnet `46630` | Fungsi Utama |
+|---|:---:|:---:|---|
+| **Governance Safe** | **3 of 5** (Kunci terpisah per individu tim) | **2 of 3** (`0x24e9...`, kunci terverifikasi) | Proposer Timelock 48 jam, pengelolaan parameter & alokasi fee |
+| **Guardian Safe** | **3 of 5** (Terpisah dari Governance) | **2 of 3** (`0x8322...`, kunci terpisah) | Pemegang `EMERGENCY_MANAGER` (`setPaused`, `shutdown_vault`), Proposer Timelock Darurat 6 jam |
+| **Treasury Safe** | **3 of 5** (Cold multi-sig) | **2 of 3** (`0x8AA6...`, kunci terpisah) | Penerima fee protokol, pemegang hak bersyarat `DEBT_PURCHASER` |
+
+*Catatan helper contracts:* Modul eksternal `TimelockExecutor` dan `DebtAllocator` **tidak dipakai** di v1 (OZ `TimelockController` standar dipakai langsung per ADR-4/ADR-12, dan logika alokasi dihitung oleh proses keeper).
+
 | Peran | Pemegang | Delay | Alasan |
 |---|---|---|---|
-| `role_manager` | `TimelockController` (OZ) dengan proposer = Safe 3/5 governance, executor = `TimelockExecutor` periphery | **48 jam** | semua perubahan peran harus terlihat sebelum berlaku |
-| `ADD_STRATEGY_MANAGER`, `QUEUE_MANAGER`, `MAX_DEBT_MANAGER`, `MINIMUM_IDLE_MANAGER`, `ACCOUNTANT_MANAGER`, `PROFIT_UNLOCK_MANAGER`, `DEPOSIT_LIMIT_MANAGER`, `WITHDRAW_LIMIT_MANAGER`, `REVOKE_STRATEGY_MANAGER` | Timelock yang sama | 48 jam | perubahan parameter produk |
-| `FORCE_REVOKE_MANAGER` | **Timelock darurat terpisah** (`emergencyTimelock`), proposer = Safe 3/5 guardian, executor = Safe yang sama (`Roles.emergencyRoleSet()`, ADR-12) | **6 jam** | de-risking harus lebih cepat dari 48 jam, tetapi `force_revoke` merealisasikan loss ke harga share sehingga tidak boleh instan |
-| `EMERGENCY_MANAGER` | **Guardian Safe 3/5 terpisah**, diberikan langsung (tanpa timelock) | 0 | pause harus instan saat eksploit aktif; konsekuensinya penarikan ikut berhenti, jadi hanya untuk insiden |
+| `role_manager` | `TimelockController` (OZ 4.9.5) dengan proposer = Governance Safe | **48 jam** | semua perubahan peran harus terlihat sebelum berlaku |
+| `ADD_STRATEGY_MANAGER`, `QUEUE_MANAGER`, `MAX_DEBT_MANAGER`, `MINIMUM_IDLE_MANAGER`, `ACCOUNTANT_MANAGER`, `PROFIT_UNLOCK_MANAGER`, `DEPOSIT_LIMIT_MANAGER`, `WITHDRAW_LIMIT_MANAGER`, `REVOKE_STRATEGY_MANAGER` | Timelock yang sama (`Roles.governanceRoleSet() = 3995`) | 48 jam | perubahan parameter produk |
+| `FORCE_REVOKE_MANAGER` | **Timelock darurat terpisah** (`emergencyTimelock`), proposer = Guardian Safe (`Roles.emergencyRoleSet() = 4`, ADR-12) | **6 jam** | de-risking harus lebih cepat dari 48 jam, tetapi `force_revoke` merealisasikan loss ke harga share sehingga tidak boleh instan |
+| `EMERGENCY_MANAGER` | **Guardian Safe terpisah**, diberikan langsung (tanpa timelock) | 0 | `setPaused` dan `shutdown_vault` harus instan saat krisis/eksploit aktif |
 | `REPORTING_MANAGER` | Keeper hot wallet (EOA, dana gas minimal) | 0 | report rutin; loss hanya bisa dilaporkan, bukan ditarik ke keeper |
-| `DEBT_MANAGER` | Keeper hot wallet (alokasi rutin) **atau** `DebtAllocator` keeper | 0 | alokasi di dalam batas `targetRatio`/`maxRatio` |
-| `DEBT_PURCHASER` | Treasury Safe (bukan keeper) | 0 | butuh kas nyata; hanya saat insiden |
-| Strategi (`TokenizedStrategy.management`/`keeper`) | Keeper hot wallet untuk `tend()`, `management` = Timelock | 0 | `tend` tidak boleh butuh governance |
+| `DEBT_MANAGER` | Keeper hot wallet (alokasi rutin di bawah batas) | 0 | alokasi di dalam batas `targetRatio`/`maxDebt` |
+| `DEBT_PURCHASER` | Treasury Safe (bukan keeper) | 0 | butuh kas nyata; hanya saat insiden subsidiasi bad debt |
+| Strategi (`TokenizedStrategy.management`/`keeper`) | Keeper hot wallet untuk `tend()`, `management` = Timelock / Safe | 0 | `tend` tidak boleh butuh governance |
 
 **Keputusan divergensi (2026-11-20, ADR-12).** Sebelumnya tabel ini menaruh `FORCE_REVOKE_MANAGER`
 di Safe Emergency dengan delay 6 jam, sedangkan `Roles.governanceRoleSet()` memberikannya ke timelock

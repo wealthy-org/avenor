@@ -1,7 +1,7 @@
 # BASELINE — Avenor Managed Strategy Vaults
 
-Status: **baseline tervalidasi dari source lokal + bytecode terbukti; belum ada deployment.**
-Tanggal: 19 November 2026 (Asia/Makassar). Network target: Robinhood Chain (mainnet `4663`, testnet `46630`).
+Status: **Baseline tervalidasi; rehearsal testnet 46630 aktif terdeploy (Safe multi-sig 2/3, Timelock 48 jam, Mock venue); mainnet 4663 menunggu peluncuran sequencer publik.**
+Tanggal: 19 November 2026 (Updated: 27 November 2026). Network target: Robinhood Chain (mainnet `4663`, testnet `46630`).
 Dokumen ini adalah satu-satunya sumber pin versi. Setiap perubahan pin harus lewat PR yang memperbarui file ini.
 Bukti reproduksi bytecode: `docs/REPRODUCIBILITY.md`. Ulangi dengan `scripts/verify-bytecode.py all`.
 
@@ -52,7 +52,7 @@ PDF tersimpan di `referensi/*/audits/`:
 
 Implikasi yang harus ditulis di UI dan docs: audit tersebut mencakup **core upstream pada versi 2023**. Tidak ada audit untuk: kombinasi pin 2026 (`v3.1.1`), modul periphery yang kita pilih, adapter Morpho Vault V2, konfigurasi peran produk, dan deployment kita. Kalimat "audited by ChainSecurity" untuk produk Avenor adalah klaim salah dan dilarang (brief §11).
 
-Catatan: `vault-periphery@672de1c` adalah merge `security/node-nov2026-security-fixes`. Diff terhadap commit yang diaudit **wajib** dibaca baris per baris sebelum slice B, dan hasilnya masuk `docs/SECURITY_DIFF.md` (belum dibuat).
+Catatan: `vault-periphery@672de1c` adalah merge `security/node-nov2026-security-fixes`. Diff terhadap commit yang diaudit telah dianalisis baris per baris dan tersedia di `docs/SECURITY_DIFF.md`.
 
 ## 4. Perbedaan terhadap upstream (kebijakan)
 
@@ -112,5 +112,5 @@ Dibaca langsung via `eth_getCode` / `eth_call` pada block `118337511`. Semua nil
 Konsekuensi yang mengikat implementasi (detail di `docs/VENUE_INTEGRATIONS.md`):
 
 1. Share `steakUSDG` 18 desimal ≠ asset 6 desimal. Adapter **wajib** memakai `convertToAssets`/`convertToShares`, dilarang menyamakan share 1:1 dengan asset.
-2. `maxDeposit(0x0)=0` berarti venue bisa menutup pintu masuk kapan saja tanpa memicu `paused`. Adapter harus memperlakukan `maxDeposit` sebagai otoritas dan melaporkan `maxDeposit` strategi = 0 saat venue tertutup.
+2. `maxDeposit(address(0))=0` adalah guard Morpho terhadap alamat nol. Plafon deposit yang sesungguhnya diukur via `maxDeposit(address(strategy))` dan ketersediaan supply cap pasar peminjam Morpho Blue.
 3. Tidak ada `liquidity()`. Kapasitas keluar = **kas idle venue** (`USDG.balanceOf(venue)`), bukan `maxRedeem`/`maxWithdraw` — di blok pin keduanya `0` padahal venue membayar penuh 8,33 juta USDG (lihat `VENUE_INTEGRATIONS.md` §4).

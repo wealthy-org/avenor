@@ -139,10 +139,10 @@ jalur cepat yang dibatasi untuk "pengurangan eksposur dan tindakan darurat" (ave
 Yang di-deploy karena itu dua `TimelockController` terpisah, dengan himpunan peran yang **tidak
 beririsan**:
 
-| Timelock | Delay | Proposer | Peran |
+| Timelock | Delay | Proposer (Prod / Testnet) | Peran |
 |---|---|---|---|
-| governance | 48 jam | Safe 3/5 governance | `role_manager` + 9 bit parameter (`governanceRoleSet()`) |
-| emergency | 6 jam | Safe 3/5 guardian | `FORCE_REVOKE_MANAGER` saja (`emergencyRoleSet()`) |
+| governance | 48 jam | Safe Governance (Rencana Prod: 3/5, Testnet: 2/3) | `role_manager` + 9 bit parameter (`governanceRoleSet() = 3995`) |
+| emergency | 6 jam | Safe Guardian (Rencana Prod: 3/5, Testnet: 2/3) | `FORCE_REVOKE_MANAGER` saja (`emergencyRoleSet() = 4`) |
 
 `FORCE_REVOKE_MANAGER` **tidak** ada di guardian Safe dan **tidak** ada di timelock governance, jadi
 satu kunci yang dicuri tidak bisa menarik strategi seketika, dan timelock governance tidak bisa
