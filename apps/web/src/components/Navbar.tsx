@@ -50,8 +50,18 @@ export function Navbar() {
     const onAccountsChanged = (accounts: unknown) => {
       if (Array.isArray(accounts) && accounts.length > 0 && typeof accounts[0] === "string") {
         setAccount(accounts[0]);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("avenor_wallet_connected", { detail: { account: accounts[0] } })
+          );
+        }
       } else {
         setAccount(null);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("avenor_wallet_connected", { detail: { account: null } })
+          );
+        }
       }
     };
 
@@ -68,6 +78,11 @@ export function Navbar() {
       const provider = findInjectedProvider({ ethereum: bag });
       const connected = await connectWallet(provider);
       setAccount(connected.account);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("avenor_wallet_connected", { detail: { account: connected.account } })
+        );
+      }
     } catch {
       // User rejection or missing provider handled safely
     } finally {

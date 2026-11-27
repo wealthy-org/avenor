@@ -127,6 +127,57 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
     [base, vaults, nodeChainId],
   );
 
+  // Auto-detect connected wallet on mount & listen to accountsChanged/global wallet events
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const bag = (globalThis as { ethereum?: unknown }).ethereum;
+    const provider = findInjectedProvider({ ethereum: bag });
+    if (!provider) return;
+
+    const syncAccount = (acc: string | null) => {
+      if (acc && typeof acc === "string") {
+        const addr = acc as Address;
+        setAccount(addr);
+        load(addr);
+      } else {
+        setAccount(null);
+        setRows([]);
+      }
+    };
+
+    provider
+      .request({ method: "eth_accounts" })
+      .then((accounts) => {
+        if (Array.isArray(accounts) && accounts.length > 0 && typeof accounts[0] === "string") {
+          syncAccount(accounts[0]);
+        }
+      })
+      .catch(() => {});
+
+    const onAccountsChanged = (accounts: unknown) => {
+      if (Array.isArray(accounts) && accounts.length > 0 && typeof accounts[0] === "string") {
+        syncAccount(accounts[0]);
+      } else {
+        syncAccount(null);
+      }
+    };
+
+    const handleCustomConnect = (event: Event) => {
+      const custom = event as CustomEvent<{ account?: string }>;
+      if (custom.detail?.account) {
+        syncAccount(custom.detail.account);
+      }
+    };
+
+    provider.on?.("accountsChanged", onAccountsChanged);
+    window.addEventListener("avenor_wallet_connected", handleCustomConnect);
+
+    return () => {
+      provider.removeListener?.("accountsChanged", onAccountsChanged);
+      window.removeEventListener("avenor_wallet_connected", handleCustomConnect);
+    };
+  }, [load]);
+
   const download = useCallback(() => {
     if (account === null) return;
     const csv = portfolioCsv(
@@ -176,6 +227,11 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
         }
       }
       setAccount(connected.account);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("avenor_wallet_connected", { detail: { account: connected.account } })
+        );
+      }
       await load(connected.account);
     } catch (error) {
       setProblem(describe(error));

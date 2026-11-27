@@ -97,6 +97,67 @@ export function DepositForm({ vault, asset, chainId: nodeChainId, assetSymbol, g
 
   const blocked = useMemo(() => (quote === null ? [] : depositBlockers({ assets: quote.assets, maxAssets: quote.maxAssets, balance: quote.balance, gate: quote.gate })), [quote]);
 
+  // Auto-detect connected wallet on mount & listen to accountsChanged/global wallet events
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const bag = (globalThis as { ethereum?: unknown }).ethereum;
+    const provider = findInjectedProvider({ ethereum: bag });
+    if (!provider) return;
+
+    const syncWallet = async (acc: string | null) => {
+      if (acc && typeof acc === "string") {
+        setAccount(acc as Address);
+        try {
+          const cid = await readChainId(provider);
+          setChainId(cid);
+        } catch {}
+      } else {
+        setAccount(null);
+        setQuote(null);
+      }
+    };
+
+    provider
+      .request({ method: "eth_accounts" })
+      .then((accounts) => {
+        if (Array.isArray(accounts) && accounts.length > 0 && typeof accounts[0] === "string") {
+          syncWallet(accounts[0]);
+        }
+      })
+      .catch(() => {});
+
+    const onAccountsChanged = (accounts: unknown) => {
+      if (Array.isArray(accounts) && accounts.length > 0 && typeof accounts[0] === "string") {
+        syncWallet(accounts[0]);
+      } else {
+        syncWallet(null);
+      }
+    };
+
+    const onChainChanged = (chain: unknown) => {
+      if (typeof chain === "string") {
+        setChainId(Number(BigInt(chain)));
+      }
+    };
+
+    const handleCustomConnect = (event: Event) => {
+      const custom = event as CustomEvent<{ account?: string }>;
+      if (custom.detail?.account) {
+        syncWallet(custom.detail.account);
+      }
+    };
+
+    provider.on?.("accountsChanged", onAccountsChanged);
+    provider.on?.("chainChanged", onChainChanged);
+    window.addEventListener("avenor_wallet_connected", handleCustomConnect);
+
+    return () => {
+      provider.removeListener?.("accountsChanged", onAccountsChanged);
+      provider.removeListener?.("chainChanged", onChainChanged);
+      window.removeEventListener("avenor_wallet_connected", handleCustomConnect);
+    };
+  }, []);
+
   const connect = useCallback(async () => {
     setProblem(null);
     setNotice(null);
@@ -105,6 +166,11 @@ export function DepositForm({ vault, asset, chainId: nodeChainId, assetSymbol, g
       const connected = await connectWallet(findInjectedProvider({ ethereum: bag }));
       setAccount(connected.account);
       setChainId(connected.chainId);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("avenor_wallet_connected", { detail: { account: connected.account } })
+        );
+      }
       if (connected.chainId !== nodeChainId) {
         const result = await switchToChain(connected.provider, nodeChainId);
         if (result.switched) {
