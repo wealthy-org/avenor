@@ -4,7 +4,7 @@
 // `quoteDeposit`, every refusal comes from `depositBlockers`, and the shares it declares as final
 // come from the receipt's `Deposit` event.
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPublicClient, createWalletClient, custom, http, type Address, type Hex } from "viem";
 import {
   DepositError,
@@ -57,10 +57,10 @@ interface Problem {
 
 function rpcUrl(): string {
   const value = process.env.NEXT_PUBLIC_RPC_URL;
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new DepositError("rpc", "NEXT_PUBLIC_RPC_URL is not configured — the form cannot read on-chain state.");
+  if (typeof value === "string" && value.trim() !== "") {
+    return value.trim();
   }
-  return value.trim();
+  return "https://rpc.testnet.chain.robinhood.com";
 }
 
 function describe(error: unknown): Problem {

@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { WithdrawForm } from "@/components/WithdrawForm";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AddressText, BlockProvenance, ErrorState } from "@/components/primitives";
 import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
 import { ApiError } from "@/lib/api";
@@ -142,19 +143,21 @@ export default async function WithdrawPage({ params }: Params) {
 
       {/* Withdraw Form */}
       <section className="card stack">
-        <WithdrawForm
-          vault={config.address}
-          chainId={facts.chainId}
-          assetSymbol="USDG"
-          shareDecimals={detail.vault === null ? 0 : detail.vault.shareDecimals}
-          live={{
-            isPaused: live.isPaused,
-            isShutdown: live.isShutdown,
-            totalIdle: live.totalIdle,
-            blockNumber: live.blockNumber,
-            blockTimestamp: live.blockTimestamp,
-          }}
-        />
+        <ErrorBoundary fallbackTitle="Withdraw form initialization issue">
+          <WithdrawForm
+            vault={config.address}
+            chainId={facts.chainId}
+            assetSymbol="USDG"
+            shareDecimals={detail.vault === null ? 0 : detail.vault.shareDecimals}
+            live={{
+              isPaused: live.isPaused,
+              isShutdown: live.isShutdown,
+              totalIdle: live.totalIdle,
+              blockNumber: live.blockNumber,
+              blockTimestamp: live.blockTimestamp,
+            }}
+          />
+        </ErrorBoundary>
         <BlockProvenance blockNumber={live.blockNumber.toString()} blockTimestamp={live.blockTimestamp} source={live.source} />
       </section>
 

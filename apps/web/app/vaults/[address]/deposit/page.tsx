@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DepositForm } from "@/components/DepositForm";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AddressText, BlockProvenance, ErrorState } from "@/components/primitives";
 import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
 import { ApiError } from "@/lib/api";
@@ -191,21 +192,23 @@ export default async function DepositPage({ params }: Params) {
 
       {/* Deposit Form */}
       <section className="card stack">
-        <DepositForm
-          vault={config.address}
-          asset={assetAddress}
-          chainId={facts.chainId}
-          assetSymbol="USDG"
-          shareDecimals={detail.vault === null ? 0 : detail.vault.shareDecimals}
-          gate={{
-            depositLimit: live.depositLimit,
-            isPaused: live.isPaused,
-            isShutdown: live.isShutdown,
-            blockNumber: live.blockNumber,
-            blockTimestamp: live.blockTimestamp,
-            source: live.source,
-          }}
-        />
+        <ErrorBoundary fallbackTitle="Deposit form initialization issue">
+          <DepositForm
+            vault={config.address}
+            asset={assetAddress}
+            chainId={facts.chainId}
+            assetSymbol="USDG"
+            shareDecimals={detail.vault === null ? 0 : detail.vault.shareDecimals}
+            gate={{
+              depositLimit: live.depositLimit,
+              isPaused: live.isPaused,
+              isShutdown: live.isShutdown,
+              blockNumber: live.blockNumber,
+              blockTimestamp: live.blockTimestamp,
+              source: live.source,
+            }}
+          />
+        </ErrorBoundary>
         <BlockProvenance
           blockNumber={live.blockNumber.toString()}
           blockTimestamp={live.blockTimestamp}
