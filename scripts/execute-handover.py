@@ -42,8 +42,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 
 # Selectors (keccak256 signatures)
-SEL_ACCEPT_ROLE_MANAGER = "0x32356507"   # accept_role_manager()
-SEL_EXECUTE = "0x2e1a7d4d"               # execute(address,uint256,bytes,bytes32,bytes32)
+SEL_ACCEPT_ROLE_MANAGER = "0xf776bf1f"   # accept_role_manager()
+SEL_EXECUTE = "0x134008d3"               # execute(address,uint256,bytes,bytes32,bytes32)
 SEL_IS_OP = "0x31d50750"                 # isOperation(bytes32)
 SEL_IS_OP_DONE = "0x2ab0f529"            # isOperationDone(bytes32)
 SEL_IS_OP_PENDING = "0x584b153e"         # isOperationPending(bytes32)
@@ -122,7 +122,7 @@ def encode_execute_calldata(
     value: int,
     call_data: str,
     predecessor: str = "0x" + "0" * 64,
-    salt: str = "0x" + "0" * 64,
+    salt: str = "0x" + "0" * 63 + "1",
 ) -> str:
     """
     Encode TimelockController.execute(
@@ -236,13 +236,14 @@ def main() -> int:
 
     print("------------------------------------------------------------------------")
 
-    # Generate calldata
+    # Generate calldata with verified salt 1
+    salt_val = "0x" + "0" * 63 + "1"
     execute_calldata = encode_execute_calldata(
         target=vault_addr,
         value=0,
         call_data=SEL_ACCEPT_ROLE_MANAGER,
         predecessor="0x" + "0" * 64,
-        salt="0x" + "0" * 64,
+        salt=salt_val,
     )
 
     print("Execution Target (To):", timelock_addr)
@@ -283,7 +284,7 @@ def main() -> int:
                     "value": "0",
                     "data": SEL_ACCEPT_ROLE_MANAGER,
                     "predecessor": "0x0000000000000000000000000000000000000000000000000000000000000000",
-                    "salt": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "salt": salt_val,
                 },
             }
         ],

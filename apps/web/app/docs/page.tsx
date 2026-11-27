@@ -19,15 +19,15 @@ const SECTIONS = [
     content: [
       {
         heading: "Overview",
-        body: `Avenor is an ERC-4626 vault for USDG on Robinhood Chain (chain ID 4663), layered on
+        body: `Avenor is an ERC-4626 vault for USDG on Robinhood Chain Testnet (chain ID 46630; Mainnet 4663 deferred), layered on
 Yearn V3 Allocator Vault API 3.1.1. Deposits flow: user → AvenorVault (ERC-4626 proxy) →
-TokenizedStrategy allocator → SteakUSDG venue adapter → steakUSDG (the yield venue).`,
+MorphoVaultStrategy adapter → SteakUSDG venue adapter (Steakhouse USDG).`,
       },
       {
         heading: "Deploy order",
         body: `1. Deploy TimelockController (≥ 48 h delay) as role_manager.
-2. Deploy AvenorAllocatorStrategy with the vault as its vault and the timelock as role_manager.
-3. Deploy DepositCapHook; set it as the vault's transfer_hook.
+2. Deploy MorphoVaultStrategy with the vault as its vault and the timelock as role_manager.
+3. Deploy DepositCapHook; set it as the vault's deposit_hook.
 4. Grant GUARDIAN role to a separate guardian address (not the timelock proposer).
 5. Set deposit_limit to 0 until the timelock delay has elapsed; then raise via governance proposal.`,
       },
@@ -124,9 +124,9 @@ The 2026 Robinhood Chain pin, Avenor adapters, and Avenor configuration have not
 independently audited. No "audited" badge is claimed for any Avenor-authored code.`,
       },
       {
-        heading: "Fork-only deployment",
-        body: `All contract addresses are fork addresses on a local anvil instance. eth_getCode for the
-vault address returns 0x on Robinhood Chain mainnet. No mainnet deployment exists or is implied.`,
+        heading: "Deployment status",
+        body: `All contracts are deployed and verified on Robinhood Chain Testnet (chain ID 46630). Mainnet (4663)
+deployment is deferred pending independent external security audit sign-off. eth_getCode for the vault returns 0x on mainnet.`,
       },
       {
         heading: "max_loss parameter",
@@ -141,11 +141,9 @@ action takes effect. Emergency actions via the guardian bypass the timelock only
 the roles explicitly listed on the bounded fast lane. Shutdown is irreversible.`,
       },
       {
-        heading: "Deposit indexer events (S-20)",
-        body: `The indexer does not yet store a dedicated Deposit/Withdraw event table. The daily
-reconciliation formula is correct per VaultV3 semantics (deposits do not change
-totalAssets independently of the on-chain snapshot), but until S-20 is implemented
-the indexer cannot produce per-depositor history from events alone. See reconcile.ts §S-11.`,
+        heading: "Deposit and withdrawal tracking",
+        body: `The indexer monitors on-chain events on Testnet 46630. User balance and position value
+are always verified directly against the live contract snapshot at the named block.`,
       },
     ],
   },

@@ -15,6 +15,17 @@ export interface NodeProbe {
   error: string | null;
 }
 
+const PROBE_CACHE_TTL_MS = 5_000; // 5-second memory cache for instant navigation
+interface ProbeEntry {
+  probe: NodeProbe;
+  cachedAt: number;
+}
+const probeCache = new Map<string, ProbeEntry>();
+
+export function clearProbeCache() {
+  probeCache.clear();
+}
+
 /** One line, never empty: a blank reason reads like "no problem". */
 export function brief(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error);
@@ -27,10 +38,17 @@ export function brief(error: unknown): string {
 export async function probeNode(rpcUrl: string | undefined, timeoutMs = 4_000): Promise<NodeProbe> {
   const empty: NodeProbe = { ok: false, chainId: null, blockNumber: null, blockHash: null, blockTimestamp: null, error: null };
   if (typeof rpcUrl !== "string" || rpcUrl.trim() === "") return { ...empty, error: "no RPC configured" };
+  const normalizedRpc = rpcUrl.trim();
+
+  const cached = probeCache.get(normalizedRpc);
+  if (cached && Date.now() - cached.cachedAt < PROBE_CACHE_TTL_MS) {
+    return cached.probe;
+  }
+
   try {
-    const client = createPublicClient({ transport: http(rpcUrl.trim(), { timeout: timeoutMs, retryCount: 0 }) });
+    const client = createPublicClient({ transport: http(normalizedRpc, { timeout: timeoutMs, retryCount: 0 }) });
     const [chainId, block] = await Promise.all([client.getChainId(), client.getBlock({ blockTag: "latest" })]);
-    return {
+    const probeResult: NodeProbe = {
       ok: true,
       chainId,
       blockNumber: Number(block.number),
@@ -38,7 +56,10 @@ export async function probeNode(rpcUrl: string | undefined, timeoutMs = 4_000): 
       blockTimestamp: Number(block.timestamp),
       error: null,
     };
+    probeCache.set(normalizedRpc, { probe: probeResult, cachedAt: Date.now() });
+    return probeResult;
   } catch (error) {
-    return { ...empty, error: brief(error) };
+    const failedProbe: NodeProbe = { ...empty, error: brief(error) };
+    return failedProbe;
   }
 }

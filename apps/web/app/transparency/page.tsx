@@ -20,8 +20,8 @@ const ITEMS = [
   },
   {
     label: "Deployment Status",
-    value: "Testnet 46630 Live & Verified · Mainnet 4663 Ready",
-    note: "All smart contracts, dual-speed timelocks, and multi-sigs are fully verified on Testnet 46630 with public on-chain deployment transactions. Mainnet deployment will execute deterministically via Deploy.s.sol following independent security audit sign-off.",
+    value: "Testnet 46630 Live & Verified · Mainnet 4663 Deferred",
+    note: "All smart contracts, dual-speed timelocks, and multi-sigs are deployed and verified on Testnet 46630 with public on-chain deployment transactions. Mainnet deployment is deferred pending independent external security audit sign-off and on-chain lifecycle drills.",
   },
   {
     label: "Asset",

@@ -475,3 +475,12 @@ html {
 .tab-pill {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}

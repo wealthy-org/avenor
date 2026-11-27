@@ -51,6 +51,20 @@ export interface MandateLive {
   venueLine: string;
 }
 
+function roleManagerDisplay(address: string | null): string {
+  if (address === null) return "not read this render";
+  const normalized = address.toLowerCase();
+  // Primary Timelock on testnet 46630
+  if (normalized === "0x7d2511309aa40ed9bd0f10b3f6c3e36e5b62eaac") {
+    return `${shortAddress(address)} · 48h Timelock`;
+  }
+  // Deployer holding role_manager during handover window
+  if (normalized === "0x56d845a35ede1436b8053f705b4b189c412a8648") {
+    return `${shortAddress(address)} (Deployer · Timelock Pending)`;
+  }
+  return shortAddress(address);
+}
+
 function deployedMandate(live: MandateLive, identity: MandateIdentity): Mandate {
   const totalAssets = BigInt(live.totalAssets);
   const totalIdle = BigInt(live.totalIdle);
@@ -85,7 +99,7 @@ function deployedMandate(live: MandateLive, identity: MandateIdentity): Mandate 
                 live.maxDebt === null ? "not readable" : `${money(BigInt(live.maxDebt))} USDG`
               }`,
       },
-      { label: "role_manager", value: identityValue(identity.roleManager, " · 48h") },
+      { label: "role_manager", value: roleManagerDisplay(identity.roleManager) },
     ],
     bounds: [
       "ERC-4626 shares; a share is a claim, not a balance",

@@ -242,6 +242,9 @@ export async function getDirectVaultDetail(address: string): Promise<VaultDetail
   };
 }
 
+const EVIDENCE_CACHE_TTL_MS = 10_000;
+const evidenceCache = new Map<string, { evidence: ContractEvidence | null; cachedAt: number }>();
+
 /**
  * What the chain answers about a vault's code, at a block read during this request.
  *
@@ -252,13 +255,20 @@ export async function getDirectVaultDetail(address: string): Promise<VaultDetail
  */
 export async function getVaultEvidence(address: string): Promise<ContractEvidence | null> {
   const normalized = address.toLowerCase();
+  const cached = evidenceCache.get(normalized);
+  if (cached && Date.now() - cached.cachedAt < EVIDENCE_CACHE_TTL_MS) {
+    return cached.evidence;
+  }
+
   const rpc = (process.env.NEXT_PUBLIC_RPC_URL ?? process.env.RPC_URL ?? "").trim();
   if (rpc === "") return captureEvidence(normalized, "no RPC configured");
 
   const client = createPublicClient({ transport: http(rpc, { timeout: 6_000, retryCount: 0 }) });
   try {
     const block = await client.getBlockNumber();
-    return await readEvidence(client, normalized as Address, block);
+    const evidence = await readEvidence(client, normalized as Address, block);
+    evidenceCache.set(normalized, { evidence, cachedAt: Date.now() });
+    return evidence;
   } catch (error) {
     return captureEvidence(normalized, error instanceof Error ? error.message : String(error));
   }

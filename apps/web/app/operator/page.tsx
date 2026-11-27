@@ -1,90 +1,112 @@
-// /operator — institutional operator and guardian dashboard for Avenor vaults (Brief §11).
+// /operator — institutional operator and governance dashboard for Avenor vaults (Brief §11).
 //
 // Displays verified governance state, TimelockController delays, guardian emergency fast-lanes,
-// keeper health indicators, and operational action runbooks.
+// keeper health indicators, and operational action runbooks based on verified testnet 46630 state.
 
 import Link from "next/link";
-import { PIN_BLOCK } from "@/lib/serverData";
+import { readChainFacts, chainSummary } from "@/lib/chainFacts";
 
 interface OperatorRole {
   role: string;
   holder: string;
   holderType: "Safe 2/3" | "Timelock" | "Dedicated EOA" | "Safe 2/2";
   channel: "Timelock (48h)" | "Emergency Timelock (6h)" | "Fast Lane (Instant)";
-  status: "active" | "standby";
+  status: "active" | "pending timelock handover" | "configured";
   description: string;
 }
 
+// Verified on-chain role assignments from packages/config/46630.json
 const ROLES_LIST: OperatorRole[] = [
   {
     role: "role_manager",
-    holder: "TimelockController (0x7D25...eAAc)",
-    holderType: "Timelock",
+    holder: "0x56d845a35EDe1436B8053f705b4b189c412A8648 (Deployer)",
+    holderType: "Dedicated EOA",
     channel: "Timelock (48h)",
-    status: "active",
-    description: "Sole manager of all privileged vault roles. Enforces minimum 48-hour delay on all mutations.",
+    status: "pending timelock handover",
+    description:
+      "Current role_manager on-chain. Timelock handover to 0x7D25...eAAc is scheduled (op 0x9068381b...) for execution after 2026-11-28 02:09:09 UTC.",
   },
   {
     role: "EMERGENCY_MANAGER",
-    holder: "Guardian Safe (0x9183...2FEA)",
-    holderType: "Safe 2/3",
-    channel: "Fast Lane (Instant)",
-    status: "active",
-    description: "Emergency circuit breaker. Can invoke shutdown_vault() or setPaused(true) instantly during exploits.",
+    holder: "Emergency Timelock (0xde3f...D4b6)",
+    holderType: "Timelock",
+    channel: "Emergency Timelock (6h)",
+    status: "configured",
+    description:
+      "Circuit breaker role (bit 4). Allows bounded emergency actions (pause, shutdown_vault) with 6-hour delay window.",
   },
   {
-    role: "FORCE_REVOKE_MANAGER",
-    holder: "Guardian Safe (0x9183...2FEA)",
-    holderType: "Safe 2/3",
+    role: "REVOKE_STRATEGY_MANAGER",
+    holder: "Emergency Timelock (0xde3f...D4b6)",
+    holderType: "Timelock",
     channel: "Emergency Timelock (6h)",
-    status: "active",
-    description: "Bounded fast-lane de-risking via Emergency Timelock (0xa575...C6c2). Revokes problematic strategy in 6 hours without 48h delay.",
+    status: "configured",
+    description:
+      "FORCE_REVOKE_MANAGER / REVOKE_STRATEGY_MANAGER fast-lane (21,600s delay). Allows revoking compromised strategy allocations in 6 hours without 48h delay.",
+  },
+  {
+    role: "GUARDIAN",
+    holder: "Guardian Safe 2/3 (0x8322...5af1)",
+    holderType: "Safe 2/3",
+    channel: "Fast Lane (Instant)",
+    status: "configured",
+    description:
+      "Multi-sig emergency oversight (role bit 8192). Independent signers with emergency pause / circuit breaker capabilities.",
   },
   {
     role: "REPORTING_MANAGER",
-    holder: "Keeper Hot Wallet (0x1535...D9b1)",
+    holder: "Keeper Service (0x9c4D...5d75)",
     holderType: "Dedicated EOA",
     channel: "Fast Lane (Instant)",
     status: "active",
-    description: "Executes periodic strategy harvest and accounting reports. Strictly bounded by Accountant healthcheck (gain <= 5%, loss <= 2%).",
+    description:
+      "Executes periodic strategy harvest and accounting reports. Strictly bounded by Accountant healthcheck (max gain <= 5%, max loss <= 2%).",
   },
   {
     role: "DEBT_MANAGER",
-    holder: "Keeper Hot Wallet (0x1535...D9b1)",
+    holder: "Keeper Service (0x9c4D...5d75)",
     holderType: "Dedicated EOA",
     channel: "Fast Lane (Instant)",
     status: "active",
-    description: "Allocates idle cash to active strategies per debt queue. Cannot send funds outside registered venues.",
+    description:
+      "Allocates idle cash to active strategies per debt queue. Cannot transfer funds outside registered venue adapters.",
   },
   {
     role: "ADD_STRATEGY_MANAGER",
-    holder: "TimelockController (0x7D25...eAAc)",
+    holder: "Primary Timelock (0x7D25...eAAc)",
     holderType: "Timelock",
     channel: "Timelock (48h)",
-    status: "active",
-    description: "Adds new yield venue strategies to the default withdrawal queue.",
+    status: "configured",
+    description:
+      "Enforces 48-hour timelock review before new yield venue strategies can be added to the withdrawal queue.",
   },
   {
     role: "DEPOSIT_LIMIT_MANAGER",
-    holder: "TimelockController (0x7D25...eAAc)",
+    holder: "Primary Timelock (0x7D25...eAAc)",
     holderType: "Timelock",
     channel: "Timelock (48h)",
-    status: "active",
-    description: "Governs vault TVL ceilings and orderly capital pauses.",
+    status: "configured",
+    description: "Governs vault TVL ceilings and orderly capital pauses via set_deposit_limit.",
   },
 ];
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Avenor — Operator & Governance Dashboard",
-  description: "Institutional operator dashboard: TimelockController verification, guardian fast-lanes, and keeper health status.",
+  description:
+    "Institutional operator dashboard: TimelockController verification, guardian fast-lanes, and keeper health status on Robinhood Chain Testnet (46630).",
 };
 
-export default function OperatorPage() {
+export default async function OperatorPage() {
+  const facts = await readChainFacts(process.env.NEXT_PUBLIC_RPC_URL);
+  const chainText = chainSummary(facts);
+
   return (
     <div className="shell stack">
       {/* Breadcrumb */}
       <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[#8b929e]">
-        <Link href="/#vaults" className="hover:text-[#6db89b] transition-colors">
+        <Link href="/app" className="hover:text-[#6db89b] transition-colors">
           ← All vaults
         </Link>
         <span aria-hidden="true">/</span>
@@ -118,7 +140,7 @@ export default function OperatorPage() {
           <span className="font-mono text-xs uppercase tracking-wider text-[#8b929e]">Guardian Multisig</span>
           <div className="text-xl sm:text-2xl font-mono font-medium text-[#6db89b] mt-1">2-of-3 Safe</div>
           <p className="text-xs text-[#a3abb8] mt-2">
-            Independent guardian signers (0x9183...2FEA). Proposer is Governance Safe (0x24e9...d4AA).
+            Independent guardian signers (0x8322...5af1). Proposer is Governance Safe (0x24e9...d4AA).
           </p>
         </div>
 
@@ -143,7 +165,7 @@ export default function OperatorPage() {
       <section className="card stack">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-white/[0.08]">
           <h2 className="font-display text-lg font-medium text-[#f8f9fa]">Role Authority Matrix</h2>
-          <span className="text-xs font-mono text-[#8b929e]">Verified On-Chain at Block {PIN_BLOCK}</span>
+          <span className="text-xs font-mono text-[#8b929e]">{chainText}</span>
         </div>
 
         {/* Mobile Card Stack */}
@@ -171,7 +193,17 @@ export default function OperatorPage() {
               <div className="text-xs text-[#a3abb8] leading-relaxed">{r.description}</div>
               <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-mono">
                 <span className="text-[#8b929e]">Status</span>
-                <span className="text-[#6db89b] font-medium uppercase tracking-wider">{r.status}</span>
+                <span
+                  className={`font-medium uppercase tracking-wider ${
+                    r.status === "active"
+                      ? "text-[#6db89b]"
+                      : r.status.includes("pending")
+                        ? "text-[#fbbf24]"
+                        : "text-[#a3abb8]"
+                  }`}
+                >
+                  {r.status}
+                </span>
               </div>
             </div>
           ))}
@@ -206,7 +238,19 @@ export default function OperatorPage() {
                       {r.channel}
                     </span>
                   </td>
-                  <td className="py-3 text-[#6db89b] font-medium">{r.status}</td>
+                  <td className="py-3 font-medium">
+                    <span
+                      className={`uppercase tracking-wider ${
+                        r.status === "active"
+                          ? "text-[#6db89b]"
+                          : r.status.includes("pending")
+                            ? "text-[#fbbf24]"
+                            : "text-[#a3abb8]"
+                      }`}
+                    >
+                      {r.status}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>

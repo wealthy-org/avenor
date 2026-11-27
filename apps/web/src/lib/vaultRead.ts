@@ -213,103 +213,175 @@ export async function liveSnapshot(rpcUrl: string, vaultAddress = CAPTURED_VAULT
     }
   };
 
+  // Phase 1 Parallelization: Dispatch all independent root contract queries simultaneously
+  const [
+    apiVersion,
+    name,
+    symbol,
+    asset,
+    decimals,
+    totalAssets,
+    totalSupply,
+    pricePerShare,
+    totalIdle,
+    totalDebt,
+    depositLimit,
+    isShutdown,
+    profitMaxUnlockTime,
+    roleManager,
+    futureRoleManager,
+    accountant,
+    queue,
+    vaultCode,
+  ] = await Promise.all([
+    read(vaultAddress, "apiVersion()", stringOf),
+    read(vaultAddress, "name()", stringOf),
+    read(vaultAddress, "symbol()", stringOf),
+    read(vaultAddress, "asset()", addressOf),
+    read(vaultAddress, "decimals()", (raw) => Number(BigInt(raw))),
+    read(vaultAddress, "totalAssets()", integer),
+    read(vaultAddress, "totalSupply()", integer),
+    read(vaultAddress, "pricePerShare()", integer),
+    read(vaultAddress, "totalIdle()", integer),
+    read(vaultAddress, "totalDebt()", integer),
+    read(vaultAddress, "deposit_limit()", integer),
+    read(vaultAddress, "isShutdown()", (raw) => BigInt(raw) !== 0n),
+    read(vaultAddress, "profitMaxUnlockTime()", integer),
+    read(vaultAddress, "role_manager()", addressOf),
+    read(vaultAddress, "future_role_manager()", addressOf),
+    read(vaultAddress, "accountant()", addressOf),
+    read(vaultAddress, "get_default_queue()", (raw) => {
+      const body = raw.slice(2);
+      const length = Number(BigInt(`0x${body.slice(64, 128)}`));
+      const addresses: string[] = [];
+      for (let index = 0; index < length; index++) {
+        addresses.push(`0x${body.slice(128 + index * 64 + 24, 128 + index * 64 + 64)}`.toLowerCase());
+      }
+      return addresses;
+    }),
+    client.getCode({ address: vaultAddress as Hex, blockNumber: block.number }),
+  ]);
+
   const vault = {
-    apiVersion: await read(vaultAddress, "apiVersion()", stringOf),
-    name: await read(vaultAddress, "name()", stringOf),
-    symbol: await read(vaultAddress, "symbol()", stringOf),
-    asset: await read(vaultAddress, "asset()", addressOf),
-    decimals: await read(vaultAddress, "decimals()", (raw) => Number(BigInt(raw))),
-    totalAssets: await read(vaultAddress, "totalAssets()", integer),
-    totalSupply: await read(vaultAddress, "totalSupply()", integer),
-    pricePerShare: await read(vaultAddress, "pricePerShare()", integer),
-    totalIdle: await read(vaultAddress, "totalIdle()", integer),
-    totalDebt: await read(vaultAddress, "totalDebt()", integer),
-    depositLimit: await read(vaultAddress, "deposit_limit()", integer),
-    isShutdown: await read(vaultAddress, "isShutdown()", (raw) => BigInt(raw) !== 0n),
-    profitMaxUnlockTime: await read(vaultAddress, "profitMaxUnlockTime()", integer),
+    apiVersion,
+    name,
+    symbol,
+    asset,
+    decimals,
+    totalAssets,
+    totalSupply,
+    pricePerShare,
+    totalIdle,
+    totalDebt,
+    depositLimit,
+    isShutdown,
+    profitMaxUnlockTime,
   };
 
-  const roleManager = await read(vaultAddress, "role_manager()", addressOf);
-  const accountant = await read(vaultAddress, "accountant()", addressOf);
+  // Phase 2 Parallelization: Dispatch dependent queries (accountant config, timelock delay, proxy, strategies)
+  const feeManagerPromise: Promise<Field<string>> =
+    accountant.value === null
+      ? Promise.resolve(fail<string>("no accountant"))
+      : read(accountant.value, "feeManager()", addressOf);
+
+  const vaultConfigPromise: Promise<Field<{
+    managementFeeBps: number;
+    performanceFeeBps: number;
+    refundRatioBps: number;
+    maxFeeBps: number;
+    maxGainBps: number;
+    maxLossBps: number;
+    custom: boolean;
+  }>> = accountant.value !== null
+    ? call(accountant.value, "getVaultConfig(address)", [vaultAddress])
+        .then((raw) => {
+          const words = raw.slice(2).match(/.{64}/g) ?? [];
+          const n = (index: number) => Number(BigInt(`0x${words[index]}`));
+          return ok({
+            managementFeeBps: n(0),
+            performanceFeeBps: n(1),
+            refundRatioBps: n(2),
+            maxFeeBps: n(3),
+            maxGainBps: n(4),
+            maxLossBps: n(5),
+            custom: n(6) !== 0,
+          });
+        })
+        .catch((error) => fail(error))
+    : Promise.resolve(fail("not read"));
+
+  const timelockPromise: Promise<Field<number>> =
+    roleManager.value === null
+      ? Promise.resolve(fail<number>("no role_manager"))
+      : read(roleManager.value, "getMinDelay()", (raw) => Number(BigInt(raw)));
+
+  const proxy = /363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3/i.exec(vaultCode ?? "");
+  const implementation: string | null = proxy ? `0x${proxy[1]}`.toLowerCase() : null;
+
+  const implementationPromise = implementation
+    ? client.getCode({ address: implementation as Hex, blockNumber: block.number })
+    : Promise.resolve(undefined);
+
+  const strategiesPromise = Promise.all(
+    (queue.value ?? []).map(async (strategy) => {
+      const [info, code, name, symbol, apiVersion, keeper, management] = await Promise.all([
+        read(
+          vaultAddress,
+          "strategies(address)",
+          (raw) => {
+            const words = raw.slice(2).match(/.{64}/g) ?? [];
+            return {
+              activation: BigInt(`0x${words[0]}`).toString(),
+              lastReport: BigInt(`0x${words[1]}`).toString(),
+              currentDebt: BigInt(`0x${words[2]}`).toString(),
+              maxDebt: BigInt(`0x${words[3]}`).toString(),
+            };
+          },
+          [strategy]
+        ),
+        client.getCode({ address: strategy as Hex, blockNumber: block.number }),
+        read(strategy, "name()", stringOf),
+        read(strategy, "symbol()", stringOf),
+        read(strategy, "apiVersion()", stringOf),
+        read(strategy, "keeper()", addressOf),
+        read(strategy, "management()", addressOf),
+      ]);
+
+      return {
+        address: strategy,
+        name,
+        symbol,
+        apiVersion,
+        keeper,
+        management,
+        codeSize: code ? (code.length - 2) / 2 : 0,
+        activation: fieldOf<string>(info.value?.activation ?? null),
+        lastReport: fieldOf<string>(info.value?.lastReport ?? null),
+        currentDebt: fieldOf<string>(info.value?.currentDebt ?? null),
+        maxDebt: fieldOf<string>(info.value?.maxDebt ?? null),
+      };
+    })
+  );
+
+  const [feeManager, vaultConfig, timelockMinDelaySeconds, impCode, strategies] = await Promise.all([
+    feeManagerPromise,
+    vaultConfigPromise,
+    timelockPromise,
+    implementationPromise,
+    strategiesPromise,
+  ]);
 
   const roles: VaultSnapshot["roles"] = {
     roleManager,
-    futureRoleManager: await read(vaultAddress, "future_role_manager()", addressOf),
+    futureRoleManager,
     accountant,
-    feeManager: accountant.value === null ? fail<string>("no accountant") : await read(accountant.value, "feeManager()", addressOf),
-    vaultConfig: fail("not read"),
-    timelockMinDelaySeconds:
-      roleManager.value === null
-        ? fail<number>("no role_manager")
-        : await read(roleManager.value, "getMinDelay()", (raw) => Number(BigInt(raw))),
+    feeManager,
+    vaultConfig,
+    timelockMinDelaySeconds,
   };
 
-  if (accountant.value !== null) {
-    try {
-      const raw = await call(accountant.value, "getVaultConfig(address)", [vaultAddress]);
-      const words = raw.slice(2).match(/.{64}/g) ?? [];
-      const n = (index: number) => Number(BigInt(`0x${words[index]}`));
-      roles.vaultConfig = ok({
-        managementFeeBps: n(0),
-        performanceFeeBps: n(1),
-        refundRatioBps: n(2),
-        maxFeeBps: n(3),
-        maxGainBps: n(4),
-        maxLossBps: n(5),
-        custom: n(6) !== 0,
-      });
-    } catch (error) {
-      roles.vaultConfig = fail(error);
-    }
-  }
-
-  const queue = await read(vaultAddress, "get_default_queue()", (raw) => {
-    const body = raw.slice(2);
-    const length = Number(BigInt(`0x${body.slice(64, 128)}`));
-    const addresses: string[] = [];
-    for (let index = 0; index < length; index++) {
-      addresses.push(`0x${body.slice(128 + index * 64 + 24, 128 + index * 64 + 64)}`.toLowerCase());
-    }
-    return addresses;
-  });
-
-  const strategies: VaultSnapshot["allocation"]["strategies"] = [];
-  for (const strategy of queue.value ?? []) {
-    const info = await read(vaultAddress, "strategies(address)", (raw) => {
-      const words = raw.slice(2).match(/.{64}/g) ?? [];
-      return {
-        activation: BigInt(`0x${words[0]}`).toString(),
-        lastReport: BigInt(`0x${words[1]}`).toString(),
-        currentDebt: BigInt(`0x${words[2]}`).toString(),
-        maxDebt: BigInt(`0x${words[3]}`).toString(),
-      };
-    }, [strategy]);
-    const code = await client.getCode({ address: strategy as Hex, blockNumber: block.number });
-    strategies.push({
-      address: strategy,
-      name: await read(strategy, "name()", stringOf),
-      symbol: await read(strategy, "symbol()", stringOf),
-      apiVersion: await read(strategy, "apiVersion()", stringOf),
-      keeper: await read(strategy, "keeper()", addressOf),
-      management: await read(strategy, "management()", addressOf),
-      codeSize: code ? (code.length - 2) / 2 : 0,
-      activation: fieldOf<string>(info.value?.activation ?? null),
-      lastReport: fieldOf<string>(info.value?.lastReport ?? null),
-      currentDebt: fieldOf<string>(info.value?.currentDebt ?? null),
-      maxDebt: fieldOf<string>(info.value?.maxDebt ?? null),
-    });
-  }
-
-  const vaultCode = await client.getCode({ address: vaultAddress as Hex, blockNumber: block.number });
-  const proxy = /363d3d373d3d3d363d73([0-9a-f]{40})5af43d82803e903d91602b57fd5bf3/i.exec(vaultCode ?? "");
-  let implementation: string | null = proxy ? `0x${proxy[1]}`.toLowerCase() : null;
-  let implementationCodeSize: number | null = null;
-  let implementationCodeHash: `0x${string}` | null = null;
-  if (implementation) {
-    const code = await client.getCode({ address: implementation as Hex, blockNumber: block.number });
-    implementationCodeSize = code ? (code.length - 2) / 2 : 0;
-    implementationCodeHash = code && code !== "0x" ? keccak256(code) : null;
-  }
+  const implementationCodeSize = impCode ? (impCode.length - 2) / 2 : null;
+  const implementationCodeHash = impCode && impCode !== "0x" ? keccak256(impCode) : null;
 
   return {
     source: "onchain",
@@ -391,6 +463,17 @@ export async function readPosition(
   }
 }
 
+const SNAPSHOT_CACHE_TTL_MS = 10_000; // 10 seconds memory cache for high-speed navigation
+interface SnapshotCacheEntry {
+  snapshot: VaultSnapshot;
+  cachedAt: number;
+}
+const snapshotCache = new Map<string, SnapshotCacheEntry>();
+
+export function clearVaultSnapshotCache() {
+  snapshotCache.clear();
+}
+
 /**
  * Read the vault that was asked about: live from the configured node first, the recorded capture only
  * when the capture actually describes this address on this chain (see `captureFallbackAllowed`).
@@ -402,12 +485,20 @@ export async function readPosition(
 export async function readVaultSnapshot(address = CAPTURED_VAULT): Promise<VaultSnapshot> {
   const rpc = process.env.NEXT_PUBLIC_RPC_URL ?? process.env.RPC_URL ?? "";
   const normalized = address.toLowerCase();
+
+  const cached = snapshotCache.get(normalized);
+  if (cached && Date.now() - cached.cachedAt < SNAPSHOT_CACHE_TTL_MS) {
+    return cached.snapshot;
+  }
+
   if (typeof rpc !== "string" || rpc.trim() === "") {
     if (captureFallbackAllowed(normalized, null)) return capturedSnapshot("no RPC configured");
     throw new Error("no RPC configured: only the captured vault can be served without a node");
   }
   try {
-    return await liveSnapshot(rpc.trim(), normalized);
+    const snap = await liveSnapshot(rpc.trim(), normalized);
+    snapshotCache.set(normalized, { snapshot: snap, cachedAt: Date.now() });
+    return snap;
   } catch (error) {
     // The guard needs the chain the node reports, not the chain the capture was read on.
     const probe = await probeNode(rpc.trim());
