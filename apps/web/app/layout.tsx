@@ -4,6 +4,13 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://avenor-kappa.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
+  icons: {
+    icon: "/icon.svg",
+  },
   title: "AVENOR — Systematically Managed On-Chain Yield Strategies",
   description:
     "Access systematically managed on-chain investment strategies through transparent, risk-bounded ERC-4626 vaults engineered for Robinhood Chain.",

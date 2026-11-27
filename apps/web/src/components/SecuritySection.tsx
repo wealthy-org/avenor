@@ -36,7 +36,7 @@ const LAYERS: SecurityLayer[] = [
     title: "Integer Provenance",
     subtitle: "bigint, 6 decimals, named block",
     description:
-      "Balances, debt and share price stay bigint end to end: 6 decimals for USDG, 18 for shares, never a float. Each figure on the vault page is printed with the block it was read at, and a section that failed to read says so instead of rendering zero.",
+      "Balances, debt and share price stay bigint end to end: 6 decimals for USDG and vault shares (avUSDG), never a float. Each figure on the vault page is printed with the block it was read at, and a section that failed to read says so instead of rendering zero.",
   },
 ];
 

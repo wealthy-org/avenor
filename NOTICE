@@ -21,3 +21,8 @@ This project incorporates components subject to open-source licenses:
    - Origin: https://github.com/foundry-rs/forge-std (v1.9.6)
    - License: MIT License or Apache 2.0
    - Copyright (c) 2022-2024 Foundry contributors
+
+5. Yearn Vault Periphery (`packages/contracts/lib/yearn-periphery`)
+   - Origin: https://github.com/yearn/yearn-vault-periphery (commit 672de1c, Accountant.sol; commit f449264, IVault.sol)
+   - License: GNU Affero General Public License v3.0 (AGPL-3.0)
+   - Copyright (c) 2023-2026 Yearn Finance contributors

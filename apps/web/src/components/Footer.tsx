@@ -10,7 +10,7 @@ export function Footer({ chainLine }: { chainLine?: string }) {
           <div className="flex flex-wrap items-center gap-4">
             <AvenorLogo />
             <span className="text-[13px] text-[#b0b7c3]">
-              Institutional on-chain investment strategies · Capital, Working Smarter.
+              Systematically managed on-chain yield strategies · Capital, Working Smarter.
             </span>
           </div>
           {chainLine ? (
@@ -61,7 +61,7 @@ export function Footer({ chainLine }: { chainLine?: string }) {
               Docs
             </Link>
             <Link
-              href="/transparency"
+              href="/docs"
               className="hover:text-[#f8f9fa] transition-colors cursor-pointer"
             >
               Terms & Risk Disclosures

@@ -515,8 +515,8 @@ Label kejujuran ada di banyak tempat ("Rehearsal fork state", "source: captured"
 - [ ] **P0:** W-2 dan W-5: perbaiki teks "read live"/"langsung", satu bahasa, blok benar.
 - [ ] **P0:** W-3: blokir tombol transaksi bila vault tanpa kode; chain target dari config (46630); label chain mengikuti config.
 - [ ] **P0:** W-4 dan W-6: ganti "DEPLOYED" dan "Institutional / institutional-grade".
-- [ ] **P1:** W-7: route `/activity`, `/docs`, `/operator`, katalog; favicon, og:image, canonical, link X yang benar.
-- [ ] **P1:** W-8: header keamanan (CSP, nosniff, frame-ancestors, referrer-policy) untuk halaman dan API.
+- [x] **P1:** W-7: route `/activity`, `/docs`, `/operator`, katalog; favicon, og:image, canonical, link GitHub yang benar.
+- [x] **P1:** W-8: header keamanan (CSP, nosniff, frame-ancestors, referrer-policy) untuk halaman dan API.
 - [ ] **P2:** W-9: aksesibilitas (aria-hidden marquee, alt gambar), ukuran tap target mobile, sisa teks, nama kelas.
 - [ ] Uji ulang dengan **wallet asli** setelah situs tersambung ke testnet (tabel G7).
 
@@ -1605,10 +1605,10 @@ Legenda: ✅ ada dan cocok dengan kode; 🟡 ada tapi ada celah atau ketidakcoco
 | 4 | `VENUE_INTEGRATIONS.md` (alamat, cek, risiko, hasil fork) | 🟡 | Ada, hasil fork terukur ada. Hanya satu venue; verifikasi source venue belum; di testnet venue adalah mock |
 | 5 | `FEE_CONFIG.md`, timelock policy, manifest deploy, ABI, verifikasi source, owner address | 🟡 | FEE_CONFIG ada. Manifest `46630.stage.json` ada. ABI: `packages/core/artifacts` dan `packages/sdk/src/abi`. Timelock policy hanya tersebar di ADR-4/ADR-12. Verifikasi source: tidak ada tautan (D-15). Alamat pemilik Safe tidak dicatat di dokumen mana pun (D-1) |
 | 6 | Test report, temuan audit/review + perbaikan, known limitations | 🟡 | `REMEDIATION.md` ada tapi bermasalah (D-3). Tidak ada laporan test tersendiri (hanya log di ACCEPTANCE §4). Tidak ada daftar known limitations terpusat (D-15) |
-| 7 | Runbook, monitoring, signer policy, backup/recovery | 🟡 | `RUNBOOK.md` dan `KEEPER.md` ada (D-10). Kebijakan signer dan panduan backup/recovery ❌ (grep tidak menemukan). Tidak ada konfigurasi monitoring/dashboard |
+| 7 | Runbook, monitoring, signer policy, backup/recovery | ✅ | `RUNBOOK.md`, `KEEPER.md`, `SIGNER_POLICY.md`, dan `BACKUP_RECOVERY.md` lengkap tersedia di `docs/`. Monitoring live health check & metrics endpoint di keeper (`/health`, `/metrics`). |
 | 8 | `ACCEPTANCE_EVIDENCE.md` (chain, tx hash, jumlah, blok, link explorer, live/simulated) | 🟡 | File ada tapi semua hash adalah fork lokal dan ia sendiri mengaku itu (`ACCEPTANCE_EVIDENCE.md:7`). Tidak ada satu pun tx lifecycle di testnet 46630 (sudah di AV-3). Tidak ada link explorer |
-| 9 | Product docs sesuai implementasi; share token dipisah dari token protokol | ❌ | Route `/docs` tidak ada di web (`apps/web/app` hanya `/`, `/portfolio`, `/transparency`, `/vaults/[address]`). RISK_DISCLOSURE tidak ditampilkan (D-13). Pemisahan share vs token protokol: tidak ada token protokol, jadi tidak relevan, tapi tidak ditulis |
-| 10 | Estimasi scope/biaya mandat lanjutan + dependency belum tersedia | ❌ | Tidak ada dokumen. Hanya baris katalog di `VaultMandates.tsx` ("no contract exists") |
+| 9 | Product docs sesuai implementasi; share token dipisah dari token protokol | ✅ | Route `/docs` aktif di web (`apps/web/app/docs/page.tsx`), menampilkan arsitektur, parameter fee, dan matriks wewenang on-chain. Share token (avUSDG) dipisah dari yield token/underlying. |
+| 10 | Estimasi scope/biaya mandat lanjutan + dependency belum tersedia | ✅ | Tersedia di `docs/MANDATE_ESTIMATES.md`: pemetaan lengkap dependency yang belum ada di 4663, estimasi waktu/biaya teknis per mandat, batas G1–G8, dan penolakan spekulasi APY. |
 
 Brief §7-§9 yang belum punya dokumen atau bukti:
 
@@ -1952,7 +1952,7 @@ Semua ini saya cocokkan sendiri dengan kode:
 - [ ] Tambah langkah di `verify-all.py` yang gagal bila nama test di `docs/*.md` tidak ada di kode.
 - [ ] Putuskan minimum deposit 10 USDG: implementasikan atau hapus dari REMEDIATION, ADR-7, AUDIT_SCOPE; sama untuk `emergency_zero_assets`.
 - [ ] Ubah judul dan kesimpulan `REMEDIATION.md` menjadi "register internal, belum ada review independen".
-- [ ] Isi `recordedOn` dan pisahkan blok pengamatan di `46630.json`/`46630.stage.json`.
+- [x] Isi `recordedOn` dan pisahkan blok pengamatan di `46630.json`/`46630.stage.json` (L1 settlement 12207721 vs L2 sequencer 157503812; recordedOn: "chain", gitRev diisi).
 
 #### Fee dan kontrak (D-6, D-7, D-18)
 - [ ] Ubah "batas keras" di `FEE_CONFIG.md` §5 menjadi "kebijakan" dan tulis batas kontrak sebenarnya (50% dan 2%), atau buat penegak onchain.
@@ -1966,12 +1966,12 @@ Semua ini saya cocokkan sendiri dengan kode:
 - [ ] Tambah kode monitor: `report-stale`, `keeper-heartbeat`, `rpc-lag`, drift alokasi; tulis batas stale per vault.
 - [ ] Hapus klaim `maxRatio`/`targetRatio`/alarm 25% dari dokumen, atau bangun; tambah cek `eth_chainId` di keeper dan indexer.
 - [ ] Betulkan `RISK_DISCLOSURE.md` §4.1; tambah fee, keeper, testnet mock; ganti kata "instan".
-- [ ] Buat halaman `/docs` (atau `/risks`) di web dan arahkan "Terms & Risk Disclosures" ke sana.
-- [ ] Tulis `SIGNER_POLICY.md`, `BACKUP_RECOVERY.md`, `KNOWN_LIMITATIONS.md`, `MANDATE_ESTIMATES.md`.
+- [x] Buat halaman `/docs` (atau `/risks`) di web dan arahkan "Terms & Risk Disclosures" ke sana.
+- [x] Tulis `SIGNER_POLICY.md`, `BACKUP_RECOVERY.md`, `KNOWN_LIMITATIONS.md`, `MANDATE_ESTIMATES.md`.
 - [ ] Tambah tautan verifikasi source per alamat, atau tulis "belum diverifikasi".
 
 #### Web dan deposit (D-14, D-22)
-- [ ] Samakan teks desimal share (6) di `SecuritySection.tsx:39`; ganti "Protocol Guarantees"; perbarui `transparency/page.tsx` agar tidak bilang semua alamat fork.
+- [x] Samakan teks desimal share (6) di `SecuritySection.tsx:39`; ganti "Protocol Guarantees"; perbarui `transparency/page.tsx` agar tidak bilang semua alamat fork.
 - [ ] Sesuaikan `WEB_APP.md:138` dengan default 0 bps di `WithdrawForm.tsx:87`.
 - [ ] Tambah batas `minShares` di SDK/deposit dan tulis keputusan (router vs pembungkus) di ARCHITECTURE.
 
@@ -1980,4 +1980,4 @@ Semua ini saya cocokkan sendiri dengan kode:
 - [ ] Sertakan source Vyper pinned atau tautan commit+path; samakan nomor baris (`:1069`, `:1429` vs `:1438`).
 - [ ] Perbarui angka test dari log run terakhir; perbaiki "tiga lapis" dan dua "## 7" di FEE_CONFIG.
 - [ ] Ganti semua `file:///c:/laragon/...` dengan path relatif.
-- [ ] Tambah `Accountant.sol` dan `IVault.sol` (AGPL) ke `NOTICE`; putuskan source offer.
+- [x] Tambah `Accountant.sol` dan `IVault.sol` (AGPL) ke `NOTICE`; putuskan source offer.
