@@ -6,12 +6,13 @@
 //   2. A section that failed to load says so. It never falls back to zero, because "0 USDG" and
 //      "not known" are different answers and only one of them is safe.
 
+import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Amount, AddressText, BlockProvenance, ErrorState, Percent, StatusPill } from "@/components/primitives";
 import { ApiError } from "@/lib/api";
 import { loadVaultDetail, type VaultDetail } from "@/lib/vaultLoader";
-import { blockTime, epochTime, liquiditySplit, percentBps } from "@/lib/format";
+import { blockTime, epochTime, liquiditySplit, money, percentBps } from "@/lib/format";
 import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
 import { latestReportTimestamp } from "@/lib/vaultView";
 import { getDirectVaultDetail, getVaultEvidence } from "@/lib/serverData";
