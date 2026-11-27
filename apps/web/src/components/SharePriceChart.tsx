@@ -18,13 +18,14 @@ export function SharePriceChart({
   pricePerShare,
   blockNumber,
 }: {
-  pricePerShare: bigint;
+  pricePerShare: string | bigint;
   blockNumber: string;
 }) {
   const [activePoint, setActivePoint] = useState<Point | null>(null);
 
-  // Convert bigint (6 decimals) to float
-  const currentPriceFloat = Number(pricePerShare) / 1_000_000;
+  // Convert bigint/string (6 decimals) to float
+  const ppsBig = typeof pricePerShare === "bigint" ? pricePerShare : BigInt(pricePerShare || "1000000");
+  const currentPriceFloat = Number(ppsBig) / 1_000_000;
   const displayPrice = currentPriceFloat > 0 ? currentPriceFloat.toFixed(4) : "1.0000";
 
   // Historical data points simulating the ERC-4626 vault accumulation baseline

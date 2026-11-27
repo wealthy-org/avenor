@@ -73,7 +73,30 @@ export default async function VaultPage({ params }: Params) {
     );
   }
 
-  const config = vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase());
+  // Fallback for default testnet vault if environment variable is unset or empty
+  if (vaults.length === 0) {
+    vaults = [
+      {
+        address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+        label: "Avenor USDG Managed Vault (Testnet)",
+        phase: "research",
+        mandate: "Allocates USDG across overcollateralized lending and savings vaults on Robinhood Chain, starting with Steakhouse spUSDG.",
+      },
+    ];
+  }
+
+  const config =
+    vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase()) ??
+    (/^0x[0-9a-fA-F]{40}$/.test(address)
+      ? {
+          address: address as `0x${string}`,
+          label: "Avenor Managed Vault",
+          phase: "research" as const,
+          mandate:
+            "Allocates USDG across overcollateralized lending and savings vaults on Robinhood Chain, starting with Steakhouse spUSDG.",
+        }
+      : undefined);
+
   if (config === undefined) notFound();
 
   let detail: VaultDetail | null = null;
@@ -732,7 +755,7 @@ export default async function VaultPage({ params }: Params) {
 
           {/* Share Price Chart (Area Performance) */}
           <SharePriceChart
-            pricePerShare={live?.pricePerShare ?? 1000000n}
+            pricePerShare={(live?.pricePerShare ?? 1000000n).toString()}
             blockNumber={live?.blockNumber.toString() ?? "158497346"}
           />
 
@@ -745,8 +768,8 @@ export default async function VaultPage({ params }: Params) {
           <VaultActionConsole
             vaultAddress={vault.address}
             phase={config.phase}
-            depositLimit={vault.depositLimit}
-            totalIdle={live?.totalIdle ?? 0n}
+            depositLimit={vault.depositLimit.toString()}
+            totalIdle={(live?.totalIdle ?? 0n).toString()}
             performanceFeeBps={live?.performanceFeeBps ?? null}
             managementFeeBps={live?.managementFeeBps ?? null}
             assetSymbol="USDG"

@@ -123,6 +123,9 @@ export function ErrorState({ code, message }: ErrorStateProps) {
  * lookalike. Pass `href` only when the explorer is known and configured.
  */
 export function AddressText({ address, href }: { address: string; href?: string }) {
+  if (!address || typeof address !== "string" || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+    return createElement("span", { className: "money text-[#a3abb8]" }, address || "not set");
+  }
   const label = shortAddress(address);
   if (href === undefined) {
     return createElement("span", { className: "money", title: address }, label);

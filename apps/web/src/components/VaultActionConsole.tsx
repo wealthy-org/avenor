@@ -13,8 +13,8 @@ import { money, percentBps } from "@/lib/format";
 interface VaultActionConsoleProps {
   vaultAddress: string;
   phase: string;
-  depositLimit: bigint;
-  totalIdle: bigint;
+  depositLimit: string | bigint;
+  totalIdle: string | bigint;
   performanceFeeBps: number | null;
   managementFeeBps: number | null;
   assetSymbol: string;
@@ -31,6 +31,9 @@ export function VaultActionConsole({
 }: VaultActionConsoleProps) {
   const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
   const [amount, setAmount] = useState<string>("");
+
+  const depositLimitBig = typeof depositLimit === "bigint" ? depositLimit : BigInt(depositLimit || "0");
+  const totalIdleBig = typeof totalIdle === "bigint" ? totalIdle : BigInt(totalIdle || "0");
 
   const isResearch = phase === "research";
   const numAmount = parseFloat(amount) || 0;
@@ -177,7 +180,7 @@ export function VaultActionConsole({
           <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3.5 space-y-2 text-xs font-mono">
             <div className="flex items-center justify-between text-[#8b929e]">
               <span>Withdrawable right now (idle)</span>
-              <span className="text-[#52b896] font-medium">{money(totalIdle)} {assetSymbol}</span>
+              <span className="text-[#52b896] font-medium">{money(totalIdleBig)} {assetSymbol}</span>
             </div>
             <div className="flex items-center justify-between text-[#8b929e]">
               <span>Mandatory loss budget</span>

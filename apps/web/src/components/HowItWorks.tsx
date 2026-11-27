@@ -51,36 +51,68 @@ export function HowItWorks() {
           </div>
           <div className="overflow-x-auto pb-2">
             <svg
-              viewBox="0 0 1100 170"
+              viewBox="0 0 1240 170"
               role="img"
               aria-label="Fund flow from wallet to vault to strategy to venue"
-              className="w-full min-w-[760px] h-auto block"
+              className="w-full min-w-[840px] h-auto block"
             >
+              <defs>
+                <marker
+                  id="flow-arrow"
+                  viewBox="0 0 10 10"
+                  refX="6"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto"
+                >
+                  <path d="M 1 2 L 8 5 L 1 8 z" fill="#52b896" />
+                </marker>
+              </defs>
+
+              {/* Step Boxes */}
               <g fill="#101b16" stroke="rgba(255,255,255,0.12)" strokeWidth="1.5">
-                <rect x="10" y="45" width="190" height="80" rx="14" />
-                <rect x="300" y="45" width="200" height="80" rx="14" stroke="#52b896" strokeWidth="2" />
-                <rect x="600" y="45" width="190" height="80" rx="14" />
-                <rect x="900" y="45" width="190" height="80" rx="14" />
+                <rect x="15" y="45" width="180" height="80" rx="14" />
+                <rect x="345" y="45" width="200" height="80" rx="14" stroke="#52b896" strokeWidth="2" />
+                <rect x="715" y="45" width="200" height="80" rx="14" />
+                <rect x="1045" y="45" width="180" height="80" rx="14" />
               </g>
+
+              {/* Connecting Flow Lines */}
               <g stroke="#52b896" strokeWidth="2" fill="none">
-                <path strokeDasharray="5 9" className="animate-pulse" d="M200 85H300" />
-                <path strokeDasharray="5 9" className="animate-pulse" d="M500 85H600" />
-                <path strokeDasharray="5 9" className="animate-pulse" d="M790 85H900" />
+                <path strokeDasharray="5 7" className="animate-pulse" d="M195 85H338" markerEnd="url(#flow-arrow)" />
+                <path strokeDasharray="5 7" className="animate-pulse" d="M545 85H708" markerEnd="url(#flow-arrow)" />
+                <path strokeDasharray="5 7" className="animate-pulse" d="M915 85H1038" markerEnd="url(#flow-arrow)" />
               </g>
-              <g font-family="system-ui, sans-serif" fontSize="16" fontWeight="600" fill="#f8f9fa" textAnchor="middle">
+
+              {/* Connector Step Badges (Pills behind text prevent line overlap) */}
+              <g fill="#080d0b" stroke="rgba(82, 184, 150, 0.4)" strokeWidth="1">
+                <rect x="215" y="59" width="110" height="24" rx="12" />
+                <rect x="555" y="59" width="150" height="24" rx="12" />
+                <rect x="925" y="59" width="105" height="24" rx="12" />
+              </g>
+
+              {/* Connector Step Texts */}
+              <g fontFamily="monospace" fontSize="11" fill="#8ed1b7" textAnchor="middle" fontWeight="500">
+                <text x="270" y="75">1. deposit()</text>
+                <text x="630" y="75">2. update_debt()</text>
+                <text x="977" y="75">3. supply()</text>
+              </g>
+
+              {/* Box Titles */}
+              <g fontFamily="system-ui, -apple-system, sans-serif" fontSize="16" fontWeight="600" fill="#f8f9fa" textAnchor="middle">
                 <text x="105" y="91">Your Wallet</text>
-                <text x="400" y="91" fill="#52b896">Avenor Vault</text>
-                <text x="695" y="91">Tokenized Strategy</text>
-                <text x="995" y="91">Steakhouse USDG</text>
+                <text x="445" y="91" fill="#52b896">Avenor Vault</text>
+                <text x="815" y="91">Tokenized Strategy</text>
+                <text x="1135" y="91">Steakhouse USDG</text>
               </g>
-              <g font-family="monospace" fontSize="12" fill="#8fa198" textAnchor="middle">
-                <text x="250" y="72">1. deposit()</text>
-                <text x="550" y="72">2. update_debt()</text>
-                <text x="845" y="72">3. supply()</text>
+
+              {/* Subtitles Below Boxes */}
+              <g fontFamily="monospace" fontSize="12" fill="#8fa198" textAnchor="middle">
                 <text x="105" y="148">USDG (6 dec)</text>
-                <text x="400" y="148" fill="#52b896">ERC-4626 avUSDG</text>
-                <text x="695" y="148">default queue</text>
-                <text x="995" y="148">Morpho Blue Venue</text>
+                <text x="445" y="148" fill="#52b896">ERC-4626 avUSDG</text>
+                <text x="815" y="148">default queue</text>
+                <text x="1135" y="148">Morpho Blue Venue</text>
               </g>
             </svg>
           </div>
