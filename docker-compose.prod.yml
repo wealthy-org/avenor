@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: avenor-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-avenor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-avenor_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-avenor}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-avenor} -d ${POSTGRES_DB:-avenor}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  indexer:
+    build:
+      context: .
+      dockerfile: services/indexer/Dockerfile
+    container_name: avenor-indexer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-avenor}:${POSTGRES_PASSWORD:-avenor_secure_password}@postgres:5432/${POSTGRES_DB:-avenor}
+      RPC_URL: ${AVENOR_RPC_URL:-https://rpc.testnet.chain.robinhood.com}
+      CHAIN_ID: ${CHAIN_ID:-46630}
+      VAULT_ADDRESS: ${VAULT_ADDRESS:-0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0}
+      STRATEGY_ADDRESS: ${STRATEGY_ADDRESS:-0x8f151132f80277b7D42Ad9615172E6De1B26Cf93}
+      DEPLOY_BLOCK: ${DEPLOY_BLOCK:-157460000}
+      PORT: 3001
+      INGEST_INTERVAL_MS: 15000
+    ports:
+      - "3001:3001"
+
+  keeper:
+    build:
+      context: .
+      dockerfile: services/keeper/Dockerfile
+    container_name: avenor-keeper
+    restart: unless-stopped
+    environment:
+      RPC_URL: ${AVENOR_RPC_URL:-https://rpc.testnet.chain.robinhood.com}
+      FALLBACK_RPC_URLS: ${FALLBACK_RPC_URLS:-https://robinhood.api.onfinality.io/public}
+      CHAIN_ID: ${CHAIN_ID:-46630}
+      VAULT_ADDRESS: ${VAULT_ADDRESS:-0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0}
+      STRATEGY_ADDRESS: ${STRATEGY_ADDRESS:-0x8f151132f80277b7D42Ad9615172E6De1B26Cf93}
+      KEEPER_PRIVATE_KEY: ${KEEPER_PRIVATE_KEY}
+      INTERVAL_MS: ${KEEPER_INTERVAL_MS:-60000}
+      MONITOR_INTERVAL_MS: ${KEEPER_MONITOR_INTERVAL_MS:-60000}
+      MAX_ASSETS_DELTA_BPS: 200
+      RUNBOOK_BASE_URL: "https://github.com/wealthy-org/avenor/blob/main/docs/RUNBOOK.md"
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL}
+
+volumes:
+  postgres_data:

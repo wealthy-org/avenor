@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "chainId": "46630",
+  "createdAt": 1795749634319,
+  "meta": {
+    "name": "Avenor Testnet Handover Execution",
+    "description": "Executes scheduled accept_role_manager() on VaultV3 to transfer role_manager to TimelockController (48h delay)",
+    "txBuilderVersion": "1.16.5",
+    "createdFromSafeAddress": "0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA",
+    "createdWithAppName": "Safe Transaction Builder"
+  },
+  "transactions": [
+    {
+      "to": "0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc",
+      "value": "0",
+      "data": "0x2e1a7d4d000000000000000000000000da4d625b2e14a3c07d21d6effe66f91aed517da0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000043235650700000000000000000000000000000000000000000000000000000000",
+      "contractMethod": {
+        "inputs": [
+          {
+            "name": "target",
+            "type": "address"
+          },
+          {
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "name": "data",
+            "type": "bytes"
+          },
+          {
+            "name": "predecessor",
+            "type": "bytes32"
+          },
+          {
+            "name": "salt",
+            "type": "bytes32"
+          }
+        ],
+        "name": "execute",
+        "payable": false
+      },
+      "contractInputsValues": {
+        "target": "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+        "value": "0",
+        "data": "0x32356507",
+        "predecessor": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "salt": "0x0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  ]
+}

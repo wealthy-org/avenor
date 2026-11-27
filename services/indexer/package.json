@@ -8,6 +8,7 @@
     "node": ">=22.6"
   },
   "scripts": {
+    "start": "node src/main.ts",
     "migrate": "node src/migrate.ts",
     "test": "node --test \"test/*.test.ts\""
   },
