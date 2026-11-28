@@ -127,6 +127,7 @@ contract Deploy is Script {
     error AccountantNotWired(string what, address expected);
     error UnsupportedChain(uint256 chainId);
     error InvalidConfig(string what);
+    error CanonicalStrategyMissing(address expected);
 
     struct Config {
         Mode mode;
@@ -141,7 +142,7 @@ contract Deploy is Script {
         address actor;
         address usdg;
         address venue;
-        address timelock; // address(0) => deploy one (dry-run only)
+        address timelock; // address(0) => deploy a fresh 48h timelock (dry-run/stage; prod must supply TIMELOCK_ADDRESS)
         address proposer;
         address guardian;
         address keeper;
@@ -937,7 +938,7 @@ contract Deploy is Script {
         _writeFeeConfig(path, d);
 
         vm.writeJson(
-            vm.serializeString("pending", "items", _pendingActions(cfg)), path, "pendingActions"
+            vm.serializeString("pending", "items", pendingActions(cfg)), path, "pendingActions"
         );
         vm.writeJson(
             vm.serializeAddress("targets", "items", d.proposalTargets), path, "proposalTargets"
@@ -988,11 +989,19 @@ contract Deploy is Script {
         );
     }
 
-    function _pendingActions(
+    /// @notice The operator's checklist written into the deployment JSON.
+    /// @dev `strategy.acceptManagement()` is listed only when a handoff target exists:
+    ///     `_handoffStrategy` skips silently when `cfg.management == address(0)` (the
+    ///     deployer keeps strategy ownership), so demanding acceptance then would be a
+    ///     step with no actor — the exact lie the committed `4663.stage.json` record
+    ///     shows (strategyManagement 0x0 with the acceptance item listed).
+    function pendingActions(
         Config memory cfg
-    ) internal pure returns (string[] memory actions) {
+    ) public pure returns (string[] memory actions) {
         bool prod = cfg.mode == Mode.Prod;
-        uint256 n = 2 + 2 + (cfg.seedAssets == 0 ? 1 : 0);
+        bool handoffPending = !prod && cfg.management != address(0);
+        uint256 branchItems = prod ? 2 : (1 + (handoffPending ? 1 : 0));
+        uint256 n = branchItems + 2 + (cfg.seedAssets == 0 ? 1 : 0);
         actions = new string[](n);
         uint256 i;
         if (prod) {
@@ -1001,7 +1010,9 @@ contract Deploy is Script {
             actions[i++] = "set_deposit_limit(0) confirmed; open only after limited-launch review";
         } else {
             actions[i++] = "timelock must call accept_role_manager() (48h delayed op)";
-            actions[i++] = "strategy.acceptManagement() by the new management";
+            if (handoffPending) {
+                actions[i++] = "strategy.acceptManagement() by the new management";
+            }
         }
         // Fees accrue as vault shares owned by the accountant. Nothing reaches the
         // treasury until the fee manager redeems them, and `redeemUnderlying` uses the
@@ -1109,6 +1120,12 @@ contract Deploy is Script {
     function _validateConfig(
         Config memory cfg
     ) internal view {
+        // Fail before a single contract is created: on a chain without the canonical
+        // `TokenizedStrategy`, the strategy would still deploy (as a proxy to an empty
+        // account), its configuration calls would silently skip, and the run would die
+        // with an opaque EvmError mid-flight — after vault, factory and accountant are
+        // already on-chain and before the deployment record is ever written.
+        if (TS_IMPL.code.length == 0) revert CanonicalStrategyMissing(TS_IMPL);
         if (cfg.actor == address(0)) revert ZeroAddress("actor (set DEPLOYER_ADDRESS)");
         if (cfg.usdg == address(0)) revert ZeroAddress("usdg");
         if (cfg.venue == address(0)) revert ZeroAddress("venue");

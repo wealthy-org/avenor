@@ -16,7 +16,9 @@ export const metadata = {
     "Architecture, fee configuration, role permission matrix, and operational references for the Avenor USDG vault.",
 };
 
-export const SECTIONS = [
+// Module-local: page files may only export known Next.js fields (metadata, default,
+// route segment config) — an extra export fails the app typecheck.
+const SECTIONS = [
   {
     id: "architecture",
     title: "Architecture",

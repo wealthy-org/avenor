@@ -30,6 +30,7 @@ contract TokenizedStrategyDeployTest is Test {
 
         bytes memory marker = hex"a2646970667358221220";
         uint256 markerLen = marker.length;
+        bool patched;
         for (
             uint256 i = canonicalCreation.length - 100;
             i < canonicalCreation.length - markerLen;
@@ -43,6 +44,7 @@ contract TokenizedStrategyDeployTest is Test {
                 }
             }
             if (matchFound) {
+                patched = true;
                 uint256 hashOffset = i + markerLen;
                 for (uint256 k = 0; k < 32; k++) {
                     canonicalCreation[hashOffset + k] = CANONICAL_IPFS_HASH[k];
@@ -50,6 +52,13 @@ contract TokenizedStrategyDeployTest is Test {
                 break;
             }
         }
+        // A marker that is not found used to fall through silently and return the
+        // *unpatched* creation code, whose create2 address then mismatched for a reason
+        // unrelated to the actual question. Fail with the real cause instead.
+        require(
+            patched,
+            "canonical IPFS marker not found in vendored creation code; address would mismatch"
+        );
 
         return abi.encodePacked(canonicalCreation, abi.encode(FACTORY_311));
     }

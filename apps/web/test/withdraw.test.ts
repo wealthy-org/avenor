@@ -174,8 +174,11 @@ test("idle coverage and the loss budget are shown as numbers, not adjectives", a
 
 test("withdraw sends the loss budget explicitly and reads the event", async () => {
   const { client, chain } = createFakeChain(handlers());
-  chain.logs = [withdrawLog(USER, USER, ASSETS - 1n, SHARES)];
   const quote = await quoteWithdraw(client, { vault: VAULT, account: USER, mode: "assets", amount: ASSETS, maxLossBps: 12 });
+  // The event is the source of truth for what was received, so the receipt amount differs from the
+  // quote - but stays inside the quote's slippage floor, which submit now enforces after the fact.
+  const floor = (quote.assets * 9_950n) / 10_000n;
+  chain.logs = [withdrawLog(USER, USER, floor, SHARES)];
   const receipt = await submitWithdraw({
     client,
     signer: scriptedSigner(chain),
@@ -187,7 +190,7 @@ test("withdraw sends the loss budget explicitly and reads the event", async () =
     isPaused: false,
   });
   assert.equal(chain.sent.length, 1);
-  assert.equal(receipt.assets, ASSETS - 1n, "the event is the source, not the quote");
+  assert.equal(receipt.assets, floor, "the event is the source, not the quote");
   assert.equal(receipt.shares, SHARES);
   assert.equal(receipt.maxLossBps, 12);
 
@@ -291,11 +294,66 @@ test("warnings name the case they come from (W3, W6, W7, idle)", async () => {
   assert.match(withdrawWarnings(quote, { isPaused: true, isShutdown: false })[0].message, /assert not self\.paused/);
 });
 
-test("a full-loss budget is warned about, never silently sent", async () => {
+test("a full-loss budget never reaches the warning list: the parser refuses it first", async () => {
   const { client } = createFakeChain(handlers());
   const quote = await quoteWithdraw(client, { vault: VAULT, account: USER, mode: "assets", amount: ASSETS, maxLossBps: 0 });
+  // W4 was removed from the warning list on purpose: `parseLossBps` throws on 10_000 before any
+  // quote can carry it, so a W4 warning would be dead code claiming to guard something.
+  await assert.rejects(quoteWithdraw(client, { vault: VAULT, account: USER, mode: "assets", amount: ASSETS, maxLossBps: 10_000 }));
   const warnings = withdrawWarnings({ ...quote, maxLossBps: 10_000 }, { isPaused: false, isShutdown: false });
-  assert.deepEqual(warnings.map((entry) => entry.case), ["W3", "W4"]);
+  assert.deepEqual(warnings.map((entry) => entry.case), ["W3"]);
+  assert.ok(!warnings.some((entry) => (entry.case as string) === "W4"), "no W4 case may exist");
+});
+
+test("the quote carries its timestamp and tolerance so submit can enforce them", async () => {
+  const { client } = createFakeChain(handlers());
+  const quote = await quoteWithdraw(client, { vault: VAULT, account: USER, mode: "assets", amount: ASSETS, maxLossBps: 0 });
+  assert.ok(typeof quote.quoteTimestamp === "number" && quote.quoteTimestamp <= Date.now());
+  assert.equal(quote.slippageBps, 50);
+  const tuned = await quoteWithdraw(client, { vault: VAULT, account: USER, mode: "assets", amount: ASSETS, maxLossBps: 0, slippageBps: 0 });
+  assert.equal(tuned.slippageBps, 0);
+});
+
+test("a slippage tolerance that is not a bound is refused", async () => {
+  const { client } = createFakeChain(handlers());
+  for (const bad of [-1, 10_001, 1.5, Number.NaN]) {
+    await assert.rejects(
+      quoteWithdraw(client, { vault: VAULT, account: USER, mode: "assets", amount: ASSETS, maxLossBps: 0, slippageBps: bad }),
+      /0..10,000/,
+    );
+  }
+});
+
+test("a stale quote is refused before signing, with a quote_expired reason", async () => {
+  const { client, chain } = createFakeChain(handlers());
+  const quote = await quoteWithdraw(client, { vault: VAULT, account: USER, mode: "assets", amount: ASSETS, maxLossBps: 0 });
+  const floor = (quote.assets * 9_950n) / 10_000n;
+  chain.logs = [withdrawLog(USER, USER, floor, SHARES)];
+  const stale = { ...quote, quoteTimestamp: Date.now() - 61_000 };
+  await assert.rejects(
+    submitWithdraw({ client, signer: scriptedSigner(chain), vault: VAULT, mode: "assets", amount: ASSETS, receiver: USER, quote: stale, isPaused: false }),
+    (error: unknown) => error instanceof WithdrawError && error.code === "quote_expired",
+  );
+  assert.equal(chain.sent.length, 0, "a stale quote must not reach the signer");
+  // The same numbers with a fresh timestamp pass the staleness gate and are signed.
+  const fresh = { ...quote, quoteTimestamp: Date.now() };
+  await submitWithdraw({ client, signer: scriptedSigner(chain), vault: VAULT, mode: "assets", amount: ASSETS, receiver: USER, quote: fresh, isPaused: false });
+  assert.equal(chain.sent.length, 1, "a fresh quote must not be refused as stale");
+});
+
+test("a receipt below the quoted floor is slippage_exceeded, not a silent worse fill", async () => {
+  const { client, chain } = createFakeChain(handlers());
+  const quote = await quoteWithdraw(client, { vault: VAULT, account: USER, mode: "assets", amount: ASSETS, maxLossBps: 0 });
+  const floor = (quote.assets * 9_950n) / 10_000n;
+  // One unit below the floor: inside the contract's max_loss guard, outside the user's tolerance.
+  chain.logs = [withdrawLog(USER, USER, floor - 1n, SHARES)];
+  await assert.rejects(
+    submitWithdraw({ client, signer: scriptedSigner(chain), vault: VAULT, mode: "assets", amount: ASSETS, receiver: USER, quote, isPaused: false }),
+    (error: unknown) => error instanceof WithdrawError && error.code === "slippage_exceeded",
+  );
+  // Exactly at the floor passes.
+  chain.logs = [withdrawLog(USER, USER, floor, SHARES)];
+  await submitWithdraw({ client, signer: scriptedSigner(chain), vault: VAULT, mode: "assets", amount: ASSETS, receiver: USER, quote, isPaused: false });
 });
 
 test("formatMaxShares uses shareDecimals (6) not hardcoded 18 (K-9 fix)", () => {

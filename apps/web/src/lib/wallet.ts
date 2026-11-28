@@ -75,12 +75,22 @@ export function mapWalletError(error: unknown): WalletError | null {
   return null;
 }
 
+function isProviderLike(candidate: unknown): boolean {
+  return typeof candidate === "object" && candidate !== null && typeof (candidate as { request?: unknown }).request === "function";
+}
+
 export function findInjectedProvider(bag: unknown): Eip1193Provider | null {
   if (typeof bag !== "object" || bag === null) return null;
   const candidate = (bag as { ethereum?: unknown }).ethereum;
-  if (typeof candidate !== "object" || candidate === null) return null;
-  const request = (candidate as { request?: unknown }).request;
-  return typeof request === "function" ? (candidate as Eip1193Provider) : null;
+  if (isProviderLike(candidate)) return candidate as Eip1193Provider;
+  // EIP-6963 wallets may expose a `providers` array on the injected object; take the first usable
+  // entry instead of dropping every wallet that upgraded to the multi-provider shape.
+  if (typeof candidate === "object" && candidate !== null && Array.isArray((candidate as { providers?: unknown }).providers)) {
+    for (const entry of (candidate as { providers: unknown[] }).providers) {
+      if (isProviderLike(entry)) return entry as Eip1193Provider;
+    }
+  }
+  return null;
 }
 
 /**
@@ -143,9 +153,4 @@ export async function switchToChain(provider: Eip1193Provider, chainId: number):
     const message = error instanceof Error ? error.message : String(error);
     return { switched: false, reason: `The wallet refused or could not switch chains: ${message}` };
   }
-}
-
-/** Backward-compatible test name; production callers use explicit node chain IDs. */
-export function switchToAvenorChain(provider: Eip1193Provider): Promise<SwitchResult> {
-  return switchToChain(provider, 4663);
 }

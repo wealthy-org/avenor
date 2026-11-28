@@ -34,3 +34,16 @@ test("commas and quotes in an error are escaped, not left to break the file", ()
   const csv = portfolioCsv([{ ...ROW, error: 'rpc: "timeout", retry' }]);
   assert.match(csv, /"rpc: ""timeout"", retry"/);
 });
+test("a leading formula character with a tab is neutralised for spreadsheets", () => {
+  const csv = portfolioCsv([{ ...ROW, error: "=1+1\tcmd" }]);
+  assert.match(csv, /,'=1\+1/);
+  const csv2 = portfolioCsv([{ ...ROW, error: "@SUM(A1)\t x" }]);
+  assert.match(csv2, /,'@SUM/);
+});
+
+test("a carriage return inside a cell is quoted, not left to split the row", () => {
+  const csv = portfolioCsv([{ ...ROW, error: "rpc: timeout\rretry" }]);
+  const lines = csv.split("\n");
+  assert.equal(lines.length, 3, "header, one quoted row, trailing newline");
+  assert.match(csv, /"rpc: timeout\rretry"/);
+});

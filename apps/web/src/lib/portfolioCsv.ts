@@ -16,7 +16,12 @@ const HEADER = ["vault", "account", "shares", "position_assets", "max_withdrawab
 
 function cell(value: string | null): string {
   if (value === null) return "";
-  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  // A leading `=+-@` followed by tab is the CSV formula-injection vector: spreadsheet apps execute
+  // the rest of the cell. Prefixing with a single quote keeps it data, not a formula.
+  if (value === "") return "";
+  // Hyphen placed first so it is a literal, not a range (e.g. `@-` → `@` to ASCII 45 is undefined).
+  const sanitized = /^[-=+@]/.test(value) ? `'${value}` : value;
+  return /[",\n\r]/.test(sanitized) ? `"${sanitized.replace(/"/g, '""')}"` : sanitized;
 }
 
 /**

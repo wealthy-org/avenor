@@ -10,7 +10,7 @@ import {
   readDepositEvent,
   submitDeposit,
 } from "../src/lib/deposit.ts";
-import { connectWallet, findInjectedProvider, mapWalletError, switchToAvenorChain, WalletError } from "../src/lib/wallet.ts";
+import { connectWallet, findInjectedProvider, mapWalletError, switchToChain, WalletError } from "../src/lib/wallet.ts";
 import { ASSET, BLOCK, USER, VAULT, createFakeChain, depositLog, scriptedSigner, type Handler } from "./fakeChain.ts";
 
 function defaultHandlers(overrides: Record<string, Handler> = {}): Record<string, Handler> {
@@ -85,6 +85,18 @@ test("a failed read is an RPC error, not a zero quote", async () => {
     quoteDeposit(client, { vault: VAULT, asset: ASSET, account: USER, assets: 1_000_000n }),
     (error: unknown) => error instanceof DepositError && error.code === "rpc",
   );
+});
+
+test("a slippage tolerance that is not a real bound is refused", async () => {
+  const { client } = createFakeChain(defaultHandlers());
+  for (const bad of [-1, 10_001, 1.5]) {
+    await assert.rejects(
+      quoteDeposit(client, { vault: VAULT, asset: ASSET, account: USER, assets: 1_000_000n, slippageBps: bad }),
+      /0\.\.10,000/,
+    );
+  }
+  const ok = await quoteDeposit(client, { vault: VAULT, asset: ASSET, account: USER, assets: 1_000_000n, slippageBps: 0 });
+  assert.equal(ok.slippageBps, 0n);
 });
 
 test("deposit approves exactly the amount, then reports shares from the event", async () => {
@@ -209,7 +221,7 @@ test("switching chain reports a refusal instead of claiming success", async () =
       throw new Error(method);
     },
   };
-  const result = await switchToAvenorChain(refuses);
+  const result = await switchToChain(refuses as never, 4663);
   assert.equal(result.switched, false);
   assert.match(result.reason ?? "", /Unrecognized chain/);
 
@@ -220,7 +232,7 @@ test("switching chain reports a refusal instead of claiming success", async () =
       throw new Error(method);
     },
   };
-  assert.deepEqual(await switchToAvenorChain(switches), { switched: true, reason: null });
+  assert.deepEqual(await switchToChain(switches as never, 4663), { switched: true, reason: null });
 });
 
 test("injected provider detection does not accept a partial object", () => {

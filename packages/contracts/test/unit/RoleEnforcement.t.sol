@@ -531,15 +531,12 @@ contract RoleEnforcementTest is Test {
     /// @notice The other direction, same function: without `EMERGENCY_MANAGER` nothing happens,
     ///         not even partially.
     function test_shutdownVaultFromAnUnprivilegedCallerChangesNothing() public {
-        address[] memory queue = new address[](1);
-        queue[0] = d.strategy;
         _openDeposits(5e6);
 
         _expectNotAllowed(outsider, abi.encodeWithSignature("shutdown_vault()"));
         assertFalse(_vault().isShutdown(), "shut down without the bit");
         assertGt(_vault().deposit_limit(), 0, "limit zeroed without the bit");
         assertEq(_vault().roles(outsider), 0, "unauthorised caller gained a role");
-        queue[0] = queue[0];
     }
 
     /*//////////////////////////////////////////////////////////////

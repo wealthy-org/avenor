@@ -13,14 +13,17 @@ export class ApiError extends Error {
   }
 }
 
-type FetchLike = (input: string, init?: { cache?: string }) => Promise<{
+type FetchLike = (input: string, init?: { cache?: string; signal?: AbortSignal }) => Promise<{
   ok: boolean;
   status: number;
   text: () => Promise<string>;
 }>;
 
+/** Upper bound on how long one API read may hold a server render hostage. */
+const FETCH_TIMEOUT_MS = 10_000;
+
 export async function fetchJson(url: string, fetchImpl: FetchLike = fetch as unknown as FetchLike): Promise<unknown> {
-  const response = await fetchImpl(url, { cache: "no-store" });
+  const response = await fetchImpl(url, { cache: "no-store", signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   const text = await response.text();
   let body: unknown;
   try {

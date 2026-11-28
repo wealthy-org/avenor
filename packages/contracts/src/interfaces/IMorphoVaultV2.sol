@@ -42,7 +42,12 @@ interface IMorphoVaultV2 {
     ) external view returns (uint256);
 
     /// @notice Maximum assets the venue will accept from `receiver` right now.
-    /// @dev Observed `maxDeposit(address(0)) == 0`. Treat a zero as a gate, not as a bug.
+    /// @dev A zero here is NOT a gate on Robinhood Chain 4663: at the pinned block
+    ///      118337511 `maxDeposit(address(0))` answered `0` for every address while a
+    ///      `deposit(10_000e6)` succeeded (`packages/config/4663.json`
+    ///      `venues.steakUSDG.snapshot.maxDeposit_zero`, fork probe
+    ///      `test/fork/VenueProbe.t.sol`). Treat a zero as a lying getter, not as a closed
+    ///      gate — see `MorphoVaultStrategy.availableDepositLimit`.
     function maxDeposit(
         address receiver
     ) external view returns (uint256);

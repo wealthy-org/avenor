@@ -6,45 +6,6 @@ import { console2 } from "forge-std/console2.sol";
 import { TimelockController } from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { IVaultV3 } from "../src/interfaces/IVaultV3.sol";
 
-interface ISafe {
-    enum Operation {
-        Call,
-        DelegateCall
-    }
-
-    function nonce() external view returns (uint256);
-
-    function getTransactionHash(
-        address to,
-        uint256 value,
-        bytes calldata data,
-        Operation operation,
-        uint256 safeTxGas,
-        uint256 baseGas,
-        uint256 gasPrice,
-        address gasToken,
-        address refundReceiver,
-        uint256 _nonce
-    ) external view returns (bytes32);
-
-    function approveHash(
-        bytes32 hashToApprove
-    ) external;
-
-    function execTransaction(
-        address to,
-        uint256 value,
-        bytes calldata data,
-        Operation operation,
-        uint256 safeTxGas,
-        uint256 baseGas,
-        uint256 gasPrice,
-        address gasToken,
-        address payable refundReceiver,
-        bytes memory signatures
-    ) external payable returns (bool success);
-}
-
 interface IStrategyHandoff {
     function management() external view returns (address);
     function pendingManagement() external view returns (address);
@@ -52,7 +13,12 @@ interface IStrategyHandoff {
 }
 
 /// @title ExecuteTestnet46630Governance
-/// @notice Rehearses and executes Governance Safe & Timelock operations on Robinhood Chain Testnet 46630.
+/// @notice Prints the governance drill for testnet 46630: the exact calldata, signature
+///         shape and Timelock operation ID that the Governance Safe / Timelock must
+///         submit. `run()` is read-only (`view`, no broadcast) — nothing is executed
+///         here. Execution happens off-chain through the Safe UI and the timelock CLI;
+///         what actually ran is recorded in `docs/TESTNET_EVIDENCE.md` and
+///         `packages/config/46630.json` `deployments.stage.governanceHandoff`.
 contract ExecuteTestnet46630Governance is Script {
     string internal constant CONFIG_PATH = "../config/46630.json";
 

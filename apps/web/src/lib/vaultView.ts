@@ -68,6 +68,12 @@ function boolean(value: unknown, field: string): boolean {
   return value;
 }
 
+/** `null` is a legitimate gate state: the flag was not read (e.g. a capture that predates it). */
+function optionalBoolean(value: unknown, field: string): boolean | null {
+  if (value === null || value === undefined) return null;
+  return boolean(value, field);
+}
+
 function source(value: unknown, field = "source"): Source {
   if (value !== "indexed" && value !== "onchain" && value !== "captured") {
     fail(field, "must be indexed, onchain or captured");
@@ -136,7 +142,8 @@ export interface Live {
   managementFeeBps: number | null;
   /** `deposit_limit()` at the same block; a deposit hook may lower the per-account ceiling further. */
   depositLimit: bigint;
-  isPaused: boolean;
+  /** `isPaused()` at the same block; `null` when the state was not read (capture fallback). */
+  isPaused: boolean | null;
   isShutdown: boolean;
   source: Source;
 }
@@ -156,7 +163,7 @@ export function parseLive(json: unknown): Live {
     performanceFeeBps: optionalBps(row.performanceFeeBps, "performanceFeeBps"),
     managementFeeBps: optionalBps(row.managementFeeBps, "managementFeeBps"),
     depositLimit: decimal(row.depositLimit, "depositLimit"),
-    isPaused: boolean(row.isPaused, "isPaused"),
+    isPaused: optionalBoolean(row.isPaused, "isPaused"),
     isShutdown: boolean(row.isShutdown, "isShutdown"),
     source: source(row.source),
   };

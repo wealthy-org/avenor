@@ -165,6 +165,10 @@ keduanya berarti dua sumber kebenaran yang cepat atau lambat berbeda. Konsekuens
   counter**: tidak ada `post_withdraw`, jadi counter akan melenceng dan entah memblokir user jujur
   atau meloloskan cap. `post_deposit` hanya mencatat (`totalRecordedDeposits`, event) dan
   memeriksa ulang cap sebagai jaring pengaman.
+- `defaultWalletCap` **tidak pernah nol**: konstruktor dan `setDefaultWalletCap` menolak 0
+  (`ZeroCap`), karena 0 di posisi default bukan sentinel — `effectiveWalletCap` akan memberi
+  setiap wallet cap 0 dan menolak semua deposit secara senyap. Nol pada `walletCap[account]`
+  tetap berarti "pakai default"; memblokir wallet adalah pekerjaan allowlist.
 - Cap per wallet hanya membatasi `deposit`/`mint`. Share yang masuk lewat `transfer` bisa melewati
   cap; hook lalu melaporkan `0` sampai posisi turun. Allowlist transfer adalah keputusan
   `transfer_hook` (matriks peran §1), bukan keputusan deposit — mencampurnya akan memblokir exit.

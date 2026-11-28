@@ -118,13 +118,15 @@ export function VaultMandates({ live, identity }: { live: MandateLive; identity:
       color: "#52b896",
     },
     metric2: {
-      value: "1.88%",
-      label: "7d APY · On-Chain",
+      // No APR exists anywhere on the vault, so an APY figure here would be invented. The idle
+      // share is derivable from the same read and says something true about liquidity.
+      value: `${percentBps(idleBps)} idle`,
+      label: "Idle share · On-Chain",
       color: "#f8f9fa",
     },
     metric3: {
-      value: depositLimit > 0n ? `$${money(depositLimit)}` : "$1.00M",
-      label: "Vault Cap",
+      value: depositLimit > 0n ? `$${money(depositLimit)}` : "not readable",
+      label: "Enforced Vault Cap",
       color: "#f8f9fa",
     },
     tag: "USDG · ERC-4626 · Moderate",
@@ -427,7 +429,7 @@ export function VaultMandates({ live, identity }: { live: MandateLive; identity:
             <div className="shrink-0">
               <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-medium text-[#52b896] bg-[#52b896]/10 border border-[#52b896]/30">
                 <span className="w-2 h-2 rounded-full bg-[#52b896] animate-pulse" />
-                1 live vault deployed
+                Live vault · read on-chain
               </span>
             </div>
           </div>
@@ -437,13 +439,13 @@ export function VaultMandates({ live, identity }: { live: MandateLive; identity:
             {/* Stat 1: Vault Capacity */}
             <div className="space-y-1.5">
               <div className="text-xs font-mono uppercase tracking-wider text-[#8b929e]">
-                Protocol Vault Capacity
+                Enforced Deposit Cap
               </div>
               <div className="text-2xl sm:text-3xl font-display font-semibold text-[#f8f9fa] tracking-tight">
-                $44.00M
+                {depositLimit > 0n ? `$${money(depositLimit)}` : "not readable"}
               </div>
               <div className="text-xs font-mono text-[#a3abb8]">
-                ${money(totalAssets)} live on-chain TVL · 1 vault deployed
+                ${money(totalAssets)} live on-chain TVL
               </div>
             </div>
 
@@ -463,7 +465,7 @@ export function VaultMandates({ live, identity }: { live: MandateLive; identity:
                 <div className="h-full w-1/4 rounded-full bg-[#f97316]" title="ETH Basis" />
               </div>
               <div className="text-xs font-mono text-[#a3abb8]">
-                4 core mandates · 2 deferred
+                Product roadmap · not an on-chain figure
               </div>
             </div>
 

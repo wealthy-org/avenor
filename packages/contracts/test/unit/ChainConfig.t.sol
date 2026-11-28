@@ -150,5 +150,76 @@ contract ChainConfigTest is Test {
             vm.parseJsonAddress(json46630, ".deployments.stage.emergencyTimelock"),
             0xde3f5071559d929d18092EEf7f3B106e39BCD4b6
         );
+        // The remaining stage actors were previously pinned nowhere: a config edit or a
+        // redeploy could drift them silently. Pin them here — a legitimate redeploy must
+        // update this test on purpose, not pass by accident.
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.factory"),
+            0x351039141Bd6CB9f4a613a24cD26a537a86ED538
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.vaultOriginal"),
+            0x8e3C196bcD62772c931fe62aAA76FDb7edAD8258
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.governanceSafe"),
+            0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.guardianSafe"),
+            0x83227a7b21Ead1e0581D03144B85Cb63Fd585af1
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.treasurySafe"),
+            0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.keeper"),
+            0x9c4D1f60c74Af03ca92D634A54d55A998CE25d75
+        );
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.deployer"),
+            0x56d845a35EDe1436B8053f705b4b189c412A8648
+        );
+    }
+
+    /// @dev `packages/config/46630.json` and `packages/contracts/deployments/46630.stage.json`
+    ///      are two independent records of the same stage deployment: the config is curated
+    ///      by hand, the record is written by `Deploy.writeOutput`. Neither is authoritative,
+    ///      so they must agree — a silent drift means the SDK, indexer or rehearsal scripts
+    ///      read addresses that no longer match the deployed stack.
+    function test_testnetConfigAndStageDeploymentRecordAgree() external view {
+        string memory record = vm.readFile("./deployments/46630.stage.json");
+        _assertRecordMatches(record, ".deployment.vault", ".deployments.stage.vault");
+        _assertRecordMatches(record, ".deployment.strategy", ".deployments.stage.strategy");
+        _assertRecordMatches(record, ".deployment.accountant", ".deployments.stage.accountant");
+        _assertRecordMatches(record, ".deployment.factory", ".deployments.stage.factory");
+        _assertRecordMatches(
+            record, ".deployment.vaultOriginal", ".deployments.stage.vaultOriginal"
+        );
+        _assertRecordMatches(record, ".deployment.timelock", ".deployments.stage.timelock");
+        _assertRecordMatches(
+            record, ".deployment.emergencyTimelock", ".deployments.stage.emergencyTimelock"
+        );
+        _assertRecordMatches(record, ".deployment.deployer", ".deployments.stage.deployer");
+        _assertRecordMatches(record, ".deployment.keeper", ".deployments.stage.keeper");
+        // Aliases: the config names the actor, the record names the role it fills.
+        _assertRecordMatches(record, ".deployment.guardian", ".deployments.stage.guardianSafe");
+        _assertRecordMatches(record, ".deployment.treasury", ".deployments.stage.treasurySafe");
+        _assertRecordMatches(
+            record, ".deployment.strategyManagement", ".deployments.stage.governanceSafe"
+        );
+    }
+
+    function _assertRecordMatches(
+        string memory record,
+        string memory recordPath,
+        string memory configPath
+    ) internal view {
+        assertEq(
+            vm.parseJsonAddress(record, recordPath),
+            vm.parseJsonAddress(json46630, configPath),
+            string.concat(recordPath, " != config ", configPath)
+        );
     }
 }

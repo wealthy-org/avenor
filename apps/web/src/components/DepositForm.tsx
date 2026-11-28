@@ -39,7 +39,8 @@ export interface DepositFormProps {
   /** Snapshot of the gate from the API, so the form can refuse before touching the wallet. */
   gate: {
     depositLimit: bigint;
-    isPaused: boolean;
+    /** `null` = not read (capture fallback); the form treats only a confirmed `true` as closed. */
+    isPaused: boolean | null;
     isShutdown: boolean;
     blockNumber: bigint;
     blockTimestamp: string;
@@ -60,7 +61,9 @@ function rpcUrl(): string {
   if (typeof value === "string" && value.trim() !== "") {
     return value.trim();
   }
-  return "https://rpc.testnet.chain.robinhood.com";
+  // No silent fallback: a hardcoded testnet RPC would let the client sign for a chain the server
+  // never read from when the build-time env differs from the runtime env.
+  throw new Error("NEXT_PUBLIC_RPC_URL is not configured; the wallet forms cannot reach the chain.");
 }
 
 function describe(error: unknown): Problem {
@@ -246,14 +249,16 @@ export function DepositForm({ vault, asset, chainId: nodeChainId, assetSymbol, g
         quote,
       });
       setReceipt(result);
+      // Same rule as the withdraw form: the quote belonged to a block that is now history.
+      setQuote(null);
       setPhase("done");
     } catch (error) {
       setPhase("error");
       setProblem(describe(error));
     }
-  }, [account, asset, client, quote, vault]);
+  }, [account, asset, client, nodeChainId, quote, vault]);
 
-  const gateClosed = gate.isShutdown || gate.isPaused || gate.depositLimit === 0n;
+  const gateClosed = gate.isShutdown || gate.isPaused === true || gate.depositLimit === 0n;
   const busy = phase === "quoting" || phase === "signing" || phase === "pending";
   const approvalNeeded = quote !== null && needsApproval(quote.allowance, quote.assets);
 
@@ -288,7 +293,7 @@ export function DepositForm({ vault, asset, chainId: nodeChainId, assetSymbol, g
             >
               {gate.isShutdown
                 ? "Shutdown — deposits permanently closed"
-                : gate.isPaused
+                : gate.isPaused === true
                   ? "Paused — deposits and withdrawals blocked"
                   : gate.depositLimit === 0n
                     ? "Closed — the cap is 0"
@@ -307,7 +312,7 @@ export function DepositForm({ vault, asset, chainId: nodeChainId, assetSymbol, g
       {gateClosed ? (
         <div className="rounded-xl bg-[#1a0f0f] border border-red-500/20 p-4" role="status">
           <p className="text-sm text-[#f87171] font-medium">
-            Deposit form disabled: {gate.isPaused ? "the vault is paused" : gate.isShutdown ? "the vault is shutdown" : "the deposit cap is 0"}.
+            Deposit form disabled: {gate.isPaused === true ? "the vault is paused" : gate.isShutdown ? "the vault is shutdown" : "the deposit cap is 0"}.
           </p>
           <p className="text-xs text-[#9ca3af] mt-1">No deposit transactions can be submitted while the vault gate is closed.</p>
         </div>

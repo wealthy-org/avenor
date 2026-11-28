@@ -88,8 +88,9 @@ function toLive(snapshot: VaultSnapshot): Live | null {
     performanceFeeBps: snapshot.roles.vaultConfig.value?.performanceFeeBps ?? null,
     managementFeeBps: snapshot.roles.vaultConfig.value?.managementFeeBps ?? null,
     depositLimit,
-    // VaultV3 has no `paused()` getter; `isShutdown` plus `deposit_limit` are what the contract exposes.
-    isPaused: false,
+    // Real read on the live path; `null` (unknown) when served from the capture, which predates the
+    // `isPaused()` read. `false` here would claim a state nobody verified.
+    isPaused: snapshot.vault.isPaused.value,
     isShutdown: snapshot.vault.isShutdown.value ?? false,
     source: snapshot.source,
   };
@@ -161,10 +162,14 @@ export async function getVaultAllocation(address: string) {
       // No venue is claimed: the strategy holds no position, so there is nothing to attribute. The
       // address in `packages/config/4663.json` is a configured target, not an observed allocation.
       venue: null,
+      // Three cases, each with its own sentence: the read failed (unknown), the debt is zero (no
+      // venue position), or the debt is non-zero (a position exists; attribution is not implemented).
       venueError:
         row.currentDebt.value === null
-          ? "currentDebt() did not answer at this block"
-          : "currentDebt() = 0 at this block, so there is no venue position to attribute yet",
+          ? row.currentDebt.error ?? "currentDebt() did not answer at this block"
+          : row.currentDebt.value === "0"
+            ? "currentDebt() = 0 at this block, so there is no venue position to attribute yet"
+            : `currentDebt() = ${row.currentDebt.value} at this block; venue attribution is not implemented yet`,
     })),
     source: snapshot.source,
     liveError: snapshot.liveError,
@@ -196,7 +201,9 @@ export async function getDirectVaultDetail(address: string): Promise<VaultDetail
     return {
       address: row.address,
       venue: null,
-      venueError: row.currentDebt.error,
+      // `liveSnapshot` builds strategy rows with `fieldOf`, so a failed decode arrives as a null
+      // value with no error string; say so instead of implying "no venue claimed" was observed.
+      venueError: row.currentDebt.error ?? (debt === null ? "currentDebt() did not answer at this block" : null),
       activation: big(row.activation.value) ?? 0n,
       lastReport: big(row.lastReport.value) ?? 0n,
       currentDebt: debt ?? 0n,
@@ -243,7 +250,16 @@ export async function getDirectVaultDetail(address: string): Promise<VaultDetail
 }
 
 const EVIDENCE_CACHE_TTL_MS = 10_000;
+const EVIDENCE_CACHE_MAX_ENTRIES = 32;
 const evidenceCache = new Map<string, { evidence: ContractEvidence | null; cachedAt: number }>();
+
+function cacheEvidence(key: string, evidence: ContractEvidence | null) {
+  if (evidenceCache.size >= EVIDENCE_CACHE_MAX_ENTRIES && !evidenceCache.has(key)) {
+    const oldest = evidenceCache.keys().next().value;
+    if (oldest !== undefined) evidenceCache.delete(oldest);
+  }
+  evidenceCache.set(key, { evidence, cachedAt: Date.now() });
+}
 
 /**
  * What the chain answers about a vault's code, at a block read during this request.
@@ -259,6 +275,7 @@ export async function getVaultEvidence(address: string): Promise<ContractEvidenc
   if (cached && Date.now() - cached.cachedAt < EVIDENCE_CACHE_TTL_MS) {
     return cached.evidence;
   }
+  evidenceCache.delete(normalized);
 
   const rpc = (process.env.NEXT_PUBLIC_RPC_URL ?? process.env.RPC_URL ?? "").trim();
   if (rpc === "") return captureEvidence(normalized, "no RPC configured");
@@ -267,7 +284,7 @@ export async function getVaultEvidence(address: string): Promise<ContractEvidenc
   try {
     const block = await client.getBlockNumber();
     const evidence = await readEvidence(client, normalized as Address, block);
-    evidenceCache.set(normalized, { evidence, cachedAt: Date.now() });
+    cacheEvidence(normalized, evidence);
     return evidence;
   } catch (error) {
     return captureEvidence(normalized, error instanceof Error ? error.message : String(error));

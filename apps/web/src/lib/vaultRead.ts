@@ -51,6 +51,8 @@ export interface VaultSnapshot {
     totalDebt: Field<string>;
     depositLimit: Field<string>;
     isShutdown: Field<boolean>;
+    /** `isPaused()` — absent from the committed capture, so the captured path reports it unknown. */
+    isPaused: Field<boolean>;
     profitMaxUnlockTime: Field<string>;
   };
   roles: {
@@ -104,7 +106,9 @@ export function capturedSnapshot(error: string | null): VaultSnapshot {
   const field = <T>(entry: unknown): Field<T> =>
     entry && typeof entry === "object" && "error" in (entry as object)
       ? { value: null, error: String((entry as { error: unknown }).error) }
-      : { value: (entry as { value: T }).value, error: null };
+      : entry && typeof entry === "object" && "value" in (entry as object)
+        ? { value: (entry as { value: T }).value, error: null }
+        : { value: null, error: "field is missing from the committed capture" };
 
   const strategies = (raw.allocation.strategies ?? []).map((row: Record<string, any>) => ({
     address: row.address,
@@ -142,6 +146,9 @@ export function capturedSnapshot(error: string | null): VaultSnapshot {
       totalDebt: field<string>(raw.vault.totalDebt),
       depositLimit: field<string>(raw.vault.depositLimit),
       isShutdown: field<boolean>(raw.vault.isShutdown),
+      // Captures recorded before the `isPaused()` read was added have no entry; the field mapper
+      // above turns that into `null` + reason instead of a silent `false`.
+      isPaused: field<boolean>(raw.vault.isPaused),
       profitMaxUnlockTime: field<string>(raw.vault.profitMaxUnlockTime),
     },
     roles: {
@@ -181,6 +188,11 @@ function stringOf(raw: string): string {
   const body = raw.slice(2);
   if (body.length < 128) throw new Error("return data is not a string");
   const length = Number(BigInt(`0x${body.slice(64, 128)}`));
+  // A length past what the payload carries means truncated or hostile data: refusing beats decoding
+  // a silent prefix as if it were the whole string.
+  if (length > 1_000_000 || body.length < 128 + length * 2) {
+    throw new Error(`string length ${length} exceeds the ${body.length}-byte return payload`);
+  }
   const bytes = body.slice(128, 128 + length * 2);
   return Buffer.from(bytes, "hex").toString("utf8");
 }
@@ -227,6 +239,7 @@ export async function liveSnapshot(rpcUrl: string, vaultAddress = CAPTURED_VAULT
     totalDebt,
     depositLimit,
     isShutdown,
+    isPaused,
     profitMaxUnlockTime,
     roleManager,
     futureRoleManager,
@@ -246,6 +259,7 @@ export async function liveSnapshot(rpcUrl: string, vaultAddress = CAPTURED_VAULT
     read(vaultAddress, "totalDebt()", integer),
     read(vaultAddress, "deposit_limit()", integer),
     read(vaultAddress, "isShutdown()", (raw) => BigInt(raw) !== 0n),
+    read(vaultAddress, "isPaused()", (raw) => BigInt(raw) !== 0n),
     read(vaultAddress, "profitMaxUnlockTime()", integer),
     read(vaultAddress, "role_manager()", addressOf),
     read(vaultAddress, "future_role_manager()", addressOf),
@@ -253,6 +267,11 @@ export async function liveSnapshot(rpcUrl: string, vaultAddress = CAPTURED_VAULT
     read(vaultAddress, "get_default_queue()", (raw) => {
       const body = raw.slice(2);
       const length = Number(BigInt(`0x${body.slice(64, 128)}`));
+      // A queue this long is not a configuration; it is a malformed payload, and looping over it
+      // would allocate memory an attacker controls.
+      if (length > 1_000 || body.length < 128 + length * 64) {
+        throw new Error(`default queue length ${length} exceeds the ${body.length}-byte return payload`);
+      }
       const addresses: string[] = [];
       for (let index = 0; index < length; index++) {
         addresses.push(`0x${body.slice(128 + index * 64 + 24, 128 + index * 64 + 64)}`.toLowerCase());
@@ -275,6 +294,7 @@ export async function liveSnapshot(rpcUrl: string, vaultAddress = CAPTURED_VAULT
     totalDebt,
     depositLimit,
     isShutdown,
+    isPaused,
     profitMaxUnlockTime,
   };
 

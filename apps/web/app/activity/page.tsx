@@ -1,6 +1,9 @@
 // /activity — on-chain activity ledger and event feed for Avenor vaults (Brief §11).
 //
-// Every item shown is a verified on-chain event or governance transaction on Robinhood Chain Testnet (46630).
+// Items below are the recorded deployment log for the testnet rehearsal, captured when each
+// transaction was submitted: each entry carries its tx hash and block, and the explorer link lets
+// anyone re-check it against the chain. The list is not re-read from the node on every render;
+// treat it as history, not a live feed.
 // Amounts use explicit units (USDG with 6 decimals, shares with shareDecimals).
 // In accordance with AGENTS.md Rule 2, no synthetic or placeholder transaction figures are displayed.
 // All transaction links open the verified Robinhood Chain Testnet block explorer.
@@ -23,7 +26,8 @@ interface ActivityItem {
   status: "confirmed" | "scheduled";
 }
 
-// Verified on-chain transactions on Robinhood Chain Testnet 46630 (packages/config/46630.json)
+// Recorded deployment transactions on Robinhood Chain Testnet 46630 (packages/config/46630.json);
+// re-verify each against the explorer link rather than trusting this file.
 const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
   {
     id: "act-gov-schedule",
@@ -105,7 +109,7 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Avenor — Activity Ledger",
   description:
-    "Real-time ledger of verified on-chain operations, governance transitions, and deployments on Robinhood Chain Testnet (46630).",
+    "Recorded ledger of deployment, governance, and venue transactions on Robinhood Chain Testnet (46630) — each entry links to the explorer for live re-verification.",
 };
 
 export default async function ActivityPage() {
@@ -132,7 +136,7 @@ export default async function ActivityPage() {
         </h1>
         <p className="mt-3 text-sm text-[#b0b7c3] leading-relaxed max-w-3xl text-pretty">
           Every transaction and state change executed on the Avenor vault contracts. All events below originate
-          from the verified on-chain deployment and governance stream on Robinhood Chain Testnet (46630).
+          from the recorded deployment and governance history on Robinhood Chain Testnet (46630); each entry re-verifiable via its explorer link.
           Per Avenor AGENTS.md honesty rules, no synthetic, simulated, or placeholder transactions are displayed.
         </p>
       </header>
@@ -171,10 +175,10 @@ export default async function ActivityPage() {
         </div>
       </div>
 
-      {/* Verified On-Chain Governance & Deployment Feed */}
+      {/* Recorded Governance & Deployment Feed */}
       <section className="card stack">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
-          <h2 className="font-display text-lg font-medium text-[#f8f9fa]">Verified On-Chain Events</h2>
+          <h2 className="font-display text-lg font-medium text-[#f8f9fa]">Recorded On-Chain Events</h2>
           <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-[#a3abb8]">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#101b16] border border-white/[0.08]">
               <span className="h-1.5 w-1.5 rounded-full bg-[#6db89b]" />

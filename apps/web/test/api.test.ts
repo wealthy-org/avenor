@@ -49,10 +49,11 @@ test("an error body without a code still carries the status", async () => {
 });
 
 test("the fetch is never cached: a stale number is an unlabelled number", async () => {
-  let seen: unknown = null;
+  let seen: { cache?: string; signal?: AbortSignal } | undefined;
   await fetchJson("http://api/v1/x", async (_url, init) => {
     seen = init;
     return response(200, "{}");
   });
-  assert.deepEqual(seen, { cache: "no-store" });
+  assert.deepEqual({ cache: seen?.cache }, { cache: "no-store" });
+  assert.ok(seen?.signal instanceof AbortSignal, "every read is bounded by a timeout");
 });

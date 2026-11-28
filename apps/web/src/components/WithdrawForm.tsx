@@ -42,7 +42,7 @@ export interface WithdrawFormProps {
   /** `decimals()` of the share token, read from the vault: VaultV3 uses the asset's decimals (6). */
   shareDecimals: number;
   /** Live snapshot from the API, used only for the "paused" gate and provenance. */
-  live: { isPaused: boolean; isShutdown: boolean; totalIdle: bigint; blockNumber: bigint; blockTimestamp: string };
+  live: { isPaused: boolean | null; isShutdown: boolean; totalIdle: bigint; blockNumber: bigint; blockTimestamp: string };
 }
 
 type Phase = "idle" | "quoting" | "signing" | "done" | "error";
@@ -60,7 +60,9 @@ function rpcUrl(): string {
   if (typeof value === "string" && value.trim() !== "") {
     return value.trim();
   }
-  return "https://rpc.testnet.chain.robinhood.com";
+  // No silent fallback: a hardcoded testnet RPC would let the client sign for a chain the server
+  // never read from when the build-time env differs from the runtime env.
+  throw new Error("NEXT_PUBLIC_RPC_URL is not configured; the wallet forms cannot reach the chain.");
 }
 
 function describe(error: unknown): Problem {
@@ -105,7 +107,7 @@ export function WithdrawForm({ vault, chainId: nodeChainId, assetSymbol, live, s
       maxAssets: quote.maxAssets,
       maxShares: quote.maxShares,
       shareBalance: quote.shareBalance,
-      isPaused: live.isPaused,
+      isPaused: live.isPaused === true,
       maxLossBps: quote.maxLossBps,
     });
   }, [live.isPaused, quote]);
@@ -216,7 +218,7 @@ export function WithdrawForm({ vault, chainId: nodeChainId, assetSymbol, live, s
       setPhase("error");
       setProblem(describe(error));
     }
-  }, [account, amount, client, customLoss, lossBps, mode, vault]);
+  }, [account, amount, client, customLoss, lossBps, mode, shareDecimals, vault]);
 
   const submit = useCallback(async () => {
     if (quote === null || account === null || client === null) return;
@@ -252,21 +254,26 @@ export function WithdrawForm({ vault, chainId: nodeChainId, assetSymbol, live, s
         amount: quote.requested,
         receiver: account,
         quote,
-        isPaused: live.isPaused,
+        isPaused: live.isPaused === true,
       });
       setReceipt(result);
+      // The quote belongs to a block that is now history; leaving it set would let the submit
+      // button fire again against a price that no longer exists.
+      setQuote(null);
       setPhase("done");
     } catch (error) {
       setPhase("error");
       setProblem(describe(error));
     }
-  }, [account, client, live.isPaused, quote, vault]);
+  }, [account, client, live.isPaused, nodeChainId, quote, vault]);
 
   const setMax = useCallback(() => {
     if (quote === null) return;
     const max = mode === "assets" ? quote.maxAssets : quote.maxShares;
     if (max === 0n) return;
-    const decimals = mode === "assets" ? 6 : shareDecimals;
+    // VaultV3.decimals() is asset.decimals(), so shares and USDG share the unit: one decimals
+    // source for both modes, read from the vault instead of assumed.
+    const decimals = shareDecimals;
     const whole = max / 10n ** BigInt(decimals);
     const fraction = (max % 10n ** BigInt(decimals)).toString().padStart(decimals, "0").replace(/0+$/, "");
     setAmount(fraction === "" ? whole.toString() : `${whole}.${fraction}`);
@@ -279,7 +286,7 @@ export function WithdrawForm({ vault, chainId: nodeChainId, assetSymbol, live, s
     <div className="space-y-4">
 
       {/* Paused Alert */}
-      {live.isPaused ? (
+      {live.isPaused === true ? (
         <div className="rounded-xl bg-[#1a0f0f] border border-red-500/25 p-4" role="alert">
           <p className="text-sm font-semibold text-[#f87171]">Vault is paused.</p>
           <p className="text-xs text-[#9ca3af] mt-1">
@@ -529,7 +536,7 @@ export function WithdrawForm({ vault, chainId: nodeChainId, assetSymbol, live, s
       <button
         type="button"
         onClick={submit}
-        disabled={quote === null || blocked.length > 0 || live.isPaused || lossTooHigh || phase === "signing"}
+        disabled={quote === null || blocked.length > 0 || live.isPaused === true || lossTooHigh || phase === "signing"}
         className="w-full flex items-center justify-center rounded-xl bg-[#f8f9fa] text-[#0b1310] hover:bg-white disabled:bg-white/[0.1] disabled:text-[#9ca3af] disabled:cursor-not-allowed px-5 py-3.5 text-sm font-bold transition-all min-h-[48px] shadow-[0_0_20px_rgba(255,255,255,0.08)]"
       >
         {phase === "signing" ? (

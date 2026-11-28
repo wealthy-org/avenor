@@ -50,6 +50,9 @@ contract DepositCapHook is IDepositHook {
     uint256 public globalCap;
 
     /// @notice Per-wallet ceiling applied when `walletCap[account]` is zero.
+    /// @dev Never zero: the constructor and `setDefaultWalletCap` refuse zero, because a zero
+    ///     default would silently reject every deposit (zero is not a sentinel here — see
+    ///     `walletCap`).
     uint256 public defaultWalletCap;
 
     /// @notice Per-wallet override. Zero means "use `defaultWalletCap`"; blocking a wallet is
@@ -79,6 +82,7 @@ contract DepositCapHook is IDepositHook {
     error NotGovernance(address caller);
     error NotVault(address caller);
     error ZeroAddress(string what);
+    error ZeroCap(string what);
     error CapExceeded(address receiver, uint256 position, uint256 cap);
 
     constructor(
@@ -90,6 +94,11 @@ contract DepositCapHook is IDepositHook {
     ) {
         if (_vault == address(0)) revert ZeroAddress("vault");
         if (_governance == address(0)) revert ZeroAddress("governance");
+        // Unlike `walletCap[account]` (zero = "use the default"), a zero default is not a
+        // sentinel: `effectiveWalletCap` would hand every wallet a cap of zero and silently
+        // reject all deposits. Blocking is the allowlist's job, or an explicit
+        // `globalCap = 0`; it is never the default's.
+        if (_defaultWalletCap == 0) revert ZeroCap("defaultWalletCap");
         vault = IVaultV3(_vault);
         governance = _governance;
         globalCap = _globalCap;
@@ -186,6 +195,7 @@ contract DepositCapHook is IDepositHook {
     function setDefaultWalletCap(
         uint256 cap
     ) external onlyGovernance {
+        if (cap == 0) revert ZeroCap("defaultWalletCap");
         defaultWalletCap = cap;
         emit SetDefaultWalletCap(cap);
     }
@@ -203,7 +213,7 @@ contract DepositCapHook is IDepositHook {
     ///         Turning the allowlist off restores the plain global/per-wallet caps;
     ///         turning it on with no entries rejects all new deposits.
     ///         Note: This is not an emergency stop — for rapid emergency freeze, the Guardian
-    ///         uses VaultV3 `set_paused` (reverts deposits and withdrawals) or `shutdown_vault`.
+    ///         uses VaultV3 `setPaused` (reverts deposits and withdrawals) or `shutdown_vault`.
     function setAllowlistEnabled(
         bool enabled
     ) external onlyGovernance {

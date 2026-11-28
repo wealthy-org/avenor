@@ -85,6 +85,8 @@ make a green test meaningless (`docs/VENUE_INTEGRATIONS.md` §4).
 
 ## Status
 
-Ticket 1 of epic 2 (`_bmad-output/avenor-managed-vaults/epic-vault-core-and-adapter`)
-is the scaffold: this file, the interfaces, the vendored deps, the chain config and
-the unit guards. Strategy, deploy script and fork tests land in tickets 2–5.
+Epic 2 (`_bmad-output/avenor-managed-vaults/epic-vault-core-and-adapter`) is built:
+this package ships the interfaces, the vendored deps, the chain config, the strategy
+(`MorphoVaultStrategy`), the deposit hook, the deploy/governance scripts and the unit
+plus fork guards. Open work outside this package (limited launch decision, keeper app,
+indexer hardening) is tracked in `_bmad-output/avenor-managed-vaults/`.

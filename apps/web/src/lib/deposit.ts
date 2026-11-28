@@ -138,8 +138,10 @@ export interface DepositQuote {
   blockNumber: bigint;
   assets: bigint;
   shares: bigint;
-  /** Minimum shares expected with 50 bps (0.5%) default slippage protection (Brief §9). */
+  /** Minimum shares expected with the quote's slippage tolerance (Brief §9). */
   minShares: bigint;
+  /** The tolerance this quote was taken with (bps); the receipt check uses it. */
+  slippageBps: bigint;
   /** Milliseconds timestamp when the quote was computed. */
   quoteTimestamp: number;
   maxAssets: bigint;
@@ -154,7 +156,13 @@ export async function quoteDeposit(
   params: { vault: Address; asset: Address; account: Address; assets: bigint; blockNumber?: bigint; slippageBps?: number },
 ): Promise<DepositQuote> {
   const blockNumber = params.blockNumber ?? (await client.getBlockNumber());
-  const slippageBps = BigInt(params.slippageBps ?? 50); // 0.50% default slippage
+  // A tolerance is a bound, not a knob: negative bps would demand more shares than the vault mints
+  // and >MAX_BPS would demand a negative minimum, silently disabling the protection.
+  const slippageRaw = params.slippageBps ?? 50;
+  if (!Number.isInteger(slippageRaw) || slippageRaw < 0 || slippageRaw > 10_000) {
+    throw new DepositError("invalid_amount", `The slippage tolerance must be an integer 0..10,000 bps, not ${slippageRaw}.`);
+  }
+  const slippageBps = BigInt(slippageRaw); // 0.50% default slippage
   try {
     const [preview, allowance, balance, depositLimit, isPaused, isShutdown] = await Promise.all([
       previewDeposit(asSdkClient(client), params.vault, params.assets, params.account, blockNumber),
@@ -183,6 +191,7 @@ export async function quoteDeposit(
       shares: preview.shares,
       minShares,
       quoteTimestamp: Date.now(),
+      slippageBps,
       maxAssets: preview.maxAssets,
       allowance,
       balance,

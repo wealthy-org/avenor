@@ -32,6 +32,7 @@ function snapshot(overrides: Partial<VaultSnapshot["vault"]> = {}, source: "onch
       totalIdle: ok("0"),
       totalDebt: ok("0"),
       depositLimit: ok("0"),
+      isPaused: ok(false),
       isShutdown: ok(false),
       profitMaxUnlockTime: ok("0"),
       ...overrides,

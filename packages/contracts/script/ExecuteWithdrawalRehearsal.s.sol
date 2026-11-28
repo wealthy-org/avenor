@@ -36,7 +36,13 @@ contract ExecuteWithdrawalRehearsal is Script {
         console2.log("Vault assets before:", vaultAssetsBefore);
         console2.log("Vault idle before:", vaultIdleBefore);
 
-        require(userSharesBefore >= WITHDRAW_ASSETS, "insufficient user shares");
+        // Value-based guard, not share-based: `userSharesBefore >= WITHDRAW_ASSETS` only
+        // holds at a share price of exactly 1.0. `withdraw` burns however many shares
+        // `previewWithdraw(WITHDRAW_ASSETS)` demands; `convertToAssets` rounds down, so a
+        // position worth at least WITHDRAW_ASSETS can always cover the withdrawal.
+        require(
+            vault.convertToAssets(userSharesBefore) >= WITHDRAW_ASSETS, "insufficient user position"
+        );
         require(vaultIdleBefore >= WITHDRAW_ASSETS, "insufficient vault idle");
 
         vm.startBroadcast(user);

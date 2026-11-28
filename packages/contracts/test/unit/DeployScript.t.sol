@@ -541,6 +541,55 @@ contract DeployScriptTest is Test {
         deployer.deployAll(cfg);
     }
 
+    /// @dev `TS_IMPL` is the canonical `TokenizedStrategy` implementation address. On a chain
+    ///      that lacks it, the strategy would deploy as a proxy delegating to an empty
+    ///      account: the configuration calls silently skip (`_configureStrategy`) and the
+    ///      run dies mid-flight with an opaque EvmError after vault, factory and accountant
+    ///      are already on-chain. The script must refuse before a single contract is created.
+    function test_deployAllRefusesAChainWithoutTheTokenizedStrategyImplementation() public {
+        Deploy.Config memory cfg = _config(Deploy.Mode.DryRun, address(0));
+        vm.etch(TS_IMPL, "");
+        vm.expectRevert(abi.encodeWithSelector(Deploy.CanonicalStrategyMissing.selector, TS_IMPL));
+        deployer.deployAll(cfg);
+    }
+
+    /// @dev `pendingActions` is the operator's checklist written into the deployment JSON.
+    ///      It lists `strategy.acceptManagement()` only when a handoff target exists:
+    ///     `_handoffStrategy` skips silently when `cfg.management == address(0)` (the
+    ///      deployer keeps ownership), so demanding acceptance then would be a step that
+    ///      has no actor and never becomes pending — the exact lie the committed
+    ///      `deployments/4663.stage.json` record shows (`strategyManagement: 0x0` with the
+    ///      acceptance item listed).
+    function test_pendingActionsListsAcceptManagementOnlyWithHandoffTarget() public {
+        Deploy.Config memory cfg = _config(Deploy.Mode.DryRun, address(0));
+
+        string[] memory withoutHandoff = deployer.pendingActions(cfg);
+        // 1 dry-run item + 2 always-on items + the seed item (seedAssets == 0).
+        assertEq(withoutHandoff.length, 4, "no handoff target: acceptance omitted");
+        for (uint256 i; i < withoutHandoff.length; ++i) {
+            assertTrue(bytes(withoutHandoff[i]).length > 0, "no padding entries");
+            assertTrue(
+                keccak256(bytes(withoutHandoff[i]))
+                    != keccak256(bytes("strategy.acceptManagement() by the new management")),
+                "acceptance must be omitted without a handoff target"
+            );
+        }
+
+        cfg.management = management;
+        string[] memory withHandoff = deployer.pendingActions(cfg);
+        assertEq(withHandoff.length, 5, "handoff target: acceptance listed");
+        bool listed;
+        for (uint256 i; i < withHandoff.length; ++i) {
+            if (
+                keccak256(bytes(withHandoff[i]))
+                    == keccak256(bytes("strategy.acceptManagement() by the new management"))
+            ) {
+                listed = true;
+            }
+        }
+        assertTrue(listed, "acceptance listed when a handoff target exists");
+    }
+
     function test_unsupportedChainReverts() public {
         vm.chainId(1);
         vm.expectRevert(abi.encodeWithSelector(Deploy.UnsupportedChain.selector, uint256(1)));

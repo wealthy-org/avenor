@@ -22,6 +22,15 @@ interface ProbeEntry {
 }
 const probeCache = new Map<string, ProbeEntry>();
 
+/** Upper bound so a long-running server cannot grow the map without limit. Oldest entries go first. */
+function cacheProbe(key: string, probe: NodeProbe, cachedAt: number) {
+  if (probeCache.size >= 32 && !probeCache.has(key)) {
+    const oldest = probeCache.keys().next().value;
+    if (oldest !== undefined) probeCache.delete(oldest);
+  }
+  probeCache.set(key, { probe, cachedAt });
+}
+
 export function clearProbeCache() {
   probeCache.clear();
 }
@@ -56,10 +65,13 @@ export async function probeNode(rpcUrl: string | undefined, timeoutMs = 4_000): 
       blockTimestamp: Number(block.timestamp),
       error: null,
     };
-    probeCache.set(normalizedRpc, { probe: probeResult, cachedAt: Date.now() });
+    cacheProbe(normalizedRpc, probeResult, Date.now());
     return probeResult;
   } catch (error) {
+    // Failures are cached too: without this, every request during an outage pays the full
+    // `timeoutMs` again, which turns one dead node into a page-render timeout.
     const failedProbe: NodeProbe = { ...empty, error: brief(error) };
+    cacheProbe(normalizedRpc, failedProbe, Date.now());
     return failedProbe;
   }
 }

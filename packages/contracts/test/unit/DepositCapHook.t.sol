@@ -293,6 +293,20 @@ contract DepositCapHookTest is Test {
         hook.post_deposit(alice, alice, 1, 0);
     }
 
+    /// @dev A zero default wallet cap must be refused at construction and by the setter:
+    ///     unlike `walletCap[account]` (zero = "use the default"), a zero *default* is not
+    ///     a sentinel — `effectiveWalletCap` would hand every wallet a cap of zero and
+    ///     silently reject all deposits. Blocking is the allowlist's job, or an explicit
+    ///     `globalCap = 0`; it is never the default's.
+    function test_zeroDefaultWalletCapIsRefusedNotSilentlyBricking() public {
+        vm.expectRevert(abi.encodeWithSelector(DepositCapHook.ZeroCap.selector, "defaultWalletCap"));
+        new DepositCapHook(d.vault, d.timelock, GLOBAL_CAP, 0, false);
+
+        vm.expectRevert(abi.encodeWithSelector(DepositCapHook.ZeroCap.selector, "defaultWalletCap"));
+        vm.prank(hook.governance());
+        hook.setDefaultWalletCap(0);
+    }
+
     function test_constructorRejectsZeroAddresses() public {
         vm.expectRevert(abi.encodeWithSelector(DepositCapHook.ZeroAddress.selector, "vault"));
         new DepositCapHook(address(0), d.timelock, 1, 1, false);

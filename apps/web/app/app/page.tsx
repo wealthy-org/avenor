@@ -9,7 +9,6 @@ import { parseVaultList } from "@/config/vaults";
 import { money, percentBps, shortAddress } from "@/lib/format";
 import { getDirectVaultDetail } from "@/lib/serverData";
 import { chainSummary, readChainFacts } from "@/lib/chainFacts";
-import type { VaultDetail } from "@/lib/vaultLoader";
 
 export const dynamic = "force-dynamic";
 
@@ -49,15 +48,32 @@ export default async function AppPage() {
     );
   }
 
-  let detail: VaultDetail;
-  try {
-    detail = await getDirectVaultDetail(vaults[0].address);
-  } catch (error) {
+  // Every catalogue card carries its own read: reusing vaults[0]'s snapshot across N configured
+  // vaults would print one vault's numbers on all of them.
+  const details = await Promise.all(
+    vaults.map(async (vault) => {
+      try {
+        return { detail: await getDirectVaultDetail(vault.address), error: null as string | null };
+      } catch (error) {
+        return { detail: null, error: error instanceof Error ? error.message : String(error) };
+      }
+    }),
+  );
+
+  const readable = details.filter((entry) => entry.detail?.live != null);
+  const live = readable[0]?.detail?.live ?? null;
+  if (live === null) {
+    const first = details[0];
     return (
       <div className="shell stack">
         <div className="rounded-xl bg-[#14221c] border border-red-500/30 p-6 text-red-300">
-          <h2 className="text-xl font-medium text-white mb-2">The vault could not be read</h2>
-          <p>{error instanceof Error ? error.message : String(error)}</p>
+          <h2 className="text-xl font-medium text-white mb-2">The vault did not answer</h2>
+          <p>
+            {first?.error ??
+              (first?.detail?.liveError instanceof Error
+                ? first.detail.liveError.message
+                : String(first?.detail?.liveError ?? "the read returned no assets, idle cash or debt"))}
+          </p>
           <p className="mt-2 text-sm text-[#b0b7c3]">
             No figure is shown instead of the missing one: an empty read is not zero.
           </p>
@@ -66,25 +82,24 @@ export default async function AppPage() {
     );
   }
 
-  const live = detail.live;
-  if (live === null) {
-    return (
-      <div className="shell stack">
-        <div className="rounded-xl bg-[#14221c] border border-red-500/30 p-6 text-red-300">
-          <h2 className="text-xl font-medium text-white mb-2">The vault did not answer</h2>
-          <p>
-            {detail.liveError instanceof Error
-              ? detail.liveError.message
-              : String(detail.liveError ?? "the read returned no assets, idle cash or debt")}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const facts = await readChainFacts(process.env.NEXT_PUBLIC_RPC_URL);
   const chainLine = chainSummary(facts);
-  const idleBps = live.totalAssets === 0n ? 0 : Number((live.totalIdle * 10000n) / live.totalAssets);
+  // Header aggregates are the sum across the vaults that answered; a vault that did not answer is
+  // not silently counted as zero, it is named as unanswered.
+  const aggregate = readable.reduce(
+    (acc, entry) => {
+      const row = entry.detail!.live!;
+      return {
+        totalAssets: acc.totalAssets + row.totalAssets,
+        totalIdle: acc.totalIdle + row.totalIdle,
+        totalDebt: acc.totalDebt + row.totalDebt,
+        depositLimit: acc.depositLimit + row.depositLimit,
+      };
+    },
+    { totalAssets: 0n, totalIdle: 0n, totalDebt: 0n, depositLimit: 0n },
+  );
+  const idleBps = aggregate.totalAssets === 0n ? 0 : Number((aggregate.totalIdle * 10000n) / aggregate.totalAssets);
+  const unanswered = vaults.length - readable.length;
 
   return (
     <div className="shell stack">
@@ -129,19 +144,22 @@ export default async function AppPage() {
       {/* Live System Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         <div className="rounded-xl bg-[#14221c]/70 border border-white/[0.08] p-4.5 space-y-1">
-          <div className="text-xs font-mono text-[#8b929e]">Total Assets (Vault TVL)</div>
+          <div className="text-xs font-mono text-[#8b929e]">Total Assets (sum of {readable.length} answered vault{readable.length === 1 ? "" : "s"})</div>
           <div className="font-mono text-xl font-semibold text-[#f8f9fa]">
-            {money(live.totalAssets)} <span className="text-xs font-normal text-[#6db89b]">USDG</span>
+            {money(aggregate.totalAssets)} <span className="text-xs font-normal text-[#6db89b]">USDG</span>
           </div>
           <div className="text-[11px] text-[#a3abb8] pt-1">
-            {money(live.totalDebt)} USDG deployed in yield venue
+            {money(aggregate.totalDebt)} USDG deployed in yield venues
+            {unanswered > 0
+              ? ` · ${unanswered} vault${unanswered === 1 ? "" : "s"} did not answer and is not counted`
+              : ""}
           </div>
         </div>
 
         <div className="rounded-xl bg-[#14221c]/70 border border-white/[0.08] p-4.5 space-y-1">
           <div className="text-xs font-mono text-[#8b929e]">Immediate Idle Liquidity</div>
           <div className="font-mono text-xl font-semibold text-[#6db89b]">
-            {money(live.totalIdle)} <span className="text-xs font-normal text-[#6db89b]">USDG</span>
+            {money(aggregate.totalIdle)} <span className="text-xs font-normal text-[#6db89b]">USDG</span>
           </div>
           <div className="text-[11px] text-[#a3abb8] pt-1">
             {percentBps(idleBps)} of total assets immediately liquid
@@ -149,23 +167,25 @@ export default async function AppPage() {
         </div>
 
         <div className="rounded-xl bg-[#14221c]/70 border border-white/[0.08] p-4.5 space-y-1">
-          <div className="text-xs font-mono text-[#8b929e]">Enforced Deposit Limit</div>
+          <div className="text-xs font-mono text-[#8b929e]">Enforced Deposit Limit (sum)</div>
           <div className="font-mono text-xl font-semibold text-[#f8f9fa]">
-            {money(live.depositLimit)} <span className="text-xs font-normal text-[#a3abb8]">USDG</span>
+            {money(aggregate.depositLimit)} <span className="text-xs font-normal text-[#a3abb8]">USDG</span>
           </div>
           <div className="text-[11px] text-[#a3abb8] pt-1">
-            Enforced by on-chain VaultV3 contract cap
+            Enforced by on-chain VaultV3 contract caps
           </div>
         </div>
 
         <div className="rounded-xl bg-[#14221c]/70 border border-white/[0.08] p-4.5 space-y-1">
           <div className="text-xs font-mono text-[#8b929e]">Protocol Fee Structure</div>
           <div className="font-mono text-xl font-semibold text-[#f8f9fa]">
-            {live.performanceFeeBps !== null ? percentBps(live.performanceFeeBps) : "10.00%"}{" "}
+            {live.performanceFeeBps !== null ? percentBps(live.performanceFeeBps) : "not readable"}{" "}
             <span className="text-xs font-normal text-[#6db89b]">Perf</span>
           </div>
           <div className="text-[11px] text-[#a3abb8] pt-1">
-            0.00% Mgmt Fee · Accountant enforced
+            {live.managementFeeBps === null
+              ? "Management fee not readable · Accountant enforced"
+              : `${percentBps(live.managementFeeBps)} Mgmt Fee · Accountant enforced`}
           </div>
         </div>
       </div>
@@ -189,7 +209,14 @@ export default async function AppPage() {
 
         {/* 2-Column Responsive Card Grid (Kassora Flagship Architecture) */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-          {vaults.map((vault) => (
+          {vaults.map((vault, vaultIndex) => {
+            const card = details[vaultIndex];
+            const cardLive = card?.detail?.live ?? null;
+            const cardIdleBps =
+              cardLive === null || cardLive.totalAssets === 0n
+                ? null
+                : Number((cardLive.totalIdle * 10000n) / cardLive.totalAssets);
+            return (
             <div
               key={vault.address}
               className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] hover:border-white/[0.18] transition-all duration-300 p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between shadow-xl group"
@@ -238,11 +265,11 @@ export default async function AppPage() {
                   </span>
                 </div>
 
-                {/* 3 Metrics Row */}
+                {/* 3 Metrics Row — this vault's own read, never a neighbour's */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-4 my-6 pt-5 pb-5 border-y border-white/[0.06]">
                   <div className="space-y-1">
                     <div className="text-lg sm:text-2xl font-mono font-semibold tracking-tight text-[#f8f9fa]">
-                      {money(live.totalAssets)}
+                      {cardLive === null ? "—" : money(cardLive.totalAssets)}
                     </div>
                     <div className="text-[11px] font-mono text-[#8b929e]">
                       Total Assets (USDG)
@@ -251,22 +278,28 @@ export default async function AppPage() {
 
                   <div className="space-y-1">
                     <div className="text-lg sm:text-2xl font-mono font-semibold tracking-tight text-[#52b896]">
-                      {money(live.totalIdle)}
+                      {cardLive === null ? "—" : money(cardLive.totalIdle)}
                     </div>
                     <div className="text-[11px] font-mono text-[#8b929e]">
-                      Idle Cash ({percentBps(idleBps)})
+                      {cardIdleBps === null ? "Idle Cash (unknown)" : `Idle Cash (${percentBps(cardIdleBps)})`}
                     </div>
                   </div>
 
                   <div className="space-y-1">
                     <div className="text-lg sm:text-2xl font-mono font-semibold tracking-tight text-[#f8f9fa]">
-                      {money(live.depositLimit)}
+                      {cardLive === null ? "—" : money(cardLive.depositLimit)}
                     </div>
                     <div className="text-[11px] font-mono text-[#8b929e]">
                       Enforced Cap (USDG)
                     </div>
                   </div>
                 </div>
+                {cardLive === null ? (
+                  <p className="text-xs text-[#e8c468] font-mono pb-4">
+                    This vault did not answer at read time
+                    {card?.error ? `: ${card.error}` : " · no figure is invented for it"}.
+                  </p>
+                ) : null}
               </div>
 
               {/* Footer Row */}
@@ -284,15 +317,18 @@ export default async function AppPage() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Provenance Footnote matching specification */}
         <div className="flex items-start gap-2.5 text-xs text-[#a3abb8] leading-relaxed pt-2">
           <span className="text-[#6db89b] text-sm leading-none mt-0.5">ℹ</span>
           <p>
-            Every figure on this page is read from the node during this render at block{" "}
-            <span className="font-mono text-[#f8f9fa]">{live.blockNumber.toString()}</span> (answered by the node).
+            Every figure on this page is read from the node during this render. The header sums carry
+            block{" "}
+            <span className="font-mono text-[#f8f9fa]">{live.blockNumber.toString()}</span> from the first vault that
+            answered; each card below carries its own read and block.
             Vault exits send an explicit loss budget chosen in the withdrawal form; the app never defaults one.
           </p>
         </div>

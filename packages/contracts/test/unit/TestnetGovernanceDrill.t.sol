@@ -3,50 +3,7 @@ pragma solidity 0.8.18;
 
 import { Test } from "forge-std/Test.sol";
 import { console } from "forge-std/console.sol";
-import { TimelockController } from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { IVaultV3 } from "../../src/interfaces/IVaultV3.sol";
-
-interface ISafe {
-    enum Operation {
-        Call,
-        DelegateCall
-    }
-
-    function nonce() external view returns (uint256);
-
-    function getTransactionHash(
-        address to,
-        uint256 value,
-        bytes calldata data,
-        Operation operation,
-        uint256 safeTxGas,
-        uint256 baseGas,
-        uint256 gasPrice,
-        address gasToken,
-        address refundReceiver,
-        uint256 _nonce
-    ) external view returns (bytes32);
-
-    function approveHash(
-        bytes32 hashToApprove
-    ) external;
-
-    function execTransaction(
-        address to,
-        uint256 value,
-        bytes calldata data,
-        Operation operation,
-        uint256 safeTxGas,
-        uint256 baseGas,
-        uint256 gasPrice,
-        address gasToken,
-        address payable refundReceiver,
-        bytes memory signatures
-    ) external payable returns (bool success);
-
-    function getOwners() external view returns (address[] memory);
-    function getThreshold() external view returns (uint256);
-}
 
 interface IStrategyHandoff {
     function management() external view returns (address);
@@ -55,8 +12,16 @@ interface IStrategyHandoff {
 }
 
 /// @title TestnetGovernanceDrill
-/// @notice Complete simulation and verification of the 48h Timelock acceptance of Vault role_manager
-///         and Safe Multisig 2/3 acceptance of Strategy management for Robinhood Chain Testnet 46630.
+/// @notice Encoding drill for the 48h Timelock acceptance of Vault `role_manager` and the
+///         Safe 2/3 acceptance of Strategy management on testnet 46630. What this proves:
+///         the pre-approved signature blob is exactly 130 bytes (2 x 65, sorted), the
+///         calldata constants match their selectors, `PROPOSER_ROLE` is the value the
+///         timelock actually uses, and the stage addresses resolve from the chain config.
+///         What it does NOT prove: Safe deployment, `approveHash` pre-approval or
+///         `execTransaction` acceptance — no Safe runtime is deployed or executed here,
+///         and the v=1 pre-approved signature shape is never validated against a live
+///         Safe. The live acceptance is recorded in `packages/config/46630.json`
+///         `deployments.stage.governanceHandoff` and `docs/TESTNET_EVIDENCE.md`.
 contract TestnetGovernanceDrillTest is Test {
     string internal constant PATH_46630 = "../config/46630.json";
 
@@ -67,8 +32,6 @@ contract TestnetGovernanceDrillTest is Test {
 
     address internal owner1;
     address internal owner2;
-
-    uint256 internal constant TIMELOCK_DELAY = 172800; // 48 hours
 
     function setUp() public {
         string memory json = vm.readFile(PATH_46630);
@@ -88,7 +51,9 @@ contract TestnetGovernanceDrillTest is Test {
         owner2 = 0x445be78AbB762884459FB0EC54FE78A5c9a573E1;
     }
 
-    /// @notice Builds sorted pre-approved signatures for a 2/3 Safe
+    /// @notice Builds sorted pre-approved signatures for a 2/3 Safe — encoding only. The
+    ///         v=1 shape (owner already called `approveHash`) is never validated against a
+    ///         live Safe in this suite; see the contract docstring.
     function _buildPreApprovedSignatures(
         address signerA,
         address signerB

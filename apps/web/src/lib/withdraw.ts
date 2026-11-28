@@ -27,6 +27,8 @@ export type WithdrawErrorCode =
   | "paused"
   | "reverted"
   | "no_event"
+  | "quote_expired"
+  | "slippage_exceeded"
   | "rpc";
 
 export class WithdrawError extends Error {
@@ -99,6 +101,10 @@ export interface WithdrawQuote {
   /** `convertToAssets(balanceOf(owner))`: value of the position, not what can be withdrawn now. */
   positionAssets: bigint;
   maxLossBps: number;
+  /** Milliseconds timestamp when the quote was computed; `submitWithdraw` refuses stale quotes. */
+  quoteTimestamp?: number;
+  /** Slippage tolerance the quote was taken with; the receipt is checked against it. */
+  slippageBps?: number;
 }
 
 export interface WithdrawInputs {
@@ -109,6 +115,11 @@ export interface WithdrawInputs {
   maxAssets: bigint;
   maxShares: bigint;
   shareBalance: bigint;
+  /**
+   * Whether the vault is confirmed paused. This field is always a narrowed `boolean`, never `null`:
+   * callers must resolve `isPaused === true` before populating this interface. Keeping it `boolean`
+   * here (not `boolean | null`) ensures `withdrawBlockers` can rely on a definite gate state.
+   */
   isPaused: boolean;
   maxLossBps: number;
 }
@@ -158,11 +169,16 @@ export function withdrawBlockers(input: WithdrawInputs): Blocker[] {
 
 export async function quoteWithdraw(
   client: ChainClient,
-  params: { vault: Address; account: Address; mode: WithdrawMode; amount: bigint; maxLossBps: number; blockNumber?: bigint },
+  params: { vault: Address; account: Address; mode: WithdrawMode; amount: bigint; maxLossBps: number; slippageBps?: number; blockNumber?: bigint },
 ): Promise<WithdrawQuote> {
   try {
     const blockNumber = params.blockNumber ?? (await client.getBlockNumber());
     const maxLossBps = parseLossBps(params.maxLossBps);
+    const slippageRaw = params.slippageBps ?? 50;
+    if (!Number.isInteger(slippageRaw) || slippageRaw < 0 || slippageRaw > 10_000) {
+      throw new WithdrawError("invalid_amount", `The slippage tolerance must be an integer 0..10,000 bps, not ${slippageRaw}.`);
+    }
+    const slippageBps = slippageRaw;
 
     // The SDK preview already asks the vault for the ceiling of the mode in use; the other ceiling is
     // the only extra read. Every call is pinned to `blockNumber`.
@@ -218,6 +234,8 @@ export async function quoteWithdraw(
       totalIdle,
       positionAssets,
       maxLossBps,
+      quoteTimestamp: Date.now(),
+      slippageBps,
     };
   } catch (error) {
     if (error instanceof WithdrawError) throw error;
@@ -245,9 +263,20 @@ export interface SubmitWithdrawParams {
   receiver: Address;
   quote: WithdrawQuote;
   isPaused: boolean;
+  maxQuoteAgeMs?: number;
 }
 
 export async function submitWithdraw(params: SubmitWithdrawParams): Promise<WithdrawReceipt> {
+  // The quote is a price from one block. Sitting on it lets the vault's price move between what the
+  // user approved on screen and what the chain pays out — the withdraw-side mirror of `quote_expired`.
+  const maxAge = params.maxQuoteAgeMs ?? 60_000;
+  if (params.quote.quoteTimestamp !== undefined && Date.now() - params.quote.quoteTimestamp > maxAge) {
+    throw new WithdrawError(
+      "quote_expired",
+      "The withdrawal quote has expired (older than 60s). Recalculate before signing so the numbers match the chain.",
+    );
+  }
+
   const blockers = withdrawBlockers({
     mode: params.mode,
     requested: params.amount,
@@ -277,6 +306,18 @@ export async function submitWithdraw(params: SubmitWithdrawParams): Promise<With
     throw new WithdrawError(
       "no_event",
       "The receipt succeeded but carries no Withdraw event, so the asset amount is not proven.",
+      withdrawTx,
+    );
+  }
+  // Post-settlement slippage check: the vault has no `minAssetsOut` parameter (its guard is
+  // `max_loss`), so the tolerance is enforced here, after the fact, and surfaced as an error the
+  // user must see rather than a quietly worse fill.
+  const slippageBps = BigInt(params.quote.slippageBps ?? 50);
+  const expectedFloor = (params.quote.assets * (10_000n - slippageBps)) / 10_000n;
+  if (event.assets < expectedFloor) {
+    throw new WithdrawError(
+      "slippage_exceeded",
+      `Received ${event.assets} assets, below the ${slippageBps} bps floor ${expectedFloor} quoted at block ${params.quote.blockNumber}.`,
       withdrawTx,
     );
   }
@@ -319,9 +360,11 @@ export function idleCoverageBps(quote: WithdrawQuote): number {
   return shareBps(quote.totalIdle < quote.assets ? quote.totalIdle : quote.assets, quote.assets);
 }
 
+export type WithdrawWarningCase = "W3" | "W6" | "W7" | "idle";
+
 export interface WithdrawWarning {
   /** The case in `docs/WITHDRAWAL_SEMANTICS.md` this sentence exists for. */
-  case: "W3" | "W4" | "W6" | "W7" | "idle";
+  case: WithdrawWarningCase;
   message: string;
 }
 
@@ -331,10 +374,10 @@ export interface WithdrawWarning {
  */
 export function withdrawWarnings(
   quote: WithdrawQuote,
-  state: { isPaused: boolean; isShutdown: boolean },
+  state: { isPaused: boolean | null; isShutdown: boolean },
 ): WithdrawWarning[] {
   const warnings: WithdrawWarning[] = [];
-  if (state.isPaused) {
+  if (state.isPaused === true) {
     warnings.push({
       case: "W6",
       message:
@@ -354,12 +397,8 @@ export function withdrawWarnings(
         "Position value is larger than what can be withdrawn now. A full exit will fail; `redeem` may fill partially within your loss tolerance.",
     });
   }
-  if (quote.maxLossBps >= MAX_LOSS_BPS) {
-    warnings.push({
-      case: "W4",
-      message: "10000 bps means accepting the loss of the entire position. That value is never sent.",
-    });
-  }
+  // W4 (max_loss = 10,000) has no warning here on purpose: `parseLossBps` refuses that value before
+  // a quote can exist, so this function can never see it. The form surfaces the refusal directly.
   if (quote.assets > quote.totalIdle) {
     warnings.push({
       case: "idle",
