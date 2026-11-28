@@ -74,3 +74,6 @@ _bmad-output/audit-bundle/
 
 # Vercel CLI project link (lokal, bukan konfigurasi aplikasi)
 .vercel/
+.env*
+!.env.example
+!.env.production.example
