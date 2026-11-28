@@ -142,3 +142,27 @@ curl -s -X POST https://rpc.solidrpc.io/public/evm/4663 -H 'Content-Type: applic
 # 0x70db07f = 118337663 -> hash 0xebf5495..., timestamp 0x6aff1bb5 = 1795103669
 ```
 
+
+## Capture state testnet `46630` — audit "aman" pasca-fix Vercel (2026-11-28)
+
+RPC: `https://rpc.testnet.chain.robinhood.com` (chainId `46630`). Blok `158763352`, timestamp `1795856593` = `2026-11-28T09:03:13Z`.
+
+Target: vault `0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0` (minimal proxy EIP-1167 → blueprint `0x8e3c196bcd62772c931fe62aaa76fdb7edad8258`, `apiVersion() = "3.1.1"`).
+
+| Kuantitas | Nilai | Cara baca |
+|---|---|---|
+| `totalAssets()` | `0` | `cast call` |
+| `totalSupply()` | `0` | `cast call` |
+| `deposit_limit()` | `0` (deposit CLOSED) | `cast call` |
+| `future_role_manager()` | `0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc` (Timelock) | `cast call` |
+| `role_manager()` | `0x56d845a35EDe1436B8053f705b4b189c412A8648` (EOA Safe owner #1) — **handover step 2 belum dieksekusi** | `cast call` |
+| `roles(timelock)` | `3995` = governanceRoleSet (tanpa bit 4) | `cast call` |
+| `accountant()` | `0xA499C9F98cE3a66B79dD9CaA99AA894DDE298e32` | `cast call` |
+| `use_default_queue()` | `true` | `cast call` |
+| `default_queue(0)` | `0x8f151132f80277b7D42Ad9615172E6De1B26Cf93` (strategi, apiVersion 3.1.1, totalAssets 0) | `cast call` |
+| `asset()` | `0xf32FFAfDC3B430D8143e29191bbCCc7AB4e6dB6c` ("MockUSDG") | `cast call` |
+| Timelock `getMinDelay()` | `172800` (48 jam) | `cast call` |
+| Timelock op `accept_role_manager` (`opId a9c36435…87c1d`) | pending/ready/done semua `false` → **belum pernah di-schedule** | `cast call` |
+| Safe `0x24e96fCB…Bd4AA` | 3 owner, threshold 2 | `getOwners`/`getThreshold` |
+
+Catatan: endpoint `solidrpc`/`onfinality` melayani **mainnet `4663`** (belum ada vault Avenor, `code 0x` = benar) — testnet `46630` hanya di RPC resmi Robinhood. `scripts/seed-deposit.py` USDG lama `0x97cb…7862` tidak punya kode; dikoreksi ke `0xf32F…dB6c`.

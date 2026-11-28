@@ -43,7 +43,7 @@ if not CAST.exists():
 
 # ── Contract addresses ───────────────────────────────────────────────────────
 VAULT_ADDRESS   = "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0"
-USDG_ADDRESS    = "0x97cb342cf2f6ecf48c1285fb8668f5a4237bf862"  # USDG on Robinhood chain 46630
+USDG_ADDRESS    = "0xf32FFAfDC3B430D8143e29191bbCCc7AB4e6dB6c"  # MockUSDG testnet 46630 (asset() vault 0xDa4D…17DA0, blok 158763352)
 
 # ── Amounts (6-decimal USDG) ─────────────────────────────────────────────────
 DEPOSIT_LIMIT   = 1_000_000 * 10**6   # 1 000 000 USDG cap
