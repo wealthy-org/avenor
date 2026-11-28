@@ -51,6 +51,20 @@ jobs:
         with:
           node-version: "22"
 
+      # verify-all.py runs `forge build --offline` / `forge test --offline` on purpose (deterministic,
+      # no network dependency mid-gate). Foundry downloads solc on first online build, so warm the
+      # ~/.svm cache here and reuse it across runs instead of failing with
+      # "can't install missing solc 0.8.18 in offline mode".
+      - name: Restore solc cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.svm
+          key: svm-solc-${{ runner.os }}-0.8.18
+
+      - name: Warm solc cache (download if missing)
+        run: forge build
+        working-directory: packages/contracts
+
       - name: Install dependencies
         run: |
           npm ci --prefix apps/web
