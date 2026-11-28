@@ -35,17 +35,16 @@ export default async function AppPage() {
   }
 
   if (vaults.length === 0) {
-    return (
-      <div className="shell py-24 text-center stack">
-        <div className="max-w-xl mx-auto rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-8 space-y-4">
-          <h2 className="text-2xl font-display font-medium text-white">No Vaults Configured</h2>
-          <p className="text-sm text-[#a3abb8] leading-relaxed">
-            No vaults are currently configured in the application environment (
-            <code className="font-mono text-[#6db89b]">AVENOR_VAULTS</code>).
-          </p>
-        </div>
-      </div>
-    );
+    // Fallback: show the testnet vault when env is unset / empty on Vercel
+    vaults = [
+      {
+        address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+        label: "Avenor USDG Managed Vault (Testnet)",
+        phase: "limited-launch",
+        mandate:
+          "Allocates USDG across overcollateralized lending and savings vaults on Robinhood Chain, starting with Steakhouse spUSDG.",
+      },
+    ];
   }
 
   // Every catalogue card carries its own read: reusing vaults[0]'s snapshot across N configured

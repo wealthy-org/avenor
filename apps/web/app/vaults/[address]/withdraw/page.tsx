@@ -39,6 +39,17 @@ export default async function WithdrawPage({ params }: Params) {
     );
   }
 
+  if (vaults.length === 0) {
+    vaults = [
+      {
+        address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+        label: "Avenor USDG Managed Vault (Testnet)",
+        phase: "limited-launch",
+        mandate: "Testnet Stage Rehearsal",
+      },
+    ];
+  }
+
   const config = vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase());
   if (config === undefined) notFound();
 

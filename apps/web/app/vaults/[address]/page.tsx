@@ -85,7 +85,7 @@ export default async function VaultPage({ params, searchParams }: Params) {
       {
         address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
         label: "Avenor USDG Managed Vault (Testnet)",
-        phase: "research",
+        phase: "limited-launch",
         mandate: "Allocates USDG across overcollateralized lending and savings vaults on Robinhood Chain, starting with Steakhouse spUSDG.",
       },
     ];

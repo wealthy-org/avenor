@@ -14,9 +14,28 @@ const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
 export function parseVaultList(raw: string | undefined): VaultConfig[] {
   if (raw === undefined || raw.trim() === "") return [];
+  let cleaned = raw.trim();
+  // Handle Vercel common encoding artifacts: bare empty-string literals
+  if (cleaned === '""' || cleaned === "''" || cleaned === "[]") return cleaned === "[]" ? [] : [];
+  // Strip outer single-quotes (some shells wrap the value)
+  if (cleaned.startsWith("'") && cleaned.endsWith("'")) {
+    cleaned = cleaned.slice(1, -1).trim();
+    if (cleaned === "" || cleaned === '""') return [];
+  }
+  // Strip outer double-quotes that Vercel sometimes adds around the JSON blob
+  if (cleaned.startsWith('"') && cleaned.endsWith('"') && cleaned.length > 2) {
+    const inner = cleaned.slice(1, -1).trim();
+    if (inner === "" || inner === "[]") return [];
+    cleaned = inner;
+  }
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(cleaned);
+    // Handle double-encoded JSON: JSON.parse returned a string → parse again
+    if (typeof parsed === "string") {
+      if (parsed.trim() === "" || parsed.trim() === "[]") return [];
+      parsed = JSON.parse(parsed);
+    }
   } catch {
     throw new Error("AVENOR_VAULTS must be JSON: an unreadable list is not an empty list");
   }
