@@ -77,3 +77,6 @@ _bmad-output/audit-bundle/
 .env*
 !.env.example
 !.env.production.example
+
+# transient orchestrator state (report json adalah evidence yang di-commit)
+_bmad-output/finalize-46630-state.json

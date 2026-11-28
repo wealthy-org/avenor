@@ -75,6 +75,8 @@
       "emergencyTimelock": "0x4B80C02fee19efc0BEb41D921fb3cD54412ad895",
       "governanceSafe": "0x68b80E963a8D8029d5D3814A7230887c1Ce0251e",
       "keeper": "0x60DF56Aec6bb8ae6BDb96538151FCe91b87D2bFA",
+      "depositCapHook": "0xf1363c4a6e257e7b0798013f4b241acd439ac6bf",
+      "mockUsdg": "0x686Ba15fdd36A40161a9c64AF21cD5AadA4b5Cf3",
       "deployer": "0xf6BAE6C6516Ab237d659F97187C475652514c76A",
       "blockNumber": 158777022,
       "governanceHandoff": {

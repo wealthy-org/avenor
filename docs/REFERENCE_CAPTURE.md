@@ -204,3 +204,17 @@ Semua query via `https://rpc.testnet.chain.robinhood.com` (retry; RPC reset seri
 | Gas testnet | Chainstack faucet 0.01 ETH → deployer; deployer→owner1 `0xe968…e9bd` (0.005 ETH) | tx receipt |
 
 Skrip handover baru: `scripts/handover_46630.py` (config-driven, gantikan pasangan `governance_handoff_46630.py`/`governance_execute_46630.py` yang alamatnya hardcode deploy lama).
+
+### 2026-11-28 — DepositCapHook + pipeline finalisasi (v2, chain 46630)
+
+| Query | Hasil | Cara |
+|---|---|---|
+| Hook deploy | `0xf1363c4a6e257e7b0798013f4b241acd439ac6bf`, tx `0xf7c1a8344ee429c02b037d8b2bae36bec73840a1ad1cc7202c3c708109fea514`, blok `158792521` (status 0x1) | receipt `--json` (`blockNumber 0x976fb49`) |
+| `hook.vault()` / `hook.governance()` | `0xFB60…4Dd9` / `0x2Bfa…09D` | `cast call` |
+| `hook.globalCap()` / `hook.defaultWalletCap()` / `hook.allowlistEnabled()` | `250000000000` / `25000000000` / `true` | `cast call` |
+| Keeper gas | deployer→keeper `0.001 ETH`, tx `0x155f9ac88641755720badce87242a83af69d170ca5d7343c3116f762439b838c` | tx receipt |
+| `isOperationPending` ×5 op pipeline (allowlist_keeper/treasury/deployer, maxdebt, hookop) | `true` semua; opId di `docs/TESTNET_EVIDENCE.md` §0.1 | `cast call` |
+
+Catatan tooling: `forge create` di foundry 1.9 selalu hit `http://localhost:8545` (bug MPP) meski `--rpc-url` diberikan — deploy pakai `cast send --create <initcode>` dengan flag kunci/RPC SEBELUM `--create`; initcode = bytecode artefak + `cast abi-encode "constructor(address,address,uint256,uint256,bool)" …`.
+
+Orkestrator: `scripts/finalize_46630.py` (`schedule` 5 op sudah dieksekusi via Safe; `run` = loop tunggu-eksekusi otomatis sampai laporan `_bmad-output/finalize-46630-report.json`; `exec-one <nama>` fallback manual).

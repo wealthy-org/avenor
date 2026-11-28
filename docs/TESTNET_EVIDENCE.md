@@ -49,10 +49,28 @@ A full redeploy was executed with keys held in the repository `.env` (all derive
 | `strategy.setPendingManagement(govSafe)` | done during deploy (tx `0xc072…e350`); `pendingManagement()` = `0x68b8…51e` verified |
 | Safe tx #1 `strategy.acceptManagement()` | tx `0x7918213812377a777fa761a79ac2d40d0f4b40adc4bd17cca8929a2fa3340787`; `management()` = GovSafe ✓ |
 | Safe tx #2 `timelock.schedule(vault.accept_role_manager(), 48h)` | tx `0xfdfc2efc3945de68b7ce1e6e8c756a56a370bad139efc82fac491ddfbcb17347`; opId `0xf4d2cee45c5fcc789452e0cf9620c4db2be34c3dc3a4e86da44070e21333fc90` (salt 0); `executeAfter = 1796034031` (**2026-11-30T10:20:31Z**) |
-| `timelock.execute` | pending — run `python scripts/handover_46630.py execute` after the delay, then `verify` |
-| Post-handover | set `deposit_limit` + seed dead shares + keeper roles — see `docs/DEPLOYMENT.md` gates |
+| `timelock.execute` | pending — dijalankan otomatis oleh `python scripts/finalize_46630.py run` saat `isOperationReady` (fallback manual: `handover_46630.py execute`) |
+| Post-handover | pipeline 5 op timelock + seed dead shares + keeper drill — dijalankan otomatis oleh `scripts/finalize_46630.py run` (lihat §0.1) |
 
-Automation: `scripts/handover_46630.py` (phases `prep|handoff|status|execute|verify`, config-driven from `packages/config/46630.json`).
+Automation: `scripts/handover_46630.py` (phases `prep|handoff|status|execute|verify`, config-driven dari `packages/config/46630.json`); orkestrator pipeline penuh: `scripts/finalize_46630.py` (phases `schedule|run|status|exec-one|report`).
+
+### 0.1. Pipeline finalisasi v2 (terjadwal 2026-11-28)
+
+Prasyarat terpasang: **DepositCapHook** deploy tx `0xf7c1a8344ee429c02b037d8b2bae36bec73840a1ad1cc7202c3c708109fea514` (blok `158792521`) di `0xf1363c4a6e257e7b0798013f4b241acd439ac6bf` — constructor: `vault=0xFB60…4Dd9`, `governance=0x2Bfa…09D` (timelock), `globalCap=250000000000` (250.000 USDG), `defaultWalletCap=25000000000` (25.000 USDG), `allowlistEnabled=true`; semua diverifikasi via `cast call` pasca-deploy. ADR-13: hook = satu-satunya plafon deposit saat aktif.
+
+5 op timelock (delay 172800s, dijadwalkan Safe 2/3 pada 2026-11-28 11:17–11:19 UTC, siap eksekusi ~2026-11-30 11:17–11:19 UTC, sesudah handover):
+
+| Op | Target | Kalldata | opId | Schedule tx |
+|---|---|---|---|---|
+| allowlist_keeper | hook `setAllowed(keeper,true)` | — | `0x91a8e4c647197a6171c4ffa96ef94e31d9d7ea05759b7df95b6f6f40a750f52d` | `0x9b2804ea98c33f46110884d6459d6452d4038c0a624dccd0429750ae2c0b0dc9` |
+| allowlist_treasury | hook `setAllowed(treasury,true)` | — | `0xe0e0f651513af984afec0c9466acb7fb938825e603e1c62f4683c4c461bff340` | `0x17b44d32899cfe4f2ffbb60662d7ec1f541a0bca31afad329f02c7ade9534d9a` |
+| allowlist_deployer | hook `setAllowed(deployer,true)` | — | `0x5f79b81fa3207a834c7771c715622a1e9ad1e4e73ad1089b90e4705383a03e1d` | `0xc4e7eb836786185193c660bc0f76ff128e26adcf33f1c3cbf690b314d1447b55` |
+| maxdebt | vault `update_max_debt_for_strategy(strategy, 250000000000)` | — | `0xc3f0c84ce35aa89dda4d5c596c4c60f8171062e44360b964f430fe9be82300cc` | `0xafb0793ef1c5876f1105835369b74042948d255f5ea4babf204793dcaba67c4e` |
+| hookop | vault `set_deposit_hook(hook, true)` | — | `0x515d0462645bce7ed35271ac61ed0c60abbd8f8eda3628a76382ed7c31dc1bec` | `0x6e5ad1846082cc4cc1cf746222494fad16ec18a6e511ff1e01262bf98912d8d2` |
+
+Eksekusi berurutan (loop `finalize_46630.py run`, idempoten, keep-awake Windows): handover → allowlist ×3 → maxdebt → hookop (asersi `deposit_hook == hook`, `deposit_limit == 2^256-1`) → seed 1.000 USDG dari keeper (mint MockUSDG publik, approve, deposit, transfer seluruh share ke `0xdEaD`) → keeper drill (`update_debt(strategy, 500e6)` → `report()` → `update_debt(strategy, 0)`, asersi debt kembali 0 ± dust). Laporan: `_bmad-output/finalize-46630-report.json`.
+
+Angka kap (global 250.000 / wallet 25.000 USDG) = angka rencana `docs/DEPLOYMENT.md` §7.4 untuk limited launch; fee tidak berubah (10% perf, `docs/FEE_CONFIG.md` tetap).
 
 ---
 

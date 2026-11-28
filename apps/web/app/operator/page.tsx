@@ -159,6 +159,14 @@ export default async function OperatorPage() {
             Scheduled operation <span className="font-mono text-[#6db89b]">0xf4d2cee4...</span> transfers role_manager to Timelock (0x2Bfa...09D).
           </p>
         </div>
+
+        <div className="card border-[#6db89b]/30 bg-[#6db89b]/5">
+          <span className="font-mono text-xs uppercase tracking-wider text-[#6db89b]">Pipeline Completion</span>
+          <div className="text-xl sm:text-2xl font-mono font-medium text-[#f8f9fa] mt-1">30 Nov, ~11:20 UTC</div>
+          <p className="text-xs text-[#a3abb8] mt-2">
+            5 follow-up timelock ops scheduled 28 Nov (48h delay each): allowlist keeper/treasury/deployer on DepositCapHook, max_debt 250,000 USDG, set_deposit_hook. Then seed dead shares + keeper drill run automatically. Handover must execute first.
+          </p>
+        </div>
       </div>
 
       {/* Role Permission Matrix Table */}

@@ -165,6 +165,14 @@ const DEPLOYMENT_PROOFS: DeploymentRecord[] = [
     block: 158777022,
     category: "Infrastructure & Venue",
   },
+  {
+    name: "DepositCapHook",
+    role: "Deposit Gate: Allowlist + Global Cap 250,000 + Wallet Cap 25,000 (ADR-13)",
+    address: "0xf1363c4a6e257e7b0798013f4b241acd439ac6bf",
+    txHash: "0xf7c1a8344ee429c02b037d8b2bae36bec73840a1ad1cc7202c3c708109fea514",
+    block: 158792521,
+    category: "Governance & Timelock",
+  },
 ];
 
 interface GovernanceActionRecord {
