@@ -4,6 +4,48 @@ Documented evidence of the Avenor Vault Stack deployment on Robinhood Chain Test
 
 ---
 
+## 0. REDEPLOY v2 (2026-11-28) — CURRENT ACTIVE DEPLOYMENT
+
+**Status: the deployment documented in §1 onward (deployer `0x56d8…648`, vault `0xDa4D…7DA0`) is SUPERSEDED.** Its governance handover was blocked permanently: all owner keys of the old Governance Safe `0x24e9…d4AA` were lost (key recovery exhausted — see `docs/REFERENCE_CAPTURE.md` 2026-11-28). The old vault holds 0 assets and is not a user risk, but it is unreachable for role changes.
+
+A full redeploy was executed with keys held in the repository `.env` (all derived addresses confirmed to match the operator's MetaMask accounts):
+
+| Property | Value |
+|---|---|
+| **Deployer** | `0xf6BAE6C6516Ab237d659F97187C475652514c76A` |
+| **Deploy block** | `158777022` (2026-11-28), 30/30 tx mined (broadcast `run-1795860249230.json`) |
+| **vaultOriginal** | `0x64Dc3C0913744a27E31Eb8322c36ee9494DAdef8` (tx `0xa21a…5325`) |
+| **Factory (VaultV3)** | `0xcA83591e36949a6190957E22DDDB9dad249a57B2` (tx `0xeea3…6d81`) |
+| **VaultV3 proxy** | `0xFB6064C2A4CedaD01b2a873E43890D18e1Cb4Dd9` — `apiVersion "3.1.1"`, runtime keccak `0x6909c58e…933` (= blueprint gate) |
+| **Accountant** | `0xE72b69440D6ddb12F07A4f0A335062f7aeD3Ad7C` (tx `0xc81a…b6f0`) |
+| **Strategy (MorphoVaultStrategy)** | `0xc96479EF4274F7619E1e78FA40bfdb3a367d8291` (tx `0x2d0a…d812`), asset = MockUSDG, management = deployer → pendingManagement = GovSafe |
+| **Timelock (48 h, proposer+executor = GovSafe)** | `0x2Bfa51B313AA76d2ED0d8D5971Dd8b3e4235609D` (tx `0x89e2…61a5`) |
+| **Emergency Timelock (6 h, proposer+executor = Guardian EOA)** | `0x4B80C02fee19efc0BEb41D921fb3cD54412ad895` (tx `0x52cf…013`) |
+| **Governance Safe 2/3** | `0x68b80E963a8D8029d5D3814A7230887c1Ce0251e` — Safe v1.3.0, owners = `0x1437…C60e`, `0xDBCF…0084`, `0x4DC9…a17C` (3 kunci di `.env`), threshold 2 |
+| **Guardian (EOA)** | `0x1a7202181f7bDdeFd031C5C45aADA3479A173796` |
+| **Keeper (EOA)** | `0x60DF56Aec6bb8ae6BDb96538151FCe91b87D2bFA` |
+| **Treasury (EOA)** | `0x43bD76147a1c897Fd7e9FDdED517E392528e556b` |
+| **MockUSDG** | `0x686Ba15fdd36A40161a9c64AF21cD5AadA4b5Cf3` (tx `0x41dc…b619`) |
+| **MockVenue** | `0xd6f72a73108eba0e5bfc382bb6cd9d3dda751f05` (tx `0x4ffc…8cca`) |
+| **TokenizedStrategy** | canonical `0x3110D1Eec90f0651C18e75AD37711A8777342504` (reused, §2.1) |
+| **Roles at deploy** | timelock `3995`, emergencyTimelock `4`, guardian `8192`, keeper `96`, treasury `4096`, deployer revoked to `0` after `transfer_role_manager` (deployer interim `1433`) |
+| **Deposit state** | `deposit_limit 0`, `max_debt 0`, `minimum_total_idle 0` — closed until handover completes |
+| **Gas funding** | Chainstack faucet drip 0.01 ETH to deployer; 0.005 ETH deployer→owner1 internal transfer tx `0xe9681968db3b08bc6ac868dafa2dc4664174f6e7bd4fd32df58e751b83afe9bd` |
+
+### Handover progress (v2)
+
+| Step | Evidence |
+|---|---|
+| `strategy.setPendingManagement(govSafe)` | done during deploy (tx `0xc072…e350`); `pendingManagement()` = `0x68b8…51e` verified |
+| Safe tx #1 `strategy.acceptManagement()` | tx `0x7918213812377a777fa761a79ac2d40d0f4b40adc4bd17cca8929a2fa3340787`; `management()` = GovSafe ✓ |
+| Safe tx #2 `timelock.schedule(vault.accept_role_manager(), 48h)` | tx `0xfdfc2efc3945de68b7ce1e6e8c756a56a370bad139efc82fac491ddfbcb17347`; opId `0xf4d2cee45c5fcc789452e0cf9620c4db2be34c3dc3a4e86da44070e21333fc90` (salt 0); `executeAfter = 1796034031` (**2026-11-30T10:20:31Z**) |
+| `timelock.execute` | pending — run `python scripts/handover_46630.py execute` after the delay, then `verify` |
+| Post-handover | set `deposit_limit` + seed dead shares + keeper roles — see `docs/DEPLOYMENT.md` gates |
+
+Automation: `scripts/handover_46630.py` (phases `prep|handoff|status|execute|verify`, config-driven from `packages/config/46630.json`).
+
+---
+
 ## 1. Network & Toolchain
 
 | Property | Value | Evidence / Note |

@@ -1,7 +1,7 @@
 {
   "_meta": {
     "purpose": "Chain 46630 (Robinhood Chain Testnet) constants consumed by deploy script, test harness and indexer.",
-    "generated_from": "direct eth_call/eth_getCode reads on rpc.testnet.chain.robinhood.com",
+    "generated_from": "fresh DeployTestnet.s.sol broadcast run-1795860249230 (30/30 tx mined)",
     "network": {
       "name": "Robinhood Chain testnet",
       "chainId": 46630,
@@ -9,11 +9,11 @@
       "explorer": "https://testnet.robinhoodchain.com"
     },
     "observed_at": {
-      "blockNumber": 157460667,
+      "blockNumber": 158777022,
       "blockTimestamp": 1795532440,
       "blockHash": "0xcf591c0b9419b5e8a0cc50db6a78c2f9ab0c90c01b3a13cdee16b763837be900",
-      "hostDate": "2026-11-24",
-      "note": "Probed live via rpc.testnet.chain.robinhood.com at block 157460667"
+      "hostDate": "2026-11-28",
+      "note": "Fresh stage redeploy probed live via rpc.testnet.chain.robinhood.com"
     },
     "rpc": {
       "primary": "https://rpc.testnet.chain.robinhood.com",
@@ -24,23 +24,23 @@
   },
   "tokens": {
     "usdg": {
-      "address": "0xf32FFAfDC3B430D8143e29191bbCCc7AB4e6dB6c",
+      "address": "0x686Ba15fdd36A40161a9c64AF21cD5AadA4b5Cf3",
       "symbol": "mockUSDG",
       "decimals": 6,
       "totalSupply": "0",
-      "evidence": "Mainnet USDG (0x5fc5360D...) has no code on 46630; MockUSDG deployed for stage rehearsal",
+      "evidence": "MockUSDG redeployed with fresh stack; deploy tx 0x41dc570d837c34fd9852dd5bbcb691696636e17157e17f8c1fe6f74c0badb619 (block 158777022)",
       "isMock": true
     }
   },
   "venues": {
     "steakUSDG": {
-      "address": "0xE20266eFC2E71e8FfC5871CDF25Dcc6522d1b037",
+      "address": "0xd6f72a73108eba0e5bfc382bb6cd9d3dda751f05",
       "kind": "MockMorphoVault",
-      "asset": "0xf32FFAfDC3B430D8143e29191bbCCc7AB4e6dB6c",
+      "asset": "0x686Ba15fdd36A40161a9c64AF21cD5AadA4b5Cf3",
       "shareDecimals": 18,
       "curator": "0x0000000000000000000000000000000000000000",
       "status": "mock",
-      "note": "MockVenue deployed on testnet as steakUSDG stand-in for stage rehearsal."
+      "note": "MockVenue redeployed with fresh stack (block 158777022)."
     }
   },
   "infrastructure": {
@@ -66,28 +66,33 @@
   },
   "deployments": {
     "stage": {
-      "vault": "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
-      "strategy": "0x8f151132f80277b7D42Ad9615172E6De1B26Cf93",
-      "accountant": "0xA499C9F98cE3a66B79dD9CaA99AA894DDE298e32",
-      "factory": "0x351039141Bd6CB9f4a613a24cD26a537a86ED538",
-      "vaultOriginal": "0x8e3C196bcD62772c931fe62aAA76FDb7edAD8258",
-      "timelock": "0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc",
-      "emergencyTimelock": "0xde3f5071559d929d18092EEf7f3B106e39BCD4b6",
-      "governanceSafe": "0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA",
-      "guardianSafe": "0x83227a7b21Ead1e0581D03144B85Cb63Fd585af1",
-      "treasurySafe": "0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58",
-      "keeper": "0x9c4D1f60c74Af03ca92D634A54d55A998CE25d75",
-      "deployer": "0x56d845a35EDe1436B8053f705b4b189c412A8648",
-      "blockNumber": 157503812,
+      "vault": "0xFB6064C2A4CedaD01b2a873E43890D18e1Cb4Dd9",
+      "strategy": "0xc96479EF4274F7619E1e78FA40bfdb3a367d8291",
+      "accountant": "0xE72b69440D6ddb12F07A4f0A335062f7aeD3Ad7C",
+      "factory": "0xcA83591e36949a6190957E22DDDB9dad249a57B2",
+      "vaultOriginal": "0x64Dc3C0913744a27E31Eb8322c36ee9494DAdef8",
+      "timelock": "0x2Bfa51B313AA76d2ED0d8D5971Dd8b3e4235609D",
+      "emergencyTimelock": "0x4B80C02fee19efc0BEb41D921fb3cD54412ad895",
+      "governanceSafe": "0x68b80E963a8D8029d5D3814A7230887c1Ce0251e",
+      "keeper": "0x60DF56Aec6bb8ae6BDb96538151FCe91b87D2bFA",
+      "deployer": "0xf6BAE6C6516Ab237d659F97187C475652514c76A",
+      "blockNumber": 158777022,
       "governanceHandoff": {
-        "acceptManagementBlock": 157995762,
-        "acceptManagementTx": "0xb88761254bb53feea86129bfe6c515ad7cd79f5a4f83ded84aa53b0dfca2f19b",
-        "timelockScheduleBlock": 157995780,
-        "timelockScheduleTx": "0x381fdf02042413bbdbda93c33b3bdff98a1e05b7c87c926dae5c806c9bc9376d",
-        "timelockOperationId": "0x9068381b1398cc7c6ca1753431c50f21db62ca44305f6d4d1fa3b450cd17d05f",
-        "timelockExecuteAfter": 1795831749,
+        "status": "timelockPending",
+        "note": "Fresh redeploy 2026-11-28. Safe 2/3 owned by GOVERNANCE_OWNER_KEY_1/2/3 (in .env, all = user MetaMask accounts).",
+        "acceptManagementTx": "0x7918213812377a777fa761a79ac2d40d0f4b40adc4bd17cca8929a2fa3340787",
+        "timelockScheduleTx": "0xfdfc2efc3945de68b7ce1e6e8c756a56a370bad139efc82fac491ddfbcb17347",
+        "timelockOperationId": "0xf4d2cee45c5fcc789452e0cf9620c4db2be34c3dc3a4e86da44070e21333fc90",
+        "timelockExecuteAfter": 1796034031,
+        "timelockExecuteAfterUTC": "2026-11-30T10:20:31Z",
         "safeNonceAfter": 2,
-        "status": "timelockPending"
+        "script": "scripts/handover_46630.py (phases: prep/handoff/status/execute/verify)"
+      },
+      "guardian": "0x1a7202181f7bDdeFd031C5C45aADA3479A173796",
+      "treasury": "0x43bD76147a1c897Fd7e9FDdED517E392528e556b",
+      "_superseded": {
+        "vault": "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+        "note": "Old vault unreachable: role_manager EOA key lost. Empty vault (totalAssets 0), deposit closed. Do not use."
       }
     }
   }

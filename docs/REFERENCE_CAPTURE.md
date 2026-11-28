@@ -178,3 +178,29 @@ Catatan: endpoint `solidrpc`/`onfinality` melayani **mainnet `4663`** (belum ada
   1. **Script otomatis (disarankan):** `$env:PK1="<owner1 key>"; $env:PK2="<owner2 key>"; python scripts/governance_execute_46630.py` — script melakukan pre-flight (opId via `hashOperation`, ready, role_manager masih deployer), menandatangani 2/3, broadcast `execTransaction`, lalu post-flight memverifikasi `role_manager() == Timelock`, `future_role_manager() == 0`.
   2. **Safe UI:** impor `_bmad-output/safe-handover-execution.json` ke Safe Transaction Builder `0x24e96fCB…Bd4AA` (chain 46630), pastikan hash yang ditandatangani = `0x9308773c…7801` (nonce 2), kumpulkan 2 tanda tangan, eksekusi.
 - Verifikasi pasca-eksekusi: `role_manager()` = `0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc`, `future_role_manager()` = `0x0`, `isOperationDone(0x9068381b…) = true`, lalu `python scripts/check-handover.py --strict`.
+
+---
+
+## 2026-11-28 — Redeploy v2 (fresh stack, chain 46630)
+
+Semua query via `https://rpc.testnet.chain.robinhood.com` (retry; RPC reset sering). Alasan redeploy + daftar lengkap tx ada di `docs/TESTNET_EVIDENCE.md` §0.
+
+| Query | Hasil | Cara |
+|---|---|---|
+| `vault.role_manager()` | `0xf6BA…4c76A` (deployer, interim) | `cast call` |
+| `vault.future_role_manager()` | `0x2Bfa513…09D` (timelock 48 jam) | `cast call` |
+| `vault.roles(timelock)` | `3995` | `cast call` |
+| `vault.roles(emergencyTimelock)` | `4` | `cast call` |
+| `vault.roles(guardian)` | `8192` | `cast call` |
+| `vault.roles(keeper)` | `96` | `cast call` |
+| `vault.roles(treasury)` | `4096` | `cast call` |
+| `vault.roles(deployer)` | `0` (setelah `set_role(deployer,0)` tx `0xa4ce…9b07`) | `cast call` |
+| `strategy.management()` pasca-handoff | `0x68b80E963a8D8029d5D3814A7230887c1Ce0251e` (govSafe) | `cast call` |
+| `strategy.pendingManagement()` sebelum handoff | `0x68b80E9…` (diset saat deploy, tx `0xc072…e350`) | `cast call` |
+| Timelock `hashOperation(vault,0,accept_role_manager(),0,salt-0)` | `0xf4d2cee45c5fcc789452e0cf9620c4db2be34c3dc3a4e86da44070e21333fc90` | `cast call` |
+| Timelock `getTimestamp(op)` | `1796034031` = 2026-11-30T10:20:31Z (schedule tx `0xfdfc…7347`) | `cast call` |
+| GovSafe `nonce()` pasca-handoff | `2` (acceptManagement tx `0x7918…0787`, schedule tx `0xfdfc…7347`) | `cast call` |
+| GovSafe owners | `0x1437…C60e`, `0xDBCF…0084`, `0x4DC9…a17C`; threshold 2; semua kunci ada di `.env` (GOVERNANCE_OWNER_KEY_1/2/3, terverifikasi derivasi) | `cast call` + derivasi lokal |
+| Gas testnet | Chainstack faucet 0.01 ETH → deployer; deployer→owner1 `0xe968…e9bd` (0.005 ETH) | tx receipt |
+
+Skrip handover baru: `scripts/handover_46630.py` (config-driven, gantikan pasangan `governance_handoff_46630.py`/`governance_execute_46630.py` yang alamatnya hardcode deploy lama).
