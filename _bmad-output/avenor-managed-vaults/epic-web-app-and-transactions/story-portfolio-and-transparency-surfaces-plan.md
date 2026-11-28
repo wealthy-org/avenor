@@ -3,7 +3,7 @@ title: 'Portfolio and transparency surfaces'
 type: 'implement'
 ticket: 5
 created: '2026-11-22'
-status: built
+status: done
 baseline_revision: '470fc88'
 route: 'oneshot'
 route_source: 'auto'

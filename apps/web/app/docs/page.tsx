@@ -69,6 +69,7 @@ const SIDEBAR_NAV: NavCategory[] = [
     items: [
       { title: "Architecture", href: "#architecture" },
       { title: "Vault mechanics", href: "#mechanics" },
+      { title: "Route Architecture", href: "#routes" },
       { title: "Security & Governance", href: "#roles" },
       { title: "Investment Mandates", href: "#mandates-doc" },
     ],
@@ -106,6 +107,7 @@ const ON_THIS_PAGE: TocItem[] = [
   { label: "AVENOR at a glance", href: "#at-a-glance" },
   { label: "Architecture", href: "#architecture" },
   { label: "Vault mechanics", href: "#mechanics" },
+  { label: "Route Architecture", href: "#routes" },
   { label: "Security & Governance", href: "#roles" },
   { label: "Investment Mandates", href: "#mandates-doc" },
   { label: "Getting started", href: "#getting-started" },
@@ -218,11 +220,12 @@ export default function DocsPage() {
 
             <div className="rounded-xl bg-[#0e1613]/90 border border-white/[0.08] p-4 space-y-1">
               <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
-                Deposit Cap · Live
+                Deposit Cap · On-Chain
               </div>
               <div className="font-mono text-lg sm:text-xl font-semibold text-[#f8f9fa]">
-                1,000,000.00 USDG
+                Closed
               </div>
+              <div className="text-[10px] font-mono text-[#6b7280]">deposit_limit = 0</div>
             </div>
 
             <div className="rounded-xl bg-[#0e1613]/90 border border-white/[0.08] p-4 space-y-1">
@@ -236,11 +239,12 @@ export default function DocsPage() {
 
             <div className="rounded-xl bg-[#0e1613]/90 border border-white/[0.08] p-4 space-y-1">
               <div className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
-                Timelock · Live
+                Timelock · Scheduled
               </div>
               <div className="font-mono text-lg sm:text-xl font-semibold text-[#f8f9fa]">
                 48 hours
               </div>
+              <div className="text-[10px] font-mono text-[#6b7280]">handover pending execution</div>
             </div>
           </div>
 
@@ -296,7 +300,7 @@ export default function DocsPage() {
             <ol className="list-decimal pl-5 space-y-1.5 text-xs font-mono text-[#a3abb8]">
               <li>Deploy TimelockController (≥ 48 h delay) as role_manager.</li>
               <li>Deploy MorphoVaultStrategy with the vault as its vault and the timelock as role_manager.</li>
-              <li>Deploy DepositCapHook; set it as the vault&apos;s deposit_hook.</li>
+              <li>Enforce deposit limits directly via set_deposit_limit (currently 0); DepositCapHook in repo pending timelock proposal.</li>
               <li>Grant GUARDIAN role to a separate guardian address (not the timelock proposer).</li>
               <li>Set deposit_limit to 0 until the timelock delay has elapsed; then raise via governance proposal.</li>
             </ol>
@@ -308,6 +312,29 @@ export default function DocsPage() {
               <li>Guardian address must not be the timelock proposer.</li>
               <li>All amounts are uint256 with 6 decimals (USDG). No floats anywhere in the stack.</li>
             </ul>
+          </div>
+        </section>
+
+        {/* Section: Route Architecture (Brief §11 & GAP C2) */}
+        <section id="routes" className="scroll-mt-28 space-y-4 pt-6 border-t border-white/[0.08]">
+          <h2 className="font-display text-2xl font-medium text-[#f8f9fa]">
+            Application Route Architecture
+          </h2>
+          <div className="text-sm text-[#b0b7c3] leading-relaxed space-y-3">
+            <p>
+              To ensure clear institutional separation and direct browser accessibility, Avenor implements the following canonical route architecture:
+            </p>
+            <div className="rounded-xl bg-[#0e1613] border border-white/[0.08] p-4 text-xs font-mono text-[#a3abb8] space-y-2">
+              <div>• <strong className="text-[#f8f9fa]">/ (Landing)</strong> — Institutional overview, live vault snapshot, roadmap mandates, protocol architecture.</div>
+              <div>• <strong className="text-[#f8f9fa]">/app &amp; /vaults</strong> — Vault catalog and exploration surface for active and stage vaults.</div>
+              <div>• <strong className="text-[#f8f9fa]">/vaults/[address]</strong> — Institutional deep-dive: on-chain metrics, live PPS chart, role matrix, fee distribution.</div>
+              <div>• <strong className="text-[#f8f9fa]">/vaults/[address]/deposit &amp; withdraw</strong> — Dedicated interactive transaction consoles with exact bounds and explicit max_loss.</div>
+              <div>• <strong className="text-[#f8f9fa]">/portfolio</strong> — Depositor telemetry: share balance, assets value, and CSV export.</div>
+              <div>• <strong className="text-[#f8f9fa]">/transparency</strong> — Proof of reserves, contract deployments, and operational disclosure.</div>
+              <div>• <strong className="text-[#f8f9fa]">/activity</strong> — Historical on-chain deployment and governance event log.</div>
+              <div>• <strong className="text-[#f8f9fa]">/operator</strong> — Governance dashboard, timelock schedules, and emergency runbooks.</div>
+              <div>• <strong className="text-[#f8f9fa]">/docs</strong> — Technical reference specifications, fee schedules, and security guides.</div>
+            </div>
           </div>
         </section>
 
@@ -489,8 +516,8 @@ export default function DocsPage() {
                   <code className="text-[#f8f9fa]">0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc</code>
                 </div>
                 <div className="p-3 flex items-center justify-between">
-                  <span className="text-[#8b929e]">DepositCapHook</span>
-                  <code className="text-[#f8f9fa]">0x980bAc25633bC5f269EaC26f743D75e3a8907869</code>
+                  <span className="text-[#8b929e]">Accountant Fee Controller</span>
+                  <code className="text-[#f8f9fa]">0xA499C9F98cE3a66B79dD9CaA99AA894DDE298e32</code>
                 </div>
               </div>
             </div>

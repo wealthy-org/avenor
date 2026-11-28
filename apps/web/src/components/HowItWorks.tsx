@@ -104,15 +104,14 @@ export function HowItWorks() {
                 <text x="105" y="91">Your Wallet</text>
                 <text x="445" y="91" fill="#52b896">Avenor Vault</text>
                 <text x="815" y="91">Tokenized Strategy</text>
-                <text x="1135" y="91">Steakhouse USDG</text>
-              </g>
+                <text x="1135" y="91">Steakhouse USDG</text>              </g>
 
               {/* Subtitles Below Boxes */}
               <g fontFamily="monospace" fontSize="12" fill="#8fa198" textAnchor="middle">
                 <text x="105" y="148">USDG (6 dec)</text>
                 <text x="445" y="148" fill="#52b896">ERC-4626 avUSDG</text>
                 <text x="815" y="148">default queue</text>
-                <text x="1135" y="148">Morpho Blue Venue</text>
+                <text x="1135" y="148">Mock venue · testnet only</text>
               </g>
             </svg>
           </div>

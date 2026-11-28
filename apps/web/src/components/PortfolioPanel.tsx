@@ -494,7 +494,7 @@ export function PortfolioPanel({ vaults, base, chainId: nodeChainId }: Portfolio
                 <div>
                   <div className="font-medium text-[#f8f9fa] text-base">{row.vault.label}</div>
                   <div className="text-xs font-mono text-[#8b929e] mt-1 flex items-center gap-2">
-                    <span>USDG · Cap $1.00M · Live On-Chain</span>
+                    <span>USDG · Deposit limit: closed</span>
                     <span>·</span>
                     <a
                       href={`${EXPLORER_BASE}/address/${row.vault.address}`}

@@ -28,16 +28,16 @@ export function SharePriceChart({
   const currentPriceFloat = Number(ppsBig) / 1_000_000;
   const displayPrice = currentPriceFloat > 0 ? currentPriceFloat.toFixed(4) : "1.0000";
 
-  // Historical data points simulating the ERC-4626 vault accumulation baseline
-  const points: Point[] = [
-    { time: "Nov 23", price: 1.0, block: "157995780" },
-    { time: "Nov 24", price: 1.0001, block: "158102400" },
-    { time: "Nov 25", price: 1.0002, block: "158250000" },
-    { time: "Nov 26", price: 1.0003, block: "158380000" },
-    { time: "Nov 27", price: currentPriceFloat > 0 ? currentPriceFloat : 1.0004, block: blockNumber },
-  ];
+  // Share price history: only the current on-chain reading is real (pricePerShare from vault).
+  // No historical snapshots exist yet (totalSupply = 0, no reports). Synthetic points are
+  // intentionally excluded per GAP_ANALYSIS U2-12 — Brief §11 requires chart data from real shares.
+  // Chart renders only when at least two on-chain snapshots are available.
+  const hasHistory = false; // updated when indexer provides real snapshot series
 
-  // SVG coordinate dimensions
+  // Current on-chain price shown in the header; chart body hidden until real data exists
+  const points: Point[] = [];
+
+  // SVG coordinate dimensions (kept for when real data is wired)
   const width = 640;
   const height = 180;
   const padding = 24;
@@ -45,7 +45,7 @@ export function SharePriceChart({
   const minPrice = 0.9995;
   const maxPrice = 1.001;
 
-  const getX = (index: number) => padding + (index / (points.length - 1)) * (width - padding * 2);
+  const getX = (index: number) => padding + (index / Math.max(points.length - 1, 1)) * (width - padding * 2);
   const getY = (val: number) => {
     const norm = (val - minPrice) / (maxPrice - minPrice);
     return height - padding - norm * (height - padding * 2);
@@ -57,7 +57,9 @@ export function SharePriceChart({
     return i === 0 ? `M ${x} ${y}` : `${acc} L ${x} ${y}`;
   }, "");
 
-  const areaPath = `${linePath} L ${getX(points.length - 1)} ${height} L ${getX(0)} ${height} Z`;
+  const areaPath = points.length > 0
+    ? `${linePath} L ${getX(points.length - 1)} ${height} L ${getX(0)} ${height} Z`
+    : "";
 
   return (
     <div className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] p-5 sm:p-6 shadow-xl relative overflow-hidden">
@@ -74,8 +76,8 @@ export function SharePriceChart({
         </div>
 
         <div className="text-right">
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono text-[#52b896] bg-[#52b896]/10 border border-[#52b896]/30">
-            +0.00% · Nov 27
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-mono text-[#8b929e] bg-white/[0.04] border border-white/[0.08]">
+            n/a · no history yet
           </span>
           <div className="text-[11px] font-mono text-[#8b929e] mt-1">
             Block #{activePoint ? activePoint.block : blockNumber}
@@ -83,78 +85,87 @@ export function SharePriceChart({
         </div>
       </div>
 
-      {/* Responsive SVG Chart */}
-      <div className="relative w-full aspect-[640/180] mt-4">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-full overflow-visible"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="chartEmeraldGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#52b896" stopOpacity="0.28" />
-              <stop offset="100%" stopColor="#52b896" stopOpacity="0.0" />
-            </linearGradient>
-            <filter id="emeraldGlow" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feComposite in="SourceGraphic" in2="blur" operator="over" />
-            </filter>
-          </defs>
+      {/* Chart body — hidden until real snapshot data is available */}
+      {hasHistory ? (
+        <div className="relative w-full aspect-[640/180] mt-4">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="w-full h-full overflow-visible"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id="chartEmeraldGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#52b896" stopOpacity="0.28" />
+                <stop offset="100%" stopColor="#52b896" stopOpacity="0.0" />
+              </linearGradient>
+              <filter id="emeraldGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
 
-          {/* Grid lines */}
-          <line
-            x1={padding}
-            y1={getY(1.0)}
-            x2={width - padding}
-            y2={getY(1.0)}
-            stroke="rgba(255,255,255,0.06)"
-            strokeDasharray="4 4"
-          />
+            {/* Grid lines */}
+            <line
+              x1={padding}
+              y1={getY(1.0)}
+              x2={width - padding}
+              y2={getY(1.0)}
+              stroke="rgba(255,255,255,0.06)"
+              strokeDasharray="4 4"
+            />
 
-          {/* Filled Area */}
-          <path d={areaPath} fill="url(#chartEmeraldGrad)" />
+            {/* Filled Area */}
+            <path d={areaPath} fill="url(#chartEmeraldGrad)" />
 
-          {/* Stroke Line */}
-          <path
-            d={linePath}
-            fill="none"
-            stroke="#52b896"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            filter="url(#emeraldGlow)"
-          />
+            {/* Stroke Line */}
+            <path
+              d={linePath}
+              fill="none"
+              stroke="#52b896"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              filter="url(#emeraldGlow)"
+            />
 
-          {/* Data Points */}
-          {points.map((p, i) => {
-            const cx = getX(i);
-            const cy = getY(p.price);
-            const isLast = i === points.length - 1;
-            return (
-              <g key={p.time}>
-                {isLast && (
-                  <circle cx={cx} cy={cy} r="6" fill="#52b896" opacity="0.3" className="animate-ping" />
-                )}
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={isLast ? "4.5" : "3"}
-                  fill={isLast ? "#52b896" : "#0e1613"}
-                  stroke="#52b896"
-                  strokeWidth="2"
-                  className="cursor-pointer hover:r-5 transition-all"
-                  onMouseEnter={() => setActivePoint(p)}
-                  onMouseLeave={() => setActivePoint(null)}
-                />
-              </g>
-            );
-          })}
-        </svg>
-      </div>
+            {/* Data Points */}
+            {points.map((p, i) => {
+              const cx = getX(i);
+              const cy = getY(p.price);
+              const isLast = i === points.length - 1;
+              return (
+                <g key={p.time}>
+                  {isLast && (
+                    <circle cx={cx} cy={cy} r="6" fill="#52b896" opacity="0.3" className="animate-ping" />
+                  )}
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={isLast ? "4.5" : "3"}
+                    fill={isLast ? "#52b896" : "#0e1613"}
+                    stroke="#52b896"
+                    strokeWidth="2"
+                    className="cursor-pointer hover:r-5 transition-all"
+                    onMouseEnter={() => setActivePoint(p)}
+                    onMouseLeave={() => setActivePoint(null)}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center h-[100px] mt-4 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+          <p className="text-[12px] font-mono text-[#6b7280] text-center px-4">
+            Chart available when on-chain snapshot history exists.<br />
+            <span className="text-[11px]">No deposits or reports yet (totalSupply = 0).</span>
+          </p>
+        </div>
+      )}
 
       {/* Timeline labels */}
       <div className="flex items-center justify-between text-[11px] font-mono text-[#8b929e] pt-2 px-1">
-        <span>Start · Nov 23</span>
         <span>Share price (USDG) {displayPrice}</span>
+        <span>Block #{blockNumber}</span>
       </div>
     </div>
   );

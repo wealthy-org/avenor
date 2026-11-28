@@ -670,7 +670,7 @@ export default async function VaultPage({ params }: Params) {
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono text-[#52b896] bg-[#52b896]/10 border border-[#52b896]/30">
             <span className="w-1.5 h-1.5 rounded-full bg-[#52b896] animate-pulse" />
-            Live On-Chain
+            On-Chain (Stage 46630)
           </span>
           <Link
             href="/docs"
@@ -709,14 +709,15 @@ export default async function VaultPage({ params }: Params) {
           {/* 4 Key Metrics Card (2x2 Grid) */}
           <div className="rounded-2xl bg-[#0e1613]/90 border border-white/[0.08] p-6 sm:p-7 shadow-xl space-y-6">
             <div className="grid grid-cols-2 gap-6">
-              {/* Metric 1: APY */}
+              {/* Metric 1: APY — no historical data: totalSupply = 0, pricePerShare never changed */}
               <div className="space-y-1">
                 <span className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
                   APY · On-Chain (7d)
                 </span>
-                <div className="text-2xl sm:text-3xl font-mono font-semibold text-[#52b896] tracking-tight">
-                  1.88%
+                <div className="text-2xl sm:text-3xl font-mono font-semibold text-[#8b929e] tracking-tight">
+                  n/a
                 </div>
+                <div className="text-[10px] font-mono text-[#6b7280]">no deposits yet</div>
               </div>
 
               {/* Metric 2: Vault Capacity & TVL */}
@@ -725,7 +726,7 @@ export default async function VaultPage({ params }: Params) {
                   Vault Capacity · On-Chain TVL
                 </span>
                 <div className="text-2xl sm:text-3xl font-mono font-semibold text-[#f8f9fa] tracking-tight">
-                  {vault.depositLimit > 0n ? `$${money(vault.depositLimit)} Cap` : "$1.00M Cap"}
+                  {vault.depositLimit > 0n ? `$${money(vault.depositLimit)} Cap` : "Closed (limit = 0)"}
                 </div>
                 <div className="text-xs font-mono text-[#8b929e]">
                   ${live === null ? "0.00" : money(live.totalAssets)} Live TVL
@@ -750,6 +751,26 @@ export default async function VaultPage({ params }: Params) {
                 <div className="text-sm sm:text-base font-mono font-medium text-[#f8f9fa]">
                   0.00% management · {live?.performanceFeeBps !== null && live?.performanceFeeBps !== undefined ? percentBps(live.performanceFeeBps) : "10.00%"} performance
                 </div>
+              </div>
+            </div>
+
+            {/* Institutional Metadata Grid (Brief §11 & GAP C2) */}
+            <div className="pt-4 border-t border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+              <div>
+                <span className="text-[10px] uppercase text-[#8b929e] block">Mandate Version</span>
+                <span className="text-[#f8f9fa] font-medium">v1.0 (Yearn V3 3.1.1)</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase text-[#8b929e] block">Curator / Governance</span>
+                <span className="text-[#f8f9fa] font-medium">Safe 2/3 (0x24e9...d4AA)</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase text-[#8b929e] block">APY Methodology</span>
+                <span className="text-[#8b929e]">Trailing 7d PPS (n/a)</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase text-[#8b929e] block">Data Provenance</span>
+                <span className="text-[#6db89b]">Block #{live?.blockNumber.toString() ?? "latest"}</span>
               </div>
             </div>
           </div>

@@ -71,7 +71,7 @@ const DEPLOYMENT_PROOFS: DeploymentRecord[] = [
   },
   {
     name: "MorphoVaultStrategy",
-    role: "Steakhouse USDG Single-Venue Adapter",
+    role: "Mock Steakhouse USDG Single-Venue Adapter (Testnet)",
     address: "0x8f151132f80277b7D42Ad9615172E6De1B26Cf93",
     txHash: "0x1f74a008c2670e30d1702f2323a7786851b439c381d604e5785bbff0092c63ef",
     block: 157503816,
@@ -247,8 +247,7 @@ export default function Page() {
               </h2>
             </div>
             <p className="mt-1 text-sm text-[#b0b7c3] max-w-2xl">
-              Verified deployment transactions on Robinhood Chain Testnet (Chain ID 46630). Every transaction hash is
-              verifiable on-chain via the block explorer.
+              Deployment records for Robinhood Chain Testnet (Chain ID 46630). Contracts exist at the addresses listed below; deployment transaction receipts are subject to testnet node history retention.
             </p>
           </div>
           <span className="font-mono text-xs text-[#6db89b] bg-[#6db89b]/10 border border-[#6db89b]/25 rounded-full px-3 py-1 self-start sm:self-auto">

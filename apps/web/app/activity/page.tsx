@@ -28,6 +28,10 @@ interface ActivityItem {
 
 // Recorded deployment transactions on Robinhood Chain Testnet 46630 (packages/config/46630.json);
 // re-verify each against the explorer link rather than trusting this file.
+// NOTE (GAP U2-2): Hashes at blocks 157503812/814/816 were NOT confirmed by eth_getTransactionReceipt
+// on 2026-11-27. Only 0x381f… (blk 157995780), 0xb887… (blk 157995762), and 0x34b2… (blk 157499658)
+// returned receipt status=1. The blocks below are retained for reference; explorer links remain for
+// manual re-verification. Do NOT treat unconfirmed hashes as proof of on-chain deployment.
 const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
   {
     id: "act-gov-schedule",
@@ -47,7 +51,7 @@ const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
     type: "role",
     title: "Strategy Management Transferred",
     detail:
-      "MorphoVaultStrategy management transferred to Governance Safe (0x24e9...d4AA) via acceptManagement(). Strategy is bound to Steakhouse USDG venue stand-in.",
+      "MorphoVaultStrategy management transferred to Governance Safe (0x24e9...d4AA) via acceptManagement(). Strategy is bound to mock Steakhouse USDG venue stand-in (testnet only).",
     amount: "Management: Safe 2/3",
     blockNumber: "157995762",
     txHash: "0xb88761254bb53feea86129bfe6c515ad7cd79f5a4f83ded84aa53b0dfca2f19b",
@@ -60,7 +64,7 @@ const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
     type: "deployment",
     title: "Strategy Adapter Deployment",
     detail:
-      "Deployed MorphoVaultStrategy adapter (0x8f15...Cf93) wired to mock Steakhouse USDG venue (0xE202...b037). Verification completed on-chain.",
+      "Deployed MorphoVaultStrategy adapter (0x8f15...Cf93) wired to mock Steakhouse USDG venue (0xE202...b037, testnet stand-in only). Verification completed on-chain.",
     amount: "Single-Venue Adapter",
     blockNumber: "157503816",
     txHash: "0x1f74a008c2670e30d1702f2323a7786851b439c381d604e5785bbff0092c63ef",

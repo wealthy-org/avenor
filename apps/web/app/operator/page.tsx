@@ -140,15 +140,15 @@ export default async function OperatorPage() {
           <span className="font-mono text-xs uppercase tracking-wider text-[#8b929e]">Guardian Multisig</span>
           <div className="text-xl sm:text-2xl font-mono font-medium text-[#6db89b] mt-1">2-of-3 Safe</div>
           <p className="text-xs text-[#a3abb8] mt-2">
-            Independent guardian signers (0x8322...5af1). Proposer is Governance Safe (0x24e9...d4AA).
+            Independent guardian signers (0x8322...5af1). Proposer is Governance Safe (0x24e9...d4AA). Note: deployer address is a signer in both Safes (testnet — separation before mainnet).
           </p>
         </div>
 
         <div className="card">
           <span className="font-mono text-xs uppercase tracking-wider text-[#8b929e]">Keeper Status</span>
-          <div className="text-xl sm:text-2xl font-mono font-medium text-[#38bdf8] mt-1">Operational</div>
+          <div className="text-xl sm:text-2xl font-mono font-medium text-[#8b929e] mt-1">Not Active</div>
           <p className="text-xs text-[#a3abb8] mt-2">
-            In-flight transaction guard active; receipt verification enforced before onSent completion.
+            Keeper nonce = 0. No keeper transactions sent yet. Status will update when first report/update_debt tx is confirmed.
           </p>
         </div>
 
@@ -270,8 +270,7 @@ export default async function OperatorPage() {
             </h3>
             <p className="text-xs text-[#a3abb8]">
               To suspend incoming capital without disrupting liquidity, invoke{" "}
-              <code className="text-[#f8f9fa]">set_deposit_limit(0)</code> or enforce through the{" "}
-              <code className="text-[#f8f9fa]">DepositCapHook</code>. Existing depositors retain 100% full
+              <code className="text-[#f8f9fa]">set_deposit_limit(0)</code>. Existing depositors retain 100% full
               unrestricted access to withdraw and redeem idle funds.
             </p>
           </div>

@@ -108,14 +108,14 @@ export function VaultMandates({ live, identity }: { live: MandateLive; identity:
     slug: "usdg-managed-yield",
     name: "USDG Managed Yield",
     subtitle: "USDG across audited on-chain lending vaults · Robinhood Chain",
-    phaseBadge: "Live On-Chain",
+    phaseBadge: "Research Staging",
     isLive: true,
     accentColor: "#52b896",
     accentGlow: "rgba(82, 184, 150, 0.16)",
     metric1: {
       value: "8.9%",
-      label: "Target Yield",
-      color: "#52b896",
+      label: "Target Yield (roadmap estimate)",
+      color: "#8b929e",
     },
     metric2: {
       // No APR exists anywhere on the vault, so an APY figure here would be invented. The idle
@@ -227,7 +227,7 @@ export function VaultMandates({ live, identity }: { live: MandateLive; identity:
       label: "Vault Cap",
       color: "#f8f9fa",
     },
-    tag: "USDG · ERC-4620 · Active Quantitative",
+    tag: "USDG · ERC-4626 · Active Quantitative",
     description:
       "Concentrated liquidity provisioning on Uniswap v4 pools with automated tick rebalancing hooks and inventory protection algorithms.",
     facts: [
@@ -478,7 +478,7 @@ export function VaultMandates({ live, identity }: { live: MandateLive; identity:
                 #{live.blockNumber}
               </div>
               <div className="text-xs font-mono text-[#a3abb8]">
-                Dual-speed timelock verified · 48h delay
+                Dual-speed timelock scheduled · 48h delay (handover pending execution)
               </div>
             </div>
           </div>
