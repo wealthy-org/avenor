@@ -130,9 +130,12 @@ export function VaultActionConsole({
           </div>
 
           {/* Capital Risk Disclosure Box */}
-          <div className="rounded-xl bg-amber-500/[0.04] border border-amber-500/20 p-3.5 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-amber-300">
-              <span>🛡️ Guarded Launch · Capital Risk Disclosure</span>
+          <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] p-3.5 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-[#b0b7c3]">
+              <svg className="w-3.5 h-3.5 shrink-0 text-[#6db89b]" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 1.5L2 4v4c0 3.3 2.5 6.4 6 7 3.5-.6 6-3.7 6-7V4L8 1.5z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round"/>
+              </svg>
+              <span>Guarded Launch · Capital Risk Disclosure</span>
             </div>
             <p className="text-[11px] text-[#a3abb8] leading-relaxed">
               ERC-4626 share valuations fluctuate in accordance with underlying strategy net asset value.
@@ -142,7 +145,7 @@ export function VaultActionConsole({
 
           {/* Primary Action Button */}
           {isResearch ? (
-            <div className="w-full text-center py-3 px-4 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono">
+            <div className="w-full text-center py-3 px-4 rounded-xl border border-white/[0.1] bg-white/[0.04] text-[#8b929e] text-xs font-mono">
               Research Phase · Deposits Closed
             </div>
           ) : (

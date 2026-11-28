@@ -804,7 +804,7 @@ export default async function VaultPage({ params }: Params) {
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
               {config.phase === "research" ? (
-                <span className="inline-flex items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 px-3.5 py-2 text-xs font-mono whitespace-nowrap">
+                <span className="inline-flex items-center justify-center rounded-lg border border-white/[0.12] bg-white/[0.04] text-[#8b929e] px-3.5 py-2 text-xs font-mono whitespace-nowrap">
                   Research Phase · Deposits Closed
                 </span>
               ) : (
@@ -825,8 +825,8 @@ export default async function VaultPage({ params }: Params) {
           </div>
 
           {/* Liquidity Promise Notice */}
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.03] p-4 text-xs font-mono text-[#8b929e] space-y-1.5 leading-relaxed">
-            <span className="text-amber-300 font-semibold block">Position value ≠ Instant liquidity</span>
+          <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 text-xs font-mono text-[#8b929e] space-y-1.5 leading-relaxed">
+            <span className="text-[#b0b7c3] font-medium block">Position value ≠ Instant liquidity</span>
             <p>
               Immediate withdrawals draw from idle cash buffer ({live === null ? "0.00" : money(live.totalIdle)} USDG).
               Capital deployed to venue requires strategy queue liquidation.
