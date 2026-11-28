@@ -162,7 +162,19 @@ Target: vault `0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0` (minimal proxy EIP-11
 | `default_queue(0)` | `0x8f151132f80277b7D42Ad9615172E6De1B26Cf93` (strategi, apiVersion 3.1.1, totalAssets 0) | `cast call` |
 | `asset()` | `0xf32FFAfDC3B430D8143e29191bbCCc7AB4e6dB6c` ("MockUSDG") | `cast call` |
 | Timelock `getMinDelay()` | `172800` (48 jam) | `cast call` |
-| Timelock op `accept_role_manager` (`opId a9c36435…87c1d`) | pending/ready/done semua `false` → **belum pernah di-schedule** | `cast call` |
+| Timelock op `accept_role_manager` (`opId 0x9068381b…d05f`, salt-1, dari `hashOperation` on-chain) | `pending=true`, `ready=true`, `done=false`, `getTimestamp=1795831749` → **READY sejak 2026-11-28 02:09:09 UTC** (schedule tx `0x381f…376d`, blok `157995780`) | `cast call` |
+| Safe `nonce()` | `2` (cocok `safeNonceAfter` di `packages/config/46630.json`) | `cast call` |
+| Safe tx hash untuk ditandatangani (nonce 2) | `0x9308773cc283c46937265ba2e599e505263d468fd92a2b8b9586d97c57677801` — dihitung via `getTransactionHash` dengan calldata `execute(address,uint256,bytes,bytes32,bytes32)(vault,0,0xf776bf1f,0,salt-1)` | `cast call` |
 | Safe `0x24e96fCB…Bd4AA` | 3 owner, threshold 2 | `getOwners`/`getThreshold` |
 
 Catatan: endpoint `solidrpc`/`onfinality` melayani **mainnet `4663`** (belum ada vault Avenor, `code 0x` = benar) — testnet `46630` hanya di RPC resmi Robinhood. `scripts/seed-deposit.py` USDG lama `0x97cb…7862` tidak punya kode; dikoreksi ke `0xf32F…dB6c`.
+
+### 2026-11-28 09:13 UTC — blok `158765396`: status eksekusi handover
+
+- Rantai validasi batch `_bmad-output/safe-handover-execution.json` (salt-1): `to=Timelock`, `data=0xf776bf1f`, re-encode `cast calldata` → `0x134008d3…da4d…` → `hashOperation` on-chain = `0x9068381b…d05f` **persis op yang READY** ✓
+- Gate `scripts/check-handover.py`: semua invariant PASS (deposit protected, strategy management = Gov Safe, deployer 0 roles, delay 48.0h, op ready). Catatan: crash di baris terakhir script hanyalah bug encoding emoji `✅` pada cp1252 Windows — laporan sebelumnya sudah tercetak lengkap.
+- Kunci owner Governance Safe (`0x56d8…`, `0x445b…`, `0xAaB2…`) **tidak tersedia di mesin CI/agent** — verifikasi derivasi dari semua nilai kunci-format di `.env*`, file bukti, dan broadcast cache: tidak ada yang cocok. Eksekusi final wajib ditandatangani 2 owner (batas keamanan multisig; tidak di-bypass).
+- Runbook eksekusi final (pilih salah satu jalur):
+  1. **Script otomatis (disarankan):** `$env:PK1="<owner1 key>"; $env:PK2="<owner2 key>"; python scripts/governance_execute_46630.py` — script melakukan pre-flight (opId via `hashOperation`, ready, role_manager masih deployer), menandatangani 2/3, broadcast `execTransaction`, lalu post-flight memverifikasi `role_manager() == Timelock`, `future_role_manager() == 0`.
+  2. **Safe UI:** impor `_bmad-output/safe-handover-execution.json` ke Safe Transaction Builder `0x24e96fCB…Bd4AA` (chain 46630), pastikan hash yang ditandatangani = `0x9308773c…7801` (nonce 2), kumpulkan 2 tanda tangan, eksekusi.
+- Verifikasi pasca-eksekusi: `role_manager()` = `0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc`, `future_role_manager()` = `0x0`, `isOperationDone(0x9068381b…) = true`, lalu `python scripts/check-handover.py --strict`.
