@@ -72,6 +72,12 @@ jobs:
           npm ci --prefix services/keeper
           npm ci --prefix packages/sdk
 
+      # scripts/db-test.py spins up its own throwaway postgres cluster and looks for
+      # initdb/pg_ctl either on PATH or via PG_BIN. Runner images ship the server binaries
+      # under /usr/lib/postgresql/<major>/bin but do not put them on PATH.
+      - name: Locate PostgreSQL binaries
+        run: echo "PG_BIN=$(ls -d /usr/lib/postgresql/*/bin | sort -V | tail -1)" >> "$GITHUB_ENV"
+
       - name: Verify All Gates
         env:
           DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/avenor_test
