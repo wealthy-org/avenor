@@ -10,8 +10,8 @@
     },
     "observed_at": {
       "blockNumber": 158777022,
-      "blockTimestamp": 1795532440,
-      "blockHash": "0xcf591c0b9419b5e8a0cc50db6a78c2f9ab0c90c01b3a13cdee16b763837be900",
+      "blockTimestamp": 1795860250,
+      "blockHash": "0x608793e491b55f1d7620be1326a62aedcf345dbf045702c42140b50d00d6afdb",
       "hostDate": "2026-11-28",
       "note": "Fresh stage redeploy probed live via rpc.testnet.chain.robinhood.com"
     },

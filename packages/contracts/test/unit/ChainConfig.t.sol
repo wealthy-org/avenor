@@ -97,11 +97,11 @@ contract ChainConfigTest is Test {
 
     function test_testnetChainIdentityIsRecorded() external view {
         assertEq(vm.parseJsonUint(json46630, "._meta.network.chainId"), 46630);
-        assertEq(vm.parseJsonUint(json46630, "._meta.observed_at.blockNumber"), 157_460_667);
-        assertEq(vm.parseJsonUint(json46630, "._meta.observed_at.blockTimestamp"), 1_795_532_440);
+        assertEq(vm.parseJsonUint(json46630, "._meta.observed_at.blockNumber"), 158_777_022);
+        assertEq(vm.parseJsonUint(json46630, "._meta.observed_at.blockTimestamp"), 1_795_860_250);
         assertEq(
             vm.parseJsonBytes32(json46630, "._meta.observed_at.blockHash"),
-            bytes32(0xcf591c0b9419b5e8a0cc50db6a78c2f9ab0c90c01b3a13cdee16b763837be900)
+            bytes32(0x608793e491b55f1d7620be1326a62aedcf345dbf045702c42140b50d00d6afdb)
         );
     }
 
@@ -132,54 +132,55 @@ contract ChainConfigTest is Test {
     function test_testnetStageDeploymentIsRecorded() external view {
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.vault"),
-            0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0
+            0xFB6064C2A4CedaD01b2a873E43890D18e1Cb4Dd9
         );
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.strategy"),
-            0x8f151132f80277b7D42Ad9615172E6De1B26Cf93
+            0xc96479EF4274F7619E1e78FA40bfdb3a367d8291
         );
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.accountant"),
-            0xA499C9F98cE3a66B79dD9CaA99AA894DDE298e32
+            0xE72b69440D6ddb12F07A4f0A335062f7aeD3Ad7C
         );
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.timelock"),
-            0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc
+            0x2Bfa51B313AA76d2ED0d8D5971Dd8b3e4235609D
         );
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.emergencyTimelock"),
-            0xde3f5071559d929d18092EEf7f3B106e39BCD4b6
+            0x4B80C02fee19efc0BEb41D921fb3cD54412ad895
         );
         // The remaining stage actors were previously pinned nowhere: a config edit or a
         // redeploy could drift them silently. Pin them here — a legitimate redeploy must
         // update this test on purpose, not pass by accident.
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.factory"),
-            0x351039141Bd6CB9f4a613a24cD26a537a86ED538
+            0xcA83591e36949a6190957E22DDDB9dad249a57B2
         );
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.vaultOriginal"),
-            0x8e3C196bcD62772c931fe62aAA76FDb7edAD8258
+            0x64Dc3C0913744a27E31Eb8322c36ee9494DAdef8
         );
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.governanceSafe"),
-            0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA
+            0x68b80E963a8D8029d5D3814A7230887c1Ce0251e
+        );
+        // v2: guardian and treasury are dedicated EOAs (no Safes on testnet).
+        assertEq(
+            vm.parseJsonAddress(json46630, ".deployments.stage.guardian"),
+            0x1a7202181f7bDdeFd031C5C45aADA3479A173796
         );
         assertEq(
-            vm.parseJsonAddress(json46630, ".deployments.stage.guardianSafe"),
-            0x83227a7b21Ead1e0581D03144B85Cb63Fd585af1
-        );
-        assertEq(
-            vm.parseJsonAddress(json46630, ".deployments.stage.treasurySafe"),
-            0x8AA6f4DA5EC2B562854D18E70A173c6CCC827e58
+            vm.parseJsonAddress(json46630, ".deployments.stage.treasury"),
+            0x43bD76147a1c897Fd7e9FDdED517E392528e556b
         );
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.keeper"),
-            0x9c4D1f60c74Af03ca92D634A54d55A998CE25d75
+            0x60DF56Aec6bb8ae6BDb96538151FCe91b87D2bFA
         );
         assertEq(
             vm.parseJsonAddress(json46630, ".deployments.stage.deployer"),
-            0x56d845a35EDe1436B8053f705b4b189c412A8648
+            0xf6BAE6C6516Ab237d659F97187C475652514c76A
         );
     }
 
@@ -204,8 +205,9 @@ contract ChainConfigTest is Test {
         _assertRecordMatches(record, ".deployment.deployer", ".deployments.stage.deployer");
         _assertRecordMatches(record, ".deployment.keeper", ".deployments.stage.keeper");
         // Aliases: the config names the actor, the record names the role it fills.
-        _assertRecordMatches(record, ".deployment.guardian", ".deployments.stage.guardianSafe");
-        _assertRecordMatches(record, ".deployment.treasury", ".deployments.stage.treasurySafe");
+        // v2: guardian and treasury are dedicated EOAs (config key = actor name, not Safe).
+        _assertRecordMatches(record, ".deployment.guardian", ".deployments.stage.guardian");
+        _assertRecordMatches(record, ".deployment.treasury", ".deployments.stage.treasury");
         _assertRecordMatches(
             record, ".deployment.strategyManagement", ".deployments.stage.governanceSafe"
         );

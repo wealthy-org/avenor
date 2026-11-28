@@ -14,8 +14,8 @@ function fail(message: string): never {
 async function main(): Promise<void> {
   const rpcUrl = process.env.RPC_URL ?? "https://rpc.testnet.chain.robinhood.com";
   const databaseUrl = process.env.DATABASE_URL;
-  const vaultAddress = process.env.VAULT_ADDRESS ?? "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0";
-  const strategyAddress = process.env.STRATEGY_ADDRESS ?? "0x8f151132f80277b7D42Ad9615172E6De1B26Cf93";
+  const vaultAddress = process.env.VAULT_ADDRESS ?? "0xFB6064C2A4CedaD01b2a873E43890D18e1Cb4Dd9";
+  const strategyAddress = process.env.STRATEGY_ADDRESS ?? "0xc96479EF4274F7619E1e78FA40bfdb3a367d8291";
   const chainId = Number(process.env.CHAIN_ID ?? "46630");
   const port = Number(process.env.PORT ?? "3001");
   const intervalMs = Number(process.env.INGEST_INTERVAL_MS ?? "15000");

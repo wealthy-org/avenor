@@ -26,6 +26,7 @@ import datetime
 import json
 import os
 import sys
+import time
 import urllib.request
 import urllib.error
 from pathlib import Path
@@ -48,8 +49,8 @@ SEL_IS_OP_READY = "0x13bc9f20"           # isOperationReady(bytes32)
 SEL_GET_TIMESTAMP = "0xd45c4435"         # getTimestamp(bytes32)
 
 
-def eth_call(rpc_url: str, to: str, data: str) -> str:
-    """Execute raw eth_call via JSON-RPC."""
+def eth_call(rpc_url: str, to: str, data: str, retries: int = 5, delay: float = 5.0) -> str:
+    """Execute raw eth_call via JSON-RPC with retry (RPC resets connections often)."""
     payload = {
         "jsonrpc": "2.0",
         "id": 1,
@@ -64,14 +65,21 @@ def eth_call(rpc_url: str, to: str, data: str) -> str:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         },
     )
-    try:
-        with urllib.request.urlopen(req, timeout=12) as response:
-            res = json.loads(response.read().decode("utf-8"))
-            if "error" in res:
-                raise RuntimeError(f"RPC error from {rpc_url}: {res['error']}")
-            return res.get("result", "0x")
-    except urllib.error.URLError as e:
-        raise RuntimeError(f"Connection failed to RPC {rpc_url}: {e}")
+    last_err: Exception | None = None
+    for attempt in range(retries):
+        try:
+            with urllib.request.urlopen(req, timeout=12) as response:
+                res = json.loads(response.read().decode("utf-8"))
+                if "error" in res:
+                    raise RuntimeError(f"RPC error from {rpc_url}: {res['error']}")
+                return res.get("result", "0x")
+        except RuntimeError:
+            raise  # RPC-level error: do not retry malformed responses
+        except (urllib.error.URLError, OSError) as e:
+            last_err = e
+            if attempt < retries - 1:
+                time.sleep(delay)
+    raise RuntimeError(f"Connection failed to RPC {rpc_url}: {last_err}")
 
 
 def decode_address(hex_str: str) -> str:
@@ -412,13 +420,13 @@ def main() -> None:
 
     print("-" * 72)
     if report["violations"]:
-        print(f"RESULT: ❌ FAIL ({len(report['violations'])} violation(s) found):")
+        print(f"RESULT: [FAIL] ({len(report['violations'])} violation(s) found):")
         for v in report["violations"]:
             print(f"  - {v}")
         print("=" * 72)
         sys.exit(1)
     else:
-        print(f"RESULT: ✅ {report['status']} — All governance and safety invariants verified.")
+        print(f"RESULT: [PASS] {report['status']} - All governance and safety invariants verified.")
         print("=" * 72)
         sys.exit(0)
 

@@ -16,21 +16,19 @@ flowchart LR
 
 ---
 
-## 2. Fase 1: Eksekusi Handover Tata Kelola di Testnet (28 Nov 2026)
+## 2. Fase 1: Eksekusi Handover Tata Kelola di Testnet (30 Nov 2026)
 
-- **Waktu Jatuh Tempo:** `2026-11-28T02:09:09Z` (09:09:09 WIB).
+- **Waktu Jatuh Tempo:** `2026-11-30T10:20:31Z` (17:20:31 WIB).
 - **Penanggung Jawab:** Winston (Architect) & Signer Governance Safe (2/3).
 - **Prosedur:**
-  1. Jalankan `python scripts/execute-handover.py` untuk mengonfirmasi status `Maturity Status: READY FOR EXECUTION`.
-  2. Buka Safe Transaction Builder di dashboard Safe Testnet (`0x24e96fCB7b7f7832D6D5cF5f08E7d50AaC0Bd4AA`).
-  3. Muat berkas calldata yang dihasilkan di [`_bmad-output/safe-handover-execution.json`](../_bmad-output/safe-handover-execution.json).
-  4. Lakukan penandatanganan minimal 2 dari 3 pemilik Safe.
-  5. Eksekusi transaksi di chain.
-  6. **Verifikasi Gerbang:**
+  1. Jalankan `python scripts/handover_46630.py status` untuk mengonfirmasi op timelock `0xf4d2cee4...33fc90` siap (`isOperationReady == true`).
+  2. Jalankan `python scripts/handover_46630.py execute` — skrip menandatangani 2/3 Safe (kunci `GOVERNANCE_OWNER_KEY_1/2/3`), broadcast `timelock.execute(vault.accept_role_manager())`, lalu memverifikasi `role_manager() == Timelock`.
+  3. **Verifikasi Gerbang:**
      ```bash
      python scripts/check-handover.py --strict
+     python scripts/handover_46630.py verify
      ```
-     *Kriteria Lolos:* Output mencetak `RESULT: PASS — All governance and safety invariants verified.` dengan `role_manager == timelock`.
+     *Kriteria Lolos:* `check-handover.py` mencetak `RESULT: PASS — All governance and safety invariants verified.` dengan `role_manager == timelock`, dan `handover_46630.py verify` hijau semua pengecekan (roles(timelock)=3995, apiVersion, threshold=2).
 
 ---
 
