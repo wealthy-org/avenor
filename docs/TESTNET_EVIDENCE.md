@@ -4,6 +4,16 @@ Documented evidence of the Avenor Vault Stack deployment on Robinhood Chain Test
 
 ---
 
+### Gate status redeploy v2 (2026-11-28)
+
+- `python scripts/verify-all.py --with-web-build --with-fork` = **ALL CHECKS PASSED**
+  (secrets, vendor, interface, build, fmt, unit+invariant, web tests, web build, fork pin 118337511, bytecode 14/14).
+- `check-handover.py --strict` FAIL yang diharapkan: role_manager masih deployer sementara
+  sampai eksekusi timelock (2026-11-30T10:20:31Z). Semua invariant lain PASS
+  (deposit limit 0, deployer 0 peran, delay 48h, strategy mgmt = Safe).
+- Web produksi `https://www.avenorfi.xyz` menunjuk vault v2 `0xFB60...4Dd9`
+  (Vercel `AVENOR_VAULTS` production, deploy `dpl_32vX5U4cTUPEAS4UbB5Syx4zN25X`).
+
 ## 0. REDEPLOY v2 (2026-11-28) — CURRENT ACTIVE DEPLOYMENT
 
 **Status: the deployment documented in §1 onward (deployer `0x56d8…648`, vault `0xDa4D…7DA0`) is SUPERSEDED.** Its governance handover was blocked permanently: all owner keys of the old Governance Safe `0x24e9…d4AA` were lost (key recovery exhausted — see `docs/REFERENCE_CAPTURE.md` 2026-11-28). The old vault holds 0 assets and is not a user risk, but it is unreachable for role changes.
