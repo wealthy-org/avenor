@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { money, percentBps } from "@/lib/format";
+import { WithdrawForm } from "./WithdrawForm";
 
 interface VaultActionConsoleProps {
   vaultAddress: string;
@@ -18,6 +19,16 @@ interface VaultActionConsoleProps {
   performanceFeeBps: number | null;
   managementFeeBps: number | null;
   assetSymbol: string;
+  chainId?: number;
+  shareDecimals?: number;
+  live?: {
+    isPaused: boolean | null;
+    isShutdown: boolean;
+    totalIdle: bigint;
+    blockNumber: bigint;
+    blockTimestamp: string;
+  } | null;
+  initialTab?: "deposit" | "withdraw";
 }
 
 export function VaultActionConsole({
@@ -28,8 +39,12 @@ export function VaultActionConsole({
   performanceFeeBps,
   managementFeeBps,
   assetSymbol = "USDG",
+  chainId,
+  shareDecimals = 6,
+  live,
+  initialTab = "deposit",
 }: VaultActionConsoleProps) {
-  const [tab, setTab] = useState<"deposit" | "withdraw">("deposit");
+  const [tab, setTab] = useState<"deposit" | "withdraw">(initialTab);
   const [amount, setAmount] = useState<string>("");
 
   const depositLimitBig = typeof depositLimit === "bigint" ? depositLimit : BigInt(depositLimit || "0");
@@ -160,59 +175,21 @@ export function VaultActionConsole({
         </div>
       ) : (
         <div className="space-y-4">
-          {/* Withdraw View */}
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-mono uppercase tracking-wider text-[#8b929e]">
-              You Withdraw
-            </label>
-            <div className="relative rounded-xl bg-[#14221c] border border-white/[0.1] focus-within:border-[#52b896] transition-colors p-3.5 flex items-center justify-between">
-              <input
-                type="text"
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="w-full bg-transparent font-mono text-xl text-[#f8f9fa] focus:outline-none placeholder:text-white/[0.2]"
-              />
-              <span className="shrink-0 px-2.5 py-1 rounded-lg bg-white/[0.06] text-xs font-mono font-medium text-[#f8f9fa] border border-white/[0.08]">
-                Shares
-              </span>
+          {live && chainId ? (
+            <WithdrawForm
+              vault={vaultAddress as `0x${string}`}
+              chainId={chainId}
+              assetSymbol={assetSymbol}
+              shareDecimals={shareDecimals}
+              live={live}
+            />
+          ) : (
+            <div className="rounded-xl bg-[#14221c] border border-white/[0.08] p-5 text-center space-y-2">
+              <p className="text-xs font-mono text-[#8b929e]">
+                On-chain vault data unavailable — withdrawal form cannot be shown.
+              </p>
             </div>
-          </div>
-
-          {/* Liquidity breakdown */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3.5 space-y-2 text-xs font-mono">
-            <div className="flex items-center justify-between text-[#8b929e]">
-              <span>Withdrawable right now (idle)</span>
-              <span className="text-[#52b896] font-medium">{money(totalIdleBig)} {assetSymbol}</span>
-            </div>
-            <div className="flex items-center justify-between text-[#8b929e]">
-              <span>Mandatory loss budget</span>
-              <span className="text-[#f8f9fa]">Explicit max_loss</span>
-            </div>
-            <div className="flex items-center justify-between text-[#8b929e]">
-              <span>Queue liquidation</span>
-              <span className="text-[#a3abb8]">Single strategy venue</span>
-            </div>
-          </div>
-
-          {/* Risk info */}
-          <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3.5 space-y-1.5 text-xs text-[#a3abb8] leading-relaxed">
-            <div className="text-[#8b929e] uppercase font-mono text-[11px] font-semibold">
-              Explicit Loss Budget Architecture
-            </div>
-            <p>
-              Withdrawals require an explicit loss parameter. The protocol assumes no default loss budget.
-              Exits draw from idle cash first without liquidation cost.
-            </p>
-          </div>
-
-          <Link
-            href={`/vaults/${vaultAddress}/withdraw`}
-            className="w-full flex items-center justify-center gap-2 py-3.5 px-5 rounded-xl border border-white/[0.14] bg-white/[0.06] hover:bg-white/[0.1] text-white font-medium text-sm transition-all"
-          >
-            <span>Withdraw {assetSymbol}</span>
-            <span>→</span>
-          </Link>
+          )}
         </div>
       )}
 

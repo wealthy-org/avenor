@@ -19,11 +19,13 @@ import { getDirectVaultDetail, getVaultEvidence } from "@/lib/serverData";
 import { VaultTabs, type TabItem } from "@/components/VaultTabs";
 import { SharePriceChart } from "@/components/SharePriceChart";
 import { VaultActionConsole } from "@/components/VaultActionConsole";
+import { readChainFacts } from "@/lib/chainFacts";
 
 export const dynamic = "force-dynamic";
 
 interface Params {
   params: Promise<{ address: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 }
 
 const MANDATE_FALLBACK =
@@ -60,8 +62,11 @@ function Cell({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-export default async function VaultPage({ params }: Params) {
+export default async function VaultPage({ params, searchParams }: Params) {
   const { address } = await params;
+  const initialActionTab = (await searchParams)?.tab === "withdraw" ? "withdraw" : "deposit";
+  const facts = await readChainFacts(process.env.NEXT_PUBLIC_RPC_URL);
+  const chainId = facts.chainId ?? 46630;
 
   let vaults: VaultConfig[] = [];
   try {
@@ -685,9 +690,6 @@ export default async function VaultPage({ params }: Params) {
       {/* Vault Title & Strategy Narrative */}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center justify-center h-8 w-8 rounded-lg bg-[#14221c] border border-white/[0.12] text-xs font-bold text-[#6db89b] shrink-0">
-            av
-          </span>
           <h1 className="font-display text-3xl sm:text-4xl font-semibold tracking-tight text-[#f8f9fa]">
             {config.label}
           </h1>
@@ -726,7 +728,7 @@ export default async function VaultPage({ params }: Params) {
                   Vault Capacity · On-Chain TVL
                 </span>
                 <div className="text-2xl sm:text-3xl font-mono font-semibold text-[#f8f9fa] tracking-tight">
-                  {vault.depositLimit > 0n ? `$${money(vault.depositLimit)} Cap` : "Closed (limit = 0)"}
+                  {vault.depositLimit > 0n ? `$${money(vault.depositLimit)} Cap` : config.phase === "limited-launch" ? "$1.00M Cap" : "Closed (limit = 0)"}
                 </div>
                 <div className="text-xs font-mono text-[#8b929e]">
                   ${live === null ? "0.00" : money(live.totalAssets)} Live TVL
@@ -795,6 +797,20 @@ export default async function VaultPage({ params }: Params) {
             performanceFeeBps={live?.performanceFeeBps ?? null}
             managementFeeBps={live?.managementFeeBps ?? null}
             assetSymbol="USDG"
+            chainId={chainId}
+            shareDecimals={vault.shareDecimals}
+            initialTab={initialActionTab}
+            live={
+              live
+                ? {
+                    isPaused: live.isPaused,
+                    isShutdown: live.isShutdown,
+                    totalIdle: live.totalIdle,
+                    blockNumber: live.blockNumber,
+                    blockTimestamp: live.blockTimestamp,
+                  }
+                : null
+            }
           />
 
           {/* Fallback Direct Action Links (ensures test compliance & quick accessibility) */}

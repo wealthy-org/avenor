@@ -300,7 +300,7 @@ export function WithdrawForm({ vault, chainId: nodeChainId, assetSymbol, live, s
       {/* Position Summary */}
       <div className="rounded-xl bg-[#0d1a14] border border-white/[0.08] p-4 space-y-3">
         <h3 className="text-xs font-mono uppercase tracking-wider text-[#a3abb8]">Position Snapshot</h3>
-        <div className="grid grid-cols-1 min-[430px]:grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-[#a3abb8]">Position Value</span>
             <span className="font-mono text-sm tabular-nums text-[#f8f9fa]">
