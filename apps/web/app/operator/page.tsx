@@ -19,16 +19,16 @@ interface OperatorRole {
 const ROLES_LIST: OperatorRole[] = [
   {
     role: "role_manager",
-    holder: "0x56d845a35EDe1436B8053f705b4b189c412A8648 (Deployer)",
+    holder: "0xf6BAE6C6516Ab237d659F97187C475652514c76A (Deployer, interim)",
     holderType: "Dedicated EOA",
     channel: "Timelock (48h)",
     status: "pending timelock handover",
     description:
-      "Current role_manager on-chain. Timelock handover to 0x7D25...eAAc is scheduled (op 0x9068381b...) for execution after 2026-11-28 02:09:09 UTC.",
+      "Current role_manager on-chain. Timelock handover to 0x2Bfa...09D is scheduled (op 0xf4d2cee4...) for execution after 2026-11-30 10:20:31 UTC.",
   },
   {
     role: "EMERGENCY_MANAGER",
-    holder: "Emergency Timelock (0xde3f...D4b6)",
+    holder: "Emergency Timelock (0x4B80...d895)",
     holderType: "Timelock",
     channel: "Emergency Timelock (6h)",
     status: "configured",
@@ -37,7 +37,7 @@ const ROLES_LIST: OperatorRole[] = [
   },
   {
     role: "REVOKE_STRATEGY_MANAGER",
-    holder: "Emergency Timelock (0xde3f...D4b6)",
+    holder: "Emergency Timelock (0x4B80...d895)",
     holderType: "Timelock",
     channel: "Emergency Timelock (6h)",
     status: "configured",
@@ -46,16 +46,16 @@ const ROLES_LIST: OperatorRole[] = [
   },
   {
     role: "GUARDIAN",
-    holder: "Guardian Safe 2/3 (0x8322...5af1)",
-    holderType: "Safe 2/3",
-    channel: "Fast Lane (Instant)",
+    holder: "Guardian EOA (0x1a72...3796)",
+    holderType: "Dedicated EOA",
+    channel: "Emergency Timelock (6h)",
     status: "configured",
     description:
-      "Multi-sig emergency oversight (role bit 8192). Independent signers with emergency pause / circuit breaker capabilities.",
+      "Emergency oversight (role bit 8192). Proposer+executor of the 6h Emergency Timelock for emergency pause / circuit breaker actions.",
   },
   {
     role: "REPORTING_MANAGER",
-    holder: "Keeper Service (0x9c4D...5d75)",
+    holder: "Keeper Service (0x60DF...2bFA)",
     holderType: "Dedicated EOA",
     channel: "Fast Lane (Instant)",
     status: "active",
@@ -64,7 +64,7 @@ const ROLES_LIST: OperatorRole[] = [
   },
   {
     role: "DEBT_MANAGER",
-    holder: "Keeper Service (0x9c4D...5d75)",
+    holder: "Keeper Service (0x60DF...2bFA)",
     holderType: "Dedicated EOA",
     channel: "Fast Lane (Instant)",
     status: "active",
@@ -73,7 +73,7 @@ const ROLES_LIST: OperatorRole[] = [
   },
   {
     role: "ADD_STRATEGY_MANAGER",
-    holder: "Primary Timelock (0x7D25...eAAc)",
+    holder: "Primary Timelock (0x2Bfa...09D)",
     holderType: "Timelock",
     channel: "Timelock (48h)",
     status: "configured",
@@ -82,7 +82,7 @@ const ROLES_LIST: OperatorRole[] = [
   },
   {
     role: "DEPOSIT_LIMIT_MANAGER",
-    holder: "Primary Timelock (0x7D25...eAAc)",
+    holder: "Primary Timelock (0x2Bfa...09D)",
     holderType: "Timelock",
     channel: "Timelock (48h)",
     status: "configured",
@@ -137,10 +137,10 @@ export default async function OperatorPage() {
         </div>
 
         <div className="card">
-          <span className="font-mono text-xs uppercase tracking-wider text-[#8b929e]">Guardian Multisig</span>
+          <span className="font-mono text-xs uppercase tracking-wider text-[#8b929e]">Governance Multisig</span>
           <div className="text-xl sm:text-2xl font-mono font-medium text-[#6db89b] mt-1">2-of-3 Safe</div>
           <p className="text-xs text-[#a3abb8] mt-2">
-            Independent guardian signers (0x8322...5af1). Proposer is Governance Safe (0x24e9...d4AA). Note: deployer address is a signer in both Safes (testnet — separation before mainnet).
+            Governance Safe (0x68b8...51e): timelock proposer + strategy management, 3 independent owner keys. Guardian is a dedicated EOA (0x1a72...3796) proposing through the 6h Emergency Timelock — never a timelock proposer.
           </p>
         </div>
 
@@ -154,9 +154,9 @@ export default async function OperatorPage() {
 
         <div className="card border-[#6db89b]/30 bg-[#6db89b]/5">
           <span className="font-mono text-xs uppercase tracking-wider text-[#6db89b]">Handover Maturity</span>
-          <div className="text-xl sm:text-2xl font-mono font-medium text-[#f8f9fa] mt-1">28 Nov, 02:09 UTC</div>
+          <div className="text-xl sm:text-2xl font-mono font-medium text-[#f8f9fa] mt-1">30 Nov, 10:20 UTC</div>
           <p className="text-xs text-[#a3abb8] mt-2">
-            Scheduled operation <span className="font-mono text-[#6db89b]">0x906838...</span> transfers role_manager to Timelock (0x7D25...eAAc).
+            Scheduled operation <span className="font-mono text-[#6db89b]">0xf4d2cee4...</span> transfers role_manager to Timelock (0x2Bfa...09D).
           </p>
         </div>
       </div>

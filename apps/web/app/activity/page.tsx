@@ -28,22 +28,22 @@ interface ActivityItem {
 
 // Recorded deployment transactions on Robinhood Chain Testnet 46630 (packages/config/46630.json);
 // re-verify each against the explorer link rather than trusting this file.
-// NOTE (GAP U2-2): Hashes at blocks 157503812/814/816 were NOT confirmed by eth_getTransactionReceipt
-// on 2026-11-27. Only 0x381f… (blk 157995780), 0xb887… (blk 157995762), and 0x34b2… (blk 157499658)
-// returned receipt status=1. The blocks below are retained for reference; explorer links remain for
-// manual re-verification. Do NOT treat unconfirmed hashes as proof of on-chain deployment.
+// NOTE (v2 redeploy 2026-11-28): all hashes below were confirmed status=1 via
+// eth_getTransactionReceipt (handover txs 0x7918…0787 blk 158780713, 0xfdfc…7347 blk 158780738)
+// or by the Foundry broadcast receipt log (deploy txs at block 158777022, run-1795860249230.json).
+// The pre-redeployment stack (vault 0xDa4D…7DA0) is superseded; see docs/TESTNET_EVIDENCE.md §0.
 const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
   {
     id: "act-gov-schedule",
     type: "role",
     title: "Timelock Role Assignment Scheduled",
     detail:
-      "Governance Safe scheduled accept_role_manager() on VaultV3 via 48h TimelockController (operation 0x9068381b...). Enforces mandatory 172,800s execution delay before role transition.",
+      "Governance Safe scheduled accept_role_manager() on VaultV3 via 48h TimelockController (operation 0xf4d2cee4...). Enforces mandatory 172,800s execution delay before role transition; executable from 2026-11-30T10:20:31Z.",
     amount: "delay: 172,800s (48h)",
-    blockNumber: "157995780",
-    txHash: "0x381fdf02042413bbdbda93c33b3bdff98a1e05b7c87c926dae5c806c9bc9376d",
-    timestamp: "2026-11-26 02:09 UTC",
-    actor: "Governance Safe 2/3 (0x24e9...d4AA)",
+    blockNumber: "158780738",
+    txHash: "0xfdfc2efc3945de68b7ce1e6e8c756a56a370bad139efc82fac491ddfbcb17347",
+    timestamp: "2026-11-28 09:26 UTC",
+    actor: "Governance Safe 2/3 (0x68b8...51e)",
     status: "scheduled",
   },
   {
@@ -51,12 +51,12 @@ const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
     type: "role",
     title: "Strategy Management Transferred",
     detail:
-      "MorphoVaultStrategy management transferred to Governance Safe (0x24e9...d4AA) via acceptManagement(). Strategy is bound to mock Steakhouse USDG venue stand-in (testnet only).",
+      "MorphoVaultStrategy management transferred to Governance Safe (0x68b8...51e) via acceptManagement(). Strategy is bound to mock Steakhouse USDG venue stand-in (testnet only).",
     amount: "Management: Safe 2/3",
-    blockNumber: "157995762",
-    txHash: "0xb88761254bb53feea86129bfe6c515ad7cd79f5a4f83ded84aa53b0dfca2f19b",
-    timestamp: "2026-11-26 02:05 UTC",
-    actor: "Governance Safe 2/3 (0x24e9...d4AA)",
+    blockNumber: "158780713",
+    txHash: "0x7918213812377a777fa761a79ac2d40d0f4b40adc4bd17cca8929a2fa3340787",
+    timestamp: "2026-11-28 09:24 UTC",
+    actor: "Governance Safe 2/3 (0x68b8...51e)",
     status: "confirmed",
   },
   {
@@ -64,12 +64,12 @@ const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
     type: "deployment",
     title: "Strategy Adapter Deployment",
     detail:
-      "Deployed MorphoVaultStrategy adapter (0x8f15...Cf93) wired to mock Steakhouse USDG venue (0xE202...b037, testnet stand-in only). Verification completed on-chain.",
+      "Deployed MorphoVaultStrategy adapter (0xc964...8291) wired to mock Steakhouse USDG venue (0xd6f7...1f05, testnet stand-in only). Verification completed on-chain.",
     amount: "Single-Venue Adapter",
-    blockNumber: "157503816",
-    txHash: "0x1f74a008c2670e30d1702f2323a7786851b439c381d604e5785bbff0092c63ef",
-    timestamp: "2026-11-24 16:53 UTC",
-    actor: "Deployer (0x56d8...8648)",
+    blockNumber: "158777022",
+    txHash: "0x2d0ae2005ed9f16609521db04a604c5d45e45d30d83a594920f1d0724efcd812",
+    timestamp: "2026-11-28 09:03 UTC",
+    actor: "Deployer (0xf6BA...4c76A)",
     status: "confirmed",
   },
   {
@@ -77,12 +77,12 @@ const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
     type: "deployment",
     title: "Accountant Deployment & Fee Wiring",
     detail:
-      "Deployed Accountant fee controller (0xA499...8e32) configured to 10% performance fee, strictly 0% management fee, and 2% max loss protection cap.",
+      "Deployed Accountant fee controller (0xE72b...ad7C) configured to 10% performance fee, strictly 0% management fee, and 2% max loss protection cap.",
     amount: "10% Perf / 0% Mgmt",
-    blockNumber: "157503814",
-    txHash: "0x93883a93c72b79313cae6b8c9d2f2d93e5db617bbd6c5bb5d2b78ce13ad373c2",
-    timestamp: "2026-11-24 16:52 UTC",
-    actor: "Deployer (0x56d8...8648)",
+    blockNumber: "158777022",
+    txHash: "0xc81aaae18b4f6e226a60d4a370fa94b0725ff5b645293d8578809b5950bfb6f0",
+    timestamp: "2026-11-28 09:03 UTC",
+    actor: "Deployer (0xf6BA...4c76A)",
     status: "confirmed",
   },
   {
@@ -90,12 +90,12 @@ const VERIFIED_ONCHAIN_EVENTS: ActivityItem[] = [
     type: "deployment",
     title: "Allocator Vault Deployment",
     detail:
-      "Deployed Yearn V3 ERC-4626 Allocator Vault (0xDa4D...7DA0) as a 45-byte EIP-1167 minimal proxy pointing to canonical runtime implementation.",
+      "Deployed Yearn V3 ERC-4626 Allocator Vault (0xFB60...4Dd9) as a 45-byte EIP-1167 minimal proxy pointing to canonical runtime implementation.",
     amount: "ERC-4626 Vault Proxy",
-    blockNumber: "157503812",
-    txHash: "0x51c7aa7c1d7e2e340798be121ec252f4477db199991206f4773403a7433230b7",
-    timestamp: "2026-11-24 16:52 UTC",
-    actor: "Deployer (0x56d8...8648)",
+    blockNumber: "158777022",
+    txHash: "0x4d00d5274625c65ba556ccd48433d6bb371ebca00c9f614a7fac4d174261b683",
+    timestamp: "2026-11-28 09:03 UTC",
+    actor: "Deployer (0xf6BA...4c76A)",
     status: "confirmed",
   },
 ];
@@ -153,7 +153,7 @@ export default async function ActivityPage() {
             <div>
               <h2 className="text-sm font-medium text-[#f8f9fa]">Capital Inflows, Redemptions &amp; Harvests</h2>
               <p className="text-xs text-[#a3abb8] mt-0.5">
-                Vault <code className="font-mono text-[#6db89b]">0xDa4D...7DA0</code> is in Research Staging with deposit limit 0 USDG.
+                Vault <code className="font-mono text-[#6db89b]">0xFB60...4Dd9</code> is in Research Staging with deposit limit 0 USDG.
               </p>
             </div>
           </div>
@@ -168,7 +168,7 @@ export default async function ActivityPage() {
           </span>
           <div className="mt-2">
             <a
-              href={`${EXPLORER_BASE}/address/0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0`}
+              href={`${EXPLORER_BASE}/address/0xFB6064C2A4CedaD01b2a873E43890D18e1Cb4Dd9`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#6db89b] hover:underline inline-flex items-center gap-1 font-mono text-[11px]"

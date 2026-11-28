@@ -10,7 +10,7 @@ import { captureFallbackAllowed, metadataFromSnapshot } from "../src/lib/vaultSo
 import type { VaultSnapshot, Field } from "../src/lib/vaultRead.ts";
 
 /** The testnet vault the web env points at: chain 46630, which the capture says nothing about. */
-const TESTNET_VAULT = "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0";
+const TESTNET_VAULT = "0xFB6064C2A4CedaD01b2a873E43890D18e1Cb4Dd9";
 
 const ok = <T>(value: T): Field<T> => ({ value, error: null });
 const failed = <T>(message: string): Field<T> => ({ value: null, error: message });
@@ -38,7 +38,7 @@ function snapshot(overrides: Partial<VaultSnapshot["vault"]> = {}, source: "onch
       ...overrides,
     },
     roles: {
-      roleManager: ok("0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc"),
+      roleManager: ok("0x2Bfa51B313AA76d2ED0d8D5971Dd8b3e4235609D"),
       futureRoleManager: ok("0x0000000000000000000000000000000000000000"),
       accountant: ok("0x47834d4241a7a5188a253cc0203ab49d4621a069"),
       feeManager: ok("0x0000000000000000000000000000000000000000"),

@@ -26,7 +26,7 @@ test("OperatorPage renders institutional operator dashboard and role matrix (Bri
   assert.match(source, /Orderly Deposit Freezing/);
 
   // Verified addresses from packages/config/46630.json
-  assert.match(source, /0x56d845a35EDe1436B8053f705b4b189c412A8648/);
+  assert.match(source, /0xf6BAE6C6516Ab237d659F97187C475652514c76A/);
   assert.match(source, /pending timelock handover/);
 
   // Rejects fake actors and ancient block from old fork

@@ -505,19 +505,19 @@ export default function DocsPage() {
               <div className="divide-y divide-white/[0.06]">
                 <div className="p-3 flex items-center justify-between">
                   <span className="text-[#8b929e]">Avenor USDG Managed Vault (Proxy)</span>
-                  <code className="text-[#52b896]">0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0</code>
+                  <code className="text-[#52b896]">0xFB6064C2A4CedaD01b2a873E43890D18e1Cb4Dd9</code>
                 </div>
                 <div className="p-3 flex items-center justify-between">
                   <span className="text-[#8b929e]">MorphoVaultStrategy Adapter</span>
-                  <code className="text-[#f8f9fa]">0x8f151132f80277b7D42Ad9615172E6De1B26Cf93</code>
+                  <code className="text-[#f8f9fa]">0xc96479EF4274F7619E1e78FA40bfdb3a367d8291</code>
                 </div>
                 <div className="p-3 flex items-center justify-between">
                   <span className="text-[#8b929e]">TimelockController (role_manager)</span>
-                  <code className="text-[#f8f9fa]">0x7D2511309AA40ed9Bd0f10b3F6c3e36E5b62eAAc</code>
+                  <code className="text-[#f8f9fa]">0x2Bfa51B313AA76d2ED0d8D5971Dd8b3e4235609D</code>
                 </div>
                 <div className="p-3 flex items-center justify-between">
                   <span className="text-[#8b929e]">Accountant Fee Controller</span>
-                  <code className="text-[#f8f9fa]">0xA499C9F98cE3a66B79dD9CaA99AA894DDE298e32</code>
+                  <code className="text-[#f8f9fa]">0xE72b69440D6ddb12F07A4f0A335062f7aeD3Ad7C</code>
                 </div>
               </div>
             </div>

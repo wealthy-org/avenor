@@ -754,7 +754,7 @@ export default async function VaultPage({ params, searchParams }: Params) {
               </div>
               <div>
                 <span className="text-[10px] uppercase text-[#8b929e] block">Curator / Governance</span>
-                <span className="text-[#f8f9fa] font-medium">Safe 2/3 (0x24e9...d4AA)</span>
+                <span className="text-[#f8f9fa] font-medium">Safe 2/3 (0x68b8...51e)</span>
               </div>
               <div>
                 <span className="text-[10px] uppercase text-[#8b929e] block">APY Methodology</span>
@@ -770,7 +770,7 @@ export default async function VaultPage({ params, searchParams }: Params) {
           {/* Share Price Chart (Area Performance) */}
           <SharePriceChart
             pricePerShare={(live?.pricePerShare ?? 1000000n).toString()}
-            blockNumber={live?.blockNumber.toString() ?? "158497346"}
+            blockNumber={live?.blockNumber.toString() ?? "158777022"}
           />
 
           {/* Deep Technical Tabs */}

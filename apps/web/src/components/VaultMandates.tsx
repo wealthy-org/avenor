@@ -75,10 +75,10 @@ interface DeferredMandate {
 function roleManagerDisplay(address: string | null): string {
   if (address === null) return "not read this render";
   const normalized = address.toLowerCase();
-  if (normalized === "0x7d2511309aa40ed9bd0f10b3f6c3e36e5b62eaac") {
+  if (normalized === "0x2bfa51b313aa76d2ed0d8d5971dd8b3e4235609d") {
     return `${shortAddress(address)} · 48h Timelock`;
   }
-  if (normalized === "0x56d845a35ede1436b8053f705b4b189c412a8648") {
+  if (normalized === "0xf6bae6c6516ab237d659f97187c475652514c76a") {
     return `${shortAddress(address)} (Deployer · Timelock Pending)`;
   }
   return shortAddress(address);

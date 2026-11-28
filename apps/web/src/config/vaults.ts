@@ -11,7 +11,7 @@ export interface VaultConfig {
 }
 
 export const DEFAULT_TESTNET_VAULT: VaultConfig = {
-  address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+  address: "0xFB6064C2A4CedaD01b2a873E43890D18e1Cb4Dd9",
   label: "Avenor USDG Managed Vault (Testnet)",
   phase: "limited-launch",
   mandate:
