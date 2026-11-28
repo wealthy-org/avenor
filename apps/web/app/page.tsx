@@ -1,4 +1,4 @@
-import { parseVaultList } from "@/config/vaults";
+import { parseVaultList, DEFAULT_TESTNET_VAULT, type VaultConfig } from "@/config/vaults";
 import { money, percentBps, shortAddress } from "@/lib/format";
 import { getDirectVaultDetail, getVaultEvidence } from "@/lib/serverData";
 import { chainSummary, readChainFacts } from "@/lib/chainFacts";
@@ -95,34 +95,16 @@ function mandateIdentity(detail: VaultDetail): MandateIdentity {
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  let vaults = [];
+  let vaults: VaultConfig[] = [];
   try {
     vaults = parseVaultList(process.env.AVENOR_VAULTS);
   } catch (error) {
-    return (
-      <div className="shell">
-        <div className="rounded-xl bg-[#14221c] border border-red-500/30 p-6 text-red-300">
-          <h2 className="text-xl font-medium text-white mb-2">Vault configuration error</h2>
-          <p>{error instanceof Error ? error.message : String(error)}</p>
-        </div>
-      </div>
-    );
+    console.warn("AVENOR_VAULTS configuration error, using default fallback:", error);
+    vaults = [];
   }
 
   if (vaults.length === 0) {
-    return (
-      <div className="shell py-24 text-center">
-        <div className="max-w-xl mx-auto rounded-xl bg-[#101b16]/90 border border-white/[0.08] p-8 space-y-4">
-          <h2 className="text-2xl font-display font-medium text-white">No Vaults Configured</h2>
-          <p className="text-sm text-[#a3abb8] leading-relaxed">
-            No vaults are currently configured in the application environment (<code className="font-mono text-[#6db89b]">AVENOR_VAULTS</code>).
-          </p>
-          <p className="text-xs text-[#6b7280]">
-            Please set the <code className="font-mono text-[#6db89b]">AVENOR_VAULTS</code> environment variable to display verified vaults.
-          </p>
-        </div>
-      </div>
-    );
+    vaults = [DEFAULT_TESTNET_VAULT];
   }
 
   // One snapshot per request. The hero tiles, the ticker, the mandate facts and the block chip all come

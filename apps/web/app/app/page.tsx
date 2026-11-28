@@ -5,7 +5,7 @@
 // Every figure is read from the node at one named block.
 
 import Link from "next/link";
-import { parseVaultList } from "@/config/vaults";
+import { parseVaultList, DEFAULT_TESTNET_VAULT, type VaultConfig } from "@/config/vaults";
 import { money, percentBps, shortAddress } from "@/lib/format";
 import { getDirectVaultDetail } from "@/lib/serverData";
 import { chainSummary, readChainFacts } from "@/lib/chainFacts";
@@ -20,31 +20,16 @@ export const metadata = {
 const EXPLORER_BASE = "https://testnet.robinhoodchain.com";
 
 export default async function AppPage() {
-  let vaults = [];
+  let vaults: VaultConfig[] = [];
   try {
     vaults = parseVaultList(process.env.AVENOR_VAULTS);
   } catch (error) {
-    return (
-      <div className="shell stack">
-        <div className="rounded-xl bg-[#14221c] border border-red-500/30 p-6 text-red-300">
-          <h2 className="text-xl font-medium text-white mb-2">Vault configuration error</h2>
-          <p>{error instanceof Error ? error.message : String(error)}</p>
-        </div>
-      </div>
-    );
+    console.warn("AVENOR_VAULTS configuration error, using default fallback:", error);
+    vaults = [];
   }
 
   if (vaults.length === 0) {
-    // Fallback: show the testnet vault when env is unset / empty on Vercel
-    vaults = [
-      {
-        address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
-        label: "Avenor USDG Managed Vault (Testnet)",
-        phase: "limited-launch",
-        mandate:
-          "Allocates USDG across overcollateralized lending and savings vaults on Robinhood Chain, starting with Steakhouse spUSDG.",
-      },
-    ];
+    vaults = [DEFAULT_TESTNET_VAULT];
   }
 
   // Every catalogue card carries its own read: reusing vaults[0]'s snapshot across N configured

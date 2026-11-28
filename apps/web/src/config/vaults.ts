@@ -10,35 +10,55 @@ export interface VaultConfig {
   mandate?: string;
 }
 
+export const DEFAULT_TESTNET_VAULT: VaultConfig = {
+  address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
+  label: "Avenor USDG Managed Vault (Testnet)",
+  phase: "limited-launch",
+  mandate:
+    "Allocates USDG across overcollateralized lending and savings vaults on Robinhood Chain, starting with Steakhouse spUSDG.",
+};
+
 const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
 
 export function parseVaultList(raw: string | undefined): VaultConfig[] {
   if (raw === undefined || raw.trim() === "") return [];
   let cleaned = raw.trim();
-  // Handle Vercel common encoding artifacts: bare empty-string literals
-  if (cleaned === '""' || cleaned === "''" || cleaned === "[]") return cleaned === "[]" ? [] : [];
-  // Strip outer single-quotes (some shells wrap the value)
-  if (cleaned.startsWith("'") && cleaned.endsWith("'")) {
+
+  // Strip repeated outer quotes added by shells, Vercel CLI, or env managers
+  while (
+    (cleaned.startsWith('"') && cleaned.endsWith('"') && cleaned.length >= 2) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'") && cleaned.length >= 2)
+  ) {
     cleaned = cleaned.slice(1, -1).trim();
-    if (cleaned === "" || cleaned === '""') return [];
   }
-  // Strip outer double-quotes that Vercel sometimes adds around the JSON blob
-  if (cleaned.startsWith('"') && cleaned.endsWith('"') && cleaned.length > 2) {
-    const inner = cleaned.slice(1, -1).trim();
-    if (inner === "" || inner === "[]") return [];
-    cleaned = inner;
-  }
+
+  if (cleaned === "" || cleaned === "[]" || cleaned === '""' || cleaned === "''" || cleaned === '\\"\\"') return [];
+
   let parsed: unknown;
   try {
     parsed = JSON.parse(cleaned);
-    // Handle double-encoded JSON: JSON.parse returned a string → parse again
-    if (typeof parsed === "string") {
-      if (parsed.trim() === "" || parsed.trim() === "[]") return [];
-      parsed = JSON.parse(parsed);
-    }
   } catch {
-    throw new Error("AVENOR_VAULTS must be JSON: an unreadable list is not an empty list");
+    // If JSON.parse failed, check if backslashes were escaped by shell (e.g. \" replaced with ")
+    try {
+      parsed = JSON.parse(cleaned.replace(/\\"/g, '"'));
+    } catch {
+      throw new Error("AVENOR_VAULTS must be JSON: an unreadable list is not an empty list");
+    }
   }
+
+  // Handle double-encoded JSON: JSON.parse returned a string → parse again
+  if (typeof parsed === "string") {
+    cleaned = parsed.trim();
+    while (
+      (cleaned.startsWith('"') && cleaned.endsWith('"') && cleaned.length >= 2) ||
+      (cleaned.startsWith("'") && cleaned.endsWith("'") && cleaned.length >= 2)
+    ) {
+      cleaned = cleaned.slice(1, -1).trim();
+    }
+    if (cleaned === "" || cleaned === "[]") return [];
+    parsed = JSON.parse(cleaned);
+  }
+
   if (!Array.isArray(parsed)) throw new Error("AVENOR_VAULTS must be a JSON array");
 
   const seen = new Set<string>();

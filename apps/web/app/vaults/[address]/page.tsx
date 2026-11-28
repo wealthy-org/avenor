@@ -13,7 +13,7 @@ import { Amount, AddressText, BlockProvenance, ErrorState, Percent, StatusPill }
 import { ApiError } from "@/lib/api";
 import { loadVaultDetail, type VaultDetail } from "@/lib/vaultLoader";
 import { blockTime, epochTime, liquiditySplit, money, percentBps } from "@/lib/format";
-import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
+import { apiUrl, parseVaultList, DEFAULT_TESTNET_VAULT, type VaultConfig } from "@/config/vaults";
 import { latestReportTimestamp } from "@/lib/vaultView";
 import { getDirectVaultDetail, getVaultEvidence } from "@/lib/serverData";
 import { VaultTabs, type TabItem } from "@/components/VaultTabs";
@@ -72,23 +72,13 @@ export default async function VaultPage({ params, searchParams }: Params) {
   try {
     vaults = parseVaultList(process.env.AVENOR_VAULTS);
   } catch (error) {
-    return (
-      <div className="shell stack">
-        <SectionError error={error} what="The AVENOR_VAULTS configuration is malformed" />
-      </div>
-    );
+    console.warn("AVENOR_VAULTS configuration error, using default fallback:", error);
+    vaults = [];
   }
 
   // Fallback for default testnet vault if environment variable is unset or empty
   if (vaults.length === 0) {
-    vaults = [
-      {
-        address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
-        label: "Avenor USDG Managed Vault (Testnet)",
-        phase: "limited-launch",
-        mandate: "Allocates USDG across overcollateralized lending and savings vaults on Robinhood Chain, starting with Steakhouse spUSDG.",
-      },
-    ];
+    vaults = [DEFAULT_TESTNET_VAULT];
   }
 
   const config =

@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { DepositForm } from "@/components/DepositForm";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AddressText, BlockProvenance, ErrorState } from "@/components/primitives";
-import { apiUrl, parseVaultList, type VaultConfig } from "@/config/vaults";
+import { apiUrl, parseVaultList, DEFAULT_TESTNET_VAULT, type VaultConfig } from "@/config/vaults";
 import { ApiError } from "@/lib/api";
 import { loadVaultDetail } from "@/lib/vaultLoader";
 import { getDirectVaultDetail } from "@/lib/serverData";
@@ -31,23 +31,12 @@ export default async function DepositPage({ params }: Params) {
   try {
     vaults = parseVaultList(process.env.AVENOR_VAULTS);
   } catch (error) {
-    const { code, message } = describe(error);
-    return (
-      <div className="shell stack">
-        <ErrorState code={code} message={`Vault configuration error: ${message}`} />
-      </div>
-    );
+    console.warn("AVENOR_VAULTS configuration error, using default fallback:", error);
+    vaults = [];
   }
 
   if (vaults.length === 0) {
-    vaults = [
-      {
-        address: "0xDa4D625B2e14A3C07D21d6eFfe66f91AED517DA0",
-        label: "Avenor USDG Managed Vault (Testnet)",
-        phase: "limited-launch",
-        mandate: "Testnet Stage Rehearsal",
-      },
-    ];
+    vaults = [DEFAULT_TESTNET_VAULT];
   }
 
   const config = vaults.find((entry) => entry.address.toLowerCase() === address.toLowerCase());
